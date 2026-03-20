@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kubernetes Terminal — Hands-On Lab</title>
+<style>
+:root{--bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--border:#30363D;--blue:#326CE5;--blue-light:#1a2848;--cyan:#79C0FF;--green:#3FB950;--yellow:#E3B341;--orange:#F0883E;--red:#FF7B72;--purple:#D2A8FF;--white:#C9D1D9;--gray:#8B949E;--header-bg:#0A1628;--radius:8px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--white);}
+.site-header{background:var(--header-bg);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:2px solid var(--blue);flex-shrink:0;}
+.site-header h1{font-size:16px;font-weight:700;}
+.site-header p{font-size:11px;color:#79C0FF;margin-top:1px;}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;}
+.nav-link{font-size:11px;padding:3px 10px;border-radius:5px;background:rgba(50,108,229,.15);color:#79C0FF;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(50,108,229,.35);color:white;}
+.app{display:flex;height:calc(100vh - 58px);overflow:hidden;}
+.sidebar{width:285px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+.stab{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--gray);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.stab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.stab:hover{color:var(--white);}
+.sidebar-content{flex:1;overflow-y:auto;padding:10px;}
+.sidebar-content::-webkit-scrollbar{width:4px;}
+.sidebar-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.ex-section{margin-bottom:16px;}
+.ex-section-title{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+.ex-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.ex-item:hover{border-color:var(--blue);}
+.ex-item.active{border-color:var(--blue);background:var(--blue-light);}
+.ex-item.done{border-color:var(--green);}
+.ex-title{font-size:12px;font-weight:600;color:var(--white);display:flex;align-items:center;gap:6px;}
+.ex-badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:700;}
+.badge-easy{background:#1a3a1a;color:var(--green);}
+.badge-medium{background:#1a2a3a;color:var(--blue);}
+.badge-hard{background:#2a1a2a;color:var(--purple);}
+.ex-desc{font-size:11px;color:var(--gray);margin-top:4px;line-height:1.5;}
+.cs-section{margin-bottom:14px;}
+.cs-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.cs-cmd{display:flex;gap:8px;margin-bottom:4px;padding:4px 6px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.cs-cmd:hover{background:var(--bg3);}
+.cs-cmd-name{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;color:var(--yellow);min-width:140px;flex-shrink:0;}
+.cs-cmd-desc{font-size:11px;color:var(--gray);line-height:1.4;}
+.state-section{margin-bottom:12px;}
+.state-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.state-item{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:11px;}
+.state-badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:9px;font-weight:700;margin-left:6px;}
+.badge-running{background:#1a3a1a;color:var(--green);}
+.badge-ready{background:#1a3a1a;color:var(--green);}
+.badge-notready{background:#2a1a1a;color:var(--red);}
+.badge-stopped{background:#2a1a1a;color:var(--red);}
+.badge-pending{background:#2a2a1a;color:var(--yellow);}
+.badge-deployed{background:#1a3a1a;color:var(--green);}
+.challenge-bar{background:var(--bg2);border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0;}
+.challenge-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.challenge-text{font-size:12px;color:var(--white);line-height:1.5;}
+.challenge-hint{font-size:11px;color:var(--gray);margin-top:4px;display:none;}
+.challenge-hint.visible{display:block;}
+.challenge-btns{display:flex;gap:6px;margin-top:8px;}
+.cbtn{font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-weight:600;background:var(--bg3);color:var(--gray);transition:all .2s;}
+.cbtn:hover{color:var(--white);}
+.cbtn.hint{color:var(--purple);border-color:var(--purple);}
+.cbtn.skip{color:var(--orange);border-color:var(--orange);}
+.terminal-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.term-top-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.term-dot{width:12px;height:12px;border-radius:50%;}
+.dot-red{background:#FF5F57;}.dot-yellow{background:#FFBD2E;}.dot-green{background:#28CA41;}
+.term-title{font-size:12px;color:var(--gray);margin-left:4px;flex:1;}
+.terminal{flex:1;overflow-y:auto;padding:14px 16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.65;cursor:text;}
+.terminal::-webkit-scrollbar{width:6px;}
+.terminal::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.line{display:flex;align-items:baseline;flex-wrap:wrap;}
+.prompt{color:var(--blue);white-space:nowrap;flex-shrink:0;}
+.cmd-echo{color:var(--white);}
+.out-line{white-space:pre-wrap;word-break:break-all;display:block;}
+.out-err{color:var(--red);}
+.out-ok{color:var(--green);}
+.out-info{color:var(--cyan);}
+.out-warn{color:var(--yellow);}
+.out-dim{color:var(--gray);}
+.out-blue{color:var(--blue);}
+.out-purple{color:var(--purple);}
+.out-orange{color:var(--orange);}
+.input-row{display:flex;align-items:center;margin-top:4px;}
+.input-prompt{color:var(--blue);white-space:nowrap;flex-shrink:0;}
+#cmd-input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-family:inherit;font-size:13px;caret-color:white;}
+.prog-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:6px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:width .4s;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <h1>&#x2388; Kubernetes Terminal &#8212; Hands-On Lab</h1>
+    <p>Simulated kubectl &middot; pods &middot; deployments &middot; services &middot; namespaces &middot; helm</p>
+  </div>
+  <div class="nav-links">
+    <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+    <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+    <a href="docker-terminal.html" class="nav-link">&#x1F433; Docker Lab</a>
+    <a href="linux-terminal.html" class="nav-link">&#x1F427; Linux Lab</a>
+    <a href="ps-terminal.html" class="nav-link">&#x1F4BB; PS Lab</a>
+    <a href="index.html" class="nav-link">&#x2601;&#xFE0F; IaaS Labs</a>
+  </div>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="stab active" onclick="showTab('exercises',this)">Exercises</div>
+      <div class="stab" onclick="showTab('cheatsheet',this)">Cheatsheet</div>
+      <div class="stab" onclick="showTab('state',this)">Cluster</div>
+    </div>
+    <div class="sidebar-content" id="tab-exercises">
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:11px;font-weight:700;color:var(--white);">Lab Progress</span>
+          <span style="font-size:10px;color:var(--blue);" id="prog-text">0 / 0 done</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div id="ex-list"></div>
+    </div>
+    <div class="sidebar-content" id="tab-cheatsheet" style="display:none;">
+      <div id="cheatsheet-content"></div>
+    </div>
+    <div class="sidebar-content" id="tab-state" style="display:none;">
+      <div class="state-section">
+        <div class="state-title">&#x1F5A5; Nodes</div>
+        <div id="state-nodes"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">&#x1F7E2; Pods (default)</div>
+        <div id="state-pods"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">&#x1F4E6; Deployments</div>
+        <div id="state-deployments"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">&#x1F310; Services</div>
+        <div id="state-services"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">&#x2388; Helm Releases</div>
+        <div id="state-helm"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="terminal-wrap">
+    <div class="term-top-bar">
+      <span class="term-dot dot-red"></span>
+      <span class="term-dot dot-yellow"></span>
+      <span class="term-dot dot-green"></span>
+      <span class="term-title">k8s-lab &mdash; kubectl</span>
+      <span style="font-size:10px;color:var(--gray);">Context: <span style="color:var(--yellow)">minikube</span> &nbsp;|&nbsp; Cluster: 3 nodes &nbsp;|&nbsp; Type <span style="color:var(--yellow)">help</span> to start</span>
+    </div>
+    <div class="terminal" id="terminal" onclick="focusInput()">
+      <div id="output"></div>
+      <div class="input-row">
+        <span class="input-prompt" id="live-prompt">$ &nbsp;</span>
+        <input type="text" id="cmd-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleKey(event)">
+      </div>
+    </div>
+    <div class="challenge-bar" id="challenge-bar" style="display:none;">
+      <div class="challenge-title">&#x1F3AF; Current Challenge</div>
+      <div class="challenge-text" id="challenge-text"></div>
+      <div class="challenge-hint" id="challenge-hint"></div>
+      <div class="challenge-btns">
+        <button class="cbtn hint" onclick="showHint()">&#x1F4A1; Hint</button>
+        <button class="cbtn skip" onclick="skipChallenge()">&#x23ED; Skip</button>
+        <button class="cbtn" onclick="resetExercise()" style="color:var(--red);border-color:var(--red);">&#x1F504; Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function rnd(n=12){return [...Array(n)].map(()=>'0123456789abcdef'[Math.random()*16|0]).join('');}
+function rndAlpha(n=5){return [...Array(n)].map(()=>'bcdfghjklmnprstvwxz0123456789'[Math.random()*29|0]).join('');}
+function rndWord(n=5){const v='aeiou',c='bcdfghjklmnprst';let s='';for(let i=0;i<n;i++)s+=i%2===0?c[Math.random()*c.length|0]:v[Math.random()*v.length|0];return s;}
+function ts(){return new Date().toISOString().replace('T',' ').slice(0,19);}
+function makePodName(dep,hash){return dep+'-'+hash+'-'+rndAlpha(5);}
+function pad(s,n){return String(s).padEnd(n);}
+function col(...cols){return cols.join('   ');}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const NODES = {
+  'minikube':     {role:'control-plane',status:'Ready',age:'10d',version:'v1.28.4',cpu:'4',mem:'8Gi',ip:'192.168.49.2',cordoned:false,taints:[]},
+  'minikube-m02': {role:'<none>',       status:'Ready',age:'10d',version:'v1.28.4',cpu:'2',mem:'4Gi',ip:'192.168.49.3',cordoned:false,taints:[]},
+  'minikube-m03': {role:'<none>',       status:'Ready',age:'10d',version:'v1.28.4',cpu:'2',mem:'4Gi',ip:'192.168.49.4',cordoned:false,taints:[]},
+};
+let namespaces = {
+  'default':         {status:'Active',age:'10d'},
+  'kube-system':     {status:'Active',age:'10d'},
+  'kube-public':     {status:'Active',age:'10d'},
+  'kube-node-lease': {status:'Active',age:'10d'},
+  'monitoring':      {status:'Active',age:'3d'},
+};
+let pods = {};
+let deployments = {};
+let services = {};
+let configmaps = {};
+let secrets = {};
+let helmReleases = {};
+let helmRepos = {};
+let rolloutHistory = {};
+let portForwards = {};
+let cmdHistory = [];
+let histIndex = -1;
+let currentExercise = null;
+let currentTaskIdx = 0;
+let doneMap = {};
+let currentNS = 'default';
+let currentContext = 'minikube';
+
+function initState(){
+  // kube-system pods
+  function ksp(name,img,ip,node,labels,restarts){
+    pods['kube-system/'+name]={name,namespace:'kube-system',image:img,status:'Running',ready:'1/1',restarts:restarts||0,age:'10d',node,ip,labels,containers:[{name:name.split('-')[0],image:img,status:'Running',ready:true}]};
+  }
+  ksp('coredns-5dd5756b68-xzp4m','registry.k8s.io/coredns/coredns:v1.11.1','10.244.0.2','minikube',{app:'coredns','k8s-app':'kube-dns','pod-template-hash':'5dd5756b68'});
+  ksp('etcd-minikube','registry.k8s.io/etcd:3.5.9-0','192.168.49.2','minikube',{component:'etcd',tier:'control-plane'});
+  ksp('kube-apiserver-minikube','registry.k8s.io/kube-apiserver:v1.28.4','192.168.49.2','minikube',{component:'kube-apiserver',tier:'control-plane'},1);
+  ksp('kube-controller-manager-minikube','registry.k8s.io/kube-controller-manager:v1.28.4','192.168.49.2','minikube',{component:'kube-controller-manager',tier:'control-plane'});
+  ksp('kube-scheduler-minikube','registry.k8s.io/kube-scheduler:v1.28.4','192.168.49.2','minikube',{component:'kube-scheduler',tier:'control-plane'});
+  ksp('kube-proxy-xkt7g','registry.k8s.io/kube-proxy:v1.28.4','192.168.49.3','minikube-m02',{'k8s-app':'kube-proxy'});
+  ksp('kube-proxy-r9s2k','registry.k8s.io/kube-proxy:v1.28.4','192.168.49.4','minikube-m03',{'k8s-app':'kube-proxy'});
+  ksp('storage-provisioner','gcr.io/k8s-minikube/storage-provisioner:v5','192.168.49.2','minikube',{addonmanager:'minikube-addons'},1);
+
+  // default pods (nginx-deployment)
+  const hash='7c79c4bf97';
+  const p1=makePodName('nginx-deployment',hash), p2=makePodName('nginx-deployment',hash);
+  function defPod(name,node,ip){
+    pods['default/'+name]={name,namespace:'default',image:'nginx:latest',status:'Running',ready:'1/1',restarts:0,age:'1d',node,ip,labels:{app:'nginx','pod-template-hash':hash},containers:[{name:'nginx',image:'nginx:latest',status:'Running',ready:true}]};
+  }
+  defPod(p1,'minikube-m02','10.244.1.3');
+  defPod(p2,'minikube-m03','10.244.2.4');
+
+  // Deployments
+  deployments['default/nginx-deployment']={name:'nginx-deployment',namespace:'default',replicas:2,ready:2,available:2,upToDate:2,image:'nginx:latest',containerName:'nginx',age:'1d',labels:{app:'nginx'},selector:{app:'nginx'},strategy:'RollingUpdate',maxSurge:'25%',maxUnavailable:'25%',podHash:hash,pods:[p1,p2]};
+  deployments['kube-system/coredns']={name:'coredns',namespace:'kube-system',replicas:1,ready:1,available:1,upToDate:1,image:'registry.k8s.io/coredns/coredns:v1.11.1',containerName:'coredns',age:'10d',labels:{app:'coredns'},selector:{'k8s-app':'kube-dns'},strategy:'RollingUpdate',maxSurge:'25%',maxUnavailable:'25%',podHash:'5dd5756b68',pods:['coredns-5dd5756b68-xzp4m']};
+
+  // Services
+  services['default/kubernetes']={name:'kubernetes',namespace:'default',type:'ClusterIP',clusterIP:'10.96.0.1',externalIP:'<none>',ports:'443/TCP',age:'10d',selector:{},labels:{component:'apiserver',provider:'kubernetes'}};
+  services['default/nginx-service']={name:'nginx-service',namespace:'default',type:'ClusterIP',clusterIP:'10.100.45.12',externalIP:'<none>',ports:'80/TCP',age:'1d',selector:{app:'nginx'},labels:{app:'nginx'}};
+  services['kube-system/kube-dns']={name:'kube-dns',namespace:'kube-system',type:'ClusterIP',clusterIP:'10.96.0.10',externalIP:'<none>',ports:'53/UDP,53/TCP',age:'10d',selector:{'k8s-app':'kube-dns'},labels:{'k8s-app':'kube-dns'}};
+
+  // ConfigMaps
+  configmaps['default/app-config']={name:'app-config',namespace:'default',age:'1d',data:{APP_ENV:'production',APP_PORT:'8080',LOG_LEVEL:'info',DATABASE_HOST:'postgres-svc'}};
+  configmaps['kube-system/coredns']={name:'coredns',namespace:'kube-system',age:'10d',data:{Corefile:'.:53 {\n    errors\n    health\n    kubernetes cluster.local\n    prometheus :9153\n    forward . /etc/resolv.conf\n    cache 30\n}'}};
+  configmaps['kube-system/kube-proxy']={name:'kube-proxy',namespace:'kube-system',age:'10d',data:{'config.conf':'apiVersion: kubeproxy.config.k8s.io/v1alpha1\nkind: KubeProxyConfiguration\nmode: iptables'}};
+
+  // Secrets
+  secrets['default/db-secret']={name:'db-secret',namespace:'default',type:'Opaque',age:'1d',data:{DB_PASSWORD:'[3 bytes]',DB_USER:'[5 bytes]',DB_NAME:'[6 bytes]'}};
+  secrets['default/default-token-abc12']={name:'default-token-abc12',namespace:'default',type:'kubernetes.io/service-account-token',age:'10d',data:{token:'[1024 bytes]','ca.crt':'[1159 bytes]',namespace:'[7 bytes]'}};
+
+  // Helm
+  helmReleases['ingress-nginx']={name:'ingress-nginx',namespace:'ingress-nginx',chart:'ingress-nginx-4.8.3',app:'1.9.4',status:'deployed',revision:1,updated:ts()};
+
+  // Rollout history
+  rolloutHistory['default/nginx-deployment']=[{revision:1,change:'<none>',image:'nginx:latest'}];
+}
+initState();
+
+// ── Argument Parser ────────────────────────────────────────────────────────────
+function parseArgs(input){
+  const toks=[];let cur='',inQ=false,qc='';
+  for(const ch of input){
+    if(inQ){if(ch===qc)inQ=false;else cur+=ch;}
+    else if(ch==='"'||ch==="'"){inQ=true;qc=ch;}
+    else if(ch===' '){if(cur)toks.push(cur);cur='';}
+    else cur+=ch;
+  }
+  if(cur)toks.push(cur);
+  return toks;
+}
+
+function extractFlags(args){
+  const flags={literals:[]};
+  const pos=[];
+  for(let i=0;i<args.length;i++){
+    const a=args[i];
+    if(a.startsWith('--')){
+      const eq=a.indexOf('=');
+      if(eq>-1){
+        const k=a.slice(2,eq),v=a.slice(eq+1);
+        if(k==='from-literal')flags.literals.push(v);
+        else flags[k]=v;
+      } else {
+        const k=a.slice(2);
+        const needVal=['namespace','selector','output','image','replicas','port','target-port','type','name','tail','to-revision','filename'];
+        if(needVal.includes(k)&&i+1<args.length&&!args[i+1].startsWith('-'))flags[k]=args[++i];
+        else flags[k]=true;
+      }
+    } else if(a.startsWith('-')&&a.length===2){
+      const k=a[1];
+      const needVal=['n','l','o','c','f','p'];
+      if(needVal.includes(k)&&i+1<args.length&&!args[i+1].startsWith('-')){
+        if(k==='n')flags['namespace']=args[++i];
+        else if(k==='l')flags['selector']=args[++i];
+        else if(k==='o')flags['output']=args[++i];
+        else if(k==='c')flags['container']=args[++i];
+        else if(k==='p')flags['port']=args[++i];
+        else flags[k]=args[++i];
+      } else {
+        if(k==='A')flags['all-namespaces']=true;
+        else if(k==='f')flags['follow']=true;
+        else flags[k]=true;
+      }
+    } else {
+      pos.push(a);
+    }
+  }
+  flags._ns = flags['namespace'] || (flags['all-namespaces']?'*':currentNS);
+  return {flags,pos};
+}
+
+function resolveResource(token){
+  // pod/name or pods or po
+  if(!token)return{kind:'',name:''};
+  const slashIdx=token.indexOf('/');
+  if(slashIdx>-1){
+    const kind=token.slice(0,slashIdx);
+    const name=token.slice(slashIdx+1);
+    return{kind:normalizeKind(kind),name};
+  }
+  return{kind:normalizeKind(token),name:''};
+}
+
+function normalizeKind(k){
+  const m={pod:'pod',pods:'pod',po:'pod',deployment:'deployment',deployments:'deployment',deploy:'deployment',service:'service',services:'service',svc:'service',configmap:'configmap',configmaps:'configmap',cm:'configmap',secret:'secret',secrets:'secret',namespace:'namespace',namespaces:'namespace',ns:'namespace',node:'node',nodes:'node',no:'node',replicaset:'replicaset',replicasets:'replicaset',rs:'replicaset',event:'event',events:'event',all:'all'};
+  return m[k]||k;
+}
+
+function getPodsInNS(ns){return Object.values(pods).filter(p=>ns==='*'||p.namespace===ns);}
+function getDeploymentsInNS(ns){return Object.values(deployments).filter(d=>ns==='*'||d.namespace===ns);}
+function getServicesInNS(ns){return Object.values(services).filter(s=>ns==='*'||s.namespace===ns);}
+function getCMsInNS(ns){return Object.values(configmaps).filter(c=>ns==='*'||c.namespace===ns);}
+function getSecretsInNS(ns){return Object.values(secrets).filter(s=>ns==='*'||s.namespace===ns);}
+
+function filterBySelector(items,sel){
+  if(!sel)return items;
+  const parts=sel.split(',');
+  return items.filter(item=>{
+    return parts.every(p=>{
+      const [k,v]=p.split('=');
+      return item.labels&&item.labels[k]===v;
+    });
+  });
+}
+
+function nextIP(){
+  const base='10.244.';const ips=Object.values(pods).map(p=>p.ip).filter(ip=>ip&&ip.startsWith('10.244.'));
+  let hi=5;
+  ips.forEach(ip=>{const n=parseInt(ip.split('.')[3]);if(n>hi)hi=n;});
+  const oct=Object.values(pods).length%3+1;
+  return `10.244.${oct}.${hi+1}`;
+}
+
+function pickNode(){
+  const nodes=Object.keys(NODES).filter(n=>!NODES[n].cordoned);
+  return nodes[Object.keys(pods).length%nodes.length]||'minikube';
+}
+
+function createPodsForDeployment(dep,ns,count,image,cname,labels){
+  const hash=rnd(10);
+  const names=[];
+  for(let i=0;i<count;i++){
+    const name=makePodName(dep,hash);
+    pods[ns+'/'+name]={name,namespace:ns,image,status:'Running',ready:'1/1',restarts:0,age:'0s',node:pickNode(),ip:nextIP(),labels:{...labels,'pod-template-hash':hash},containers:[{name:cname||dep,image,status:'Running',ready:true}]};
+    names.push(name);
+  }
+  return{names,hash};
+}
+
+// ── Output helpers ─────────────────────────────────────────────────────────────
+const out=document.getElementById('output');
+function print(text,cls=''){const d=document.createElement('div');d.className='out-line'+(cls?' '+cls:'');d.innerHTML=text;out.appendChild(d);scrollBottom();}
+function println(text='',cls=''){print(text,cls);}
+function scrollBottom(){document.getElementById('terminal').scrollTop=99999;}
+function table(headers,rows){
+  const widths=headers.map((h,i)=>Math.max(h.length,...rows.map(r=>(r[i]||'').length))+2);
+  println(headers.map((h,i)=>h.padEnd(widths[i])).join('').trimEnd(),'out-dim');
+  rows.forEach(r=>println(r.map((c,i)=>(c||'').padEnd(widths[i])).join('').trimEnd()));
+}
+
+// ── Command dispatcher ─────────────────────────────────────────────────────────
+function runCommand(input){
+  const raw=input.trim();
+  if(!raw)return;
+  cmdHistory.unshift(raw);histIndex=-1;
+
+  // echo
+  const lp=document.createElement('div');lp.className='line';
+  lp.innerHTML=`<span class="prompt">$ &nbsp;</span><span class="cmd-echo">${escHtml(raw)}</span>`;
+  out.appendChild(lp);
+
+  const args=parseArgs(raw);
+  const cmd=args[0]||'';
+  const rest=args.slice(1);
+
+  checkTask(raw);
+
+  if(cmd==='kubectl')handleKubectl(rest);
+  else if(cmd==='helm')handleHelm(rest);
+  else if(cmd==='manifest')handleManifest(rest);
+  else if(cmd==='clear'||cmd==='reset'){out.innerHTML='';}
+  else if(cmd==='help')printHelp();
+  else println(`command not found: ${cmd}. Try kubectl, helm, manifest, or help`,'out-err');
+
+  updateState();
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── kubectl ────────────────────────────────────────────────────────────────────
+function handleKubectl(args){
+  if(!args.length){println('kubectl controls the Kubernetes cluster manager.','out-info');println('  Run kubectl --help for usage.','out-dim');return;}
+  const sub=args[0];
+  const rest=args.slice(1);
+  switch(sub){
+    case 'version':      return cmdVersion(rest);
+    case 'cluster-info': return cmdClusterInfo();
+    case 'get':          return cmdGet(rest);
+    case 'describe':     return cmdDescribe(rest);
+    case 'create':       return cmdCreate(rest);
+    case 'run':          return cmdRun(rest);
+    case 'expose':       return cmdExpose(rest);
+    case 'apply':        return cmdApply(rest);
+    case 'delete':       return cmdDelete(rest);
+    case 'logs':         return cmdLogs(rest);
+    case 'exec':         return cmdExec(rest);
+    case 'scale':        return cmdScale(rest);
+    case 'rollout':      return cmdRollout(rest);
+    case 'set':          return cmdSet(rest);
+    case 'label':        return cmdLabel(rest);
+    case 'annotate':     return cmdAnnotate(rest);
+    case 'config':       return cmdConfig(rest);
+    case 'top':          return cmdTop(rest);
+    case 'cordon':       return cmdCordon(rest[0],false);
+    case 'uncordon':     return cmdCordon(rest[0],true);
+    case 'drain':        return cmdDrain(rest);
+    case 'taint':        return cmdTaint(rest);
+    case 'port-forward': return cmdPortForward(rest);
+    case 'cp':           return cmdCp(rest);
+    case 'edit':         println(`hint: use 'kubectl describe' to view resources in this simulator`,'out-warn');break;
+    default: println(`error: unknown command "${sub}" for "kubectl".\nRun 'kubectl help' for usage.`,'out-err');
+  }
+}
+
+function cmdVersion(args){
+  if(args.includes('--short')||args.includes('--client')){
+    println('Client Version: v1.28.4','out-info');
+  } else {
+    println('Client Version: v1.28.4','out-info');
+    println('Kustomize Version: v5.0.4-0.20230601165947-6ce0bf390ce3','out-dim');
+    println('Server Version: v1.28.4','out-info');
+  }
+}
+
+function cmdClusterInfo(){
+  println('Kubernetes control plane is running at <span class="out-blue">https://192.168.49.2:8443</span>','');
+  println('CoreDNS is running at <span class="out-blue">https://192.168.49.2:8443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy</span>','');
+  println('');
+  println('To further debug and diagnose cluster problems, use: kubectl cluster-info dump','out-dim');
+}
+
+function cmdGet(args){
+  if(!args.length){println('error: must specify the type of resource to get','out-err');return;}
+  const {flags,pos}=extractFlags(args);
+  const ns=flags._ns;
+  const {kind,name}=resolveResource(pos[0]);
+  const wide=flags['output']==='wide'||flags['o']==='wide';
+  const showLabels=flags['show-labels'];
+  const sel=flags['selector'];
+
+  if(kind==='node'||kind==='nodes'){
+    const allNodes=Object.entries(NODES);
+    if(name){const n=NODES[name];if(!n){println(`Error from server (NotFound): nodes "${name}" not found`,'out-err');return;}
+      const st=n.cordoned?'Ready,SchedulingDisabled':n.status;
+      if(wide)table(['NAME','STATUS','ROLES','AGE','VERSION','INTERNAL-IP','KERNEL-VERSION','CONTAINER-RUNTIME'],[[name,st,n.role,n.age,n.version,n.ip,'5.15.0','containerd://1.6.24']]);
+      else table(['NAME','STATUS','ROLES','AGE','VERSION'],[[name,st,n.role,n.age,n.version]]);
+      return;
+    }
+    const rows=allNodes.map(([n,d])=>{const st=d.cordoned?'Ready,SchedulingDisabled':d.status;return wide?[n,st,d.role,d.age,d.version,d.ip,'5.15.0','containerd://1.6.24']:[n,st,d.role,d.age,d.version];});
+    if(wide)table(['NAME','STATUS','ROLES','AGE','VERSION','INTERNAL-IP','KERNEL-VERSION','CONTAINER-RUNTIME'],rows);
+    else table(['NAME','STATUS','ROLES','AGE','VERSION'],rows);
+    return;
+  }
+
+  if(kind==='namespace'||kind==='namespaces'){
+    const rows=Object.entries(namespaces).map(([n,d])=>[n,d.status,d.age]);
+    table(['NAME','STATUS','AGE'],rows);return;
+  }
+
+  if(kind==='pod'){
+    let list=name?[pods[ns+'/'+name]||pods[currentNS+'/'+name]].filter(Boolean):getPodsInNS(ns==='*'?'*':ns);
+    if(name&&!list.length){println(`Error from server (NotFound): pods "${name}" not found`,'out-err');return;}
+    list=filterBySelector(list,sel);
+    if(!list.length&&!name){println('No resources found in '+ns+' namespace.','out-dim');return;}
+    const hdrs=ns==='*'?['NAMESPACE','NAME','READY','STATUS','RESTARTS','AGE']:['NAME','READY','STATUS','RESTARTS','AGE'];
+    if(wide)(ns==='*'?hdrs.push('IP','NODE'):hdrs.push('IP','NODE'));
+    if(showLabels)hdrs.push('LABELS');
+    const rows=list.map(p=>{
+      const labStr=p.labels?Object.entries(p.labels).map(([k,v])=>k+'='+v).join(','):'<none>';
+      const base=ns==='*'?[p.namespace,p.name,p.ready,p.status,String(p.restarts),p.age]:[p.name,p.ready,p.status,String(p.restarts),p.age];
+      if(wide)base.push(p.ip||'<none>',p.node||'<none>');
+      if(showLabels)base.push(labStr);
+      return base;
+    });
+    table(hdrs,rows);return;
+  }
+
+  if(kind==='deployment'){
+    let list=name?[deployments[ns+'/'+name]||deployments[currentNS+'/'+name]].filter(Boolean):getDeploymentsInNS(ns);
+    if(name&&!list.length){println(`Error from server (NotFound): deployments.apps "${name}" not found`,'out-err');return;}
+    if(!list.length&&!name){println('No resources found in '+ns+' namespace.','out-dim');return;}
+    const hdrs=ns==='*'?['NAMESPACE','NAME','READY','UP-TO-DATE','AVAILABLE','AGE']:['NAME','READY','UP-TO-DATE','AVAILABLE','AGE'];
+    const rows=list.map(d=>ns==='*'?[d.namespace,d.name,d.ready+'/'+d.replicas,String(d.upToDate),String(d.available),d.age]:[d.name,d.ready+'/'+d.replicas,String(d.upToDate),String(d.available),d.age]);
+    table(hdrs,rows);return;
+  }
+
+  if(kind==='service'){
+    let list=name?[services[ns+'/'+name]||services[currentNS+'/'+name]].filter(Boolean):getServicesInNS(ns);
+    if(name&&!list.length){println(`Error from server (NotFound): services "${name}" not found`,'out-err');return;}
+    if(!list.length&&!name){println('No resources found in '+ns+' namespace.','out-dim');return;}
+    const hdrs=ns==='*'?['NAMESPACE','NAME','TYPE','CLUSTER-IP','EXTERNAL-IP','PORT(S)','AGE']:['NAME','TYPE','CLUSTER-IP','EXTERNAL-IP','PORT(S)','AGE'];
+    const rows=list.map(s=>ns==='*'?[s.namespace,s.name,s.type,s.clusterIP,s.externalIP,s.ports,s.age]:[s.name,s.type,s.clusterIP,s.externalIP,s.ports,s.age]);
+    table(hdrs,rows);return;
+  }
+
+  if(kind==='configmap'){
+    let list=name?[configmaps[ns+'/'+name]||configmaps[currentNS+'/'+name]].filter(Boolean):getCMsInNS(ns);
+    if(name&&!list.length){println(`Error from server (NotFound): configmaps "${name}" not found`,'out-err');return;}
+    if(!list.length&&!name){println('No resources found in '+ns+' namespace.','out-dim');return;}
+    const hdrs=ns==='*'?['NAMESPACE','NAME','DATA','AGE']:['NAME','DATA','AGE'];
+    const rows=list.map(c=>ns==='*'?[c.namespace,c.name,String(Object.keys(c.data||{}).length),c.age]:[c.name,String(Object.keys(c.data||{}).length),c.age]);
+    table(hdrs,rows);return;
+  }
+
+  if(kind==='secret'){
+    let list=name?[secrets[ns+'/'+name]||secrets[currentNS+'/'+name]].filter(Boolean):getSecretsInNS(ns);
+    if(name&&!list.length){println(`Error from server (NotFound): secrets "${name}" not found`,'out-err');return;}
+    if(!list.length&&!name){println('No resources found in '+ns+' namespace.','out-dim');return;}
+    const hdrs=ns==='*'?['NAMESPACE','NAME','TYPE','DATA','AGE']:['NAME','TYPE','DATA','AGE'];
+    const rows=list.map(s=>ns==='*'?[s.namespace,s.name,s.type,String(Object.keys(s.data||{}).length),s.age]:[s.name,s.type,String(Object.keys(s.data||{}).length),s.age]);
+    table(hdrs,rows);return;
+  }
+
+  if(kind==='replicaset'){
+    const depList=getDeploymentsInNS(ns);
+    if(!depList.length){println('No resources found.','out-dim');return;}
+    const rows=depList.map(d=>[d.name+'-'+d.podHash,String(d.replicas),String(d.ready),String(d.available),d.age]);
+    table(['NAME','DESIRED','CURRENT','READY','AGE'],rows);return;
+  }
+
+  if(kind==='event'){
+    const ns2=ns==='*'?'default':ns;
+    println(`LAST SEEN   TYPE      REASON              OBJECT                    MESSAGE`,'out-dim');
+    println(`2m          Normal    Scheduled           pod/nginx-deployment-xxx  Successfully assigned ${ns2}/pod to minikube-m02`,'');
+    println(`2m          Normal    Pulling             pod/nginx-deployment-xxx  Pulling image "nginx:latest"`,'');
+    println(`2m          Normal    Pulled              pod/nginx-deployment-xxx  Successfully pulled image "nginx:latest"`,'');
+    println(`2m          Normal    Created             pod/nginx-deployment-xxx  Created container nginx`,'');
+    println(`2m          Normal    Started             pod/nginx-deployment-xxx  Started container nginx`,'');
+    return;
+  }
+
+  if(kind==='all'){
+    println('--- Pods ---','out-dim');cmdGet(['pods',ns==='*'?'-A':'-n',ns==='*'?'':ns].filter(Boolean));
+    println('--- Deployments ---','out-dim');cmdGet(['deployments',ns==='*'?'-A':'-n',ns==='*'?'':ns].filter(Boolean));
+    println('--- Services ---','out-dim');cmdGet(['services',ns==='*'?'-A':'-n',ns==='*'?'':ns].filter(Boolean));
+    return;
+  }
+
+  println(`error: the server doesn't have a resource type "${pos[0]}"`, 'out-err');
+}
+
+function cmdDescribe(args){
+  if(!args.length){println('error: must specify resource type and name','out-err');return;}
+  const {flags,pos}=extractFlags(args);
+  const ns=flags._ns;
+  const {kind,name}=resolveResource(pos[0]);
+  const rname=name||pos[1];
+
+  if(kind==='node'){
+    const n=NODES[rname];
+    if(!n){println(`Error from server (NotFound): nodes "${rname}" not found`,'out-err');return;}
+    const st=n.cordoned?'Ready,SchedulingDisabled':n.status;
+    println(`Name:               ${rname}`,'');
+    println(`Roles:              ${n.role}`,'');
+    println(`Labels:             beta.kubernetes.io/arch=amd64`,'');
+    println(`                    beta.kubernetes.io/os=linux`,'');
+    println(`                    kubernetes.io/hostname=${rname}`,'');
+    println(`Annotations:        node.alpha.kubernetes.io/ttl: 0`,'');
+    println(`Status:             ${st}`,'');
+    println(`Addresses:`,'');
+    println(`  InternalIP:  ${n.ip}`,'');
+    println(`  Hostname:    ${rname}`,'');
+    println(`Capacity:`,'');
+    println(`  cpu:                ${n.cpu}`,'');
+    println(`  memory:             ${n.mem}`,'');
+    println(`  pods:               110`,'');
+    println(`Taints:             ${n.taints.length?n.taints.join(', '):'<none>'}`,'');
+    println(`Unschedulable:      ${n.cordoned}`,'');
+    println(`System Info:`,'');
+    println(`  OS Image:              Ubuntu 20.04.5 LTS`,'');
+    println(`  Kernel Version:        5.15.0-76-generic`,'');
+    println(`  Container Runtime:     containerd://1.6.24`,'');
+    println(`  Kubelet Version:       ${n.version}`,'');
+    return;
+  }
+
+  if(kind==='pod'){
+    const p=pods[ns+'/'+rname]||pods[currentNS+'/'+rname];
+    if(!p){println(`Error from server (NotFound): pods "${rname}" not found`,'out-err');return;}
+    println(`Name:         ${p.name}`,'');
+    println(`Namespace:    ${p.namespace}`,'');
+    println(`Node:         ${p.node}/${NODES[p.node]?.ip||'<unknown>'}`,'');
+    println(`IP:           ${p.ip}`,'');
+    println(`Labels:       ${p.labels?Object.entries(p.labels).map(([k,v])=>k+'='+v).join('\n              '):'<none>'}`,'');
+    println(`Status:       ${p.status}`,'');
+    println(`Containers:`,'');
+    (p.containers||[]).forEach(c=>{
+      println(`  ${c.name}:`,'');
+      println(`    Image:    ${c.image}`,'');
+      println(`    State:    Running`,'');
+      println(`    Ready:    ${c.ready}`,'');
+    });
+    println(`Events:       <none>`,'out-dim');
+    return;
+  }
+
+  if(kind==='deployment'){
+    const d=deployments[ns+'/'+rname]||deployments[currentNS+'/'+rname];
+    if(!d){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+    println(`Name:               ${d.name}`,'');
+    println(`Namespace:          ${d.namespace}`,'');
+    println(`Labels:             ${Object.entries(d.labels||{}).map(([k,v])=>k+'='+v).join(', ')}`,'');
+    println(`Selector:           ${Object.entries(d.selector||{}).map(([k,v])=>k+'='+v).join(', ')}`,'');
+    println(`Replicas:           ${d.replicas} desired | ${d.upToDate} updated | ${d.replicas} total | ${d.available} available`,'');
+    println(`StrategyType:       ${d.strategy}`,'');
+    println(`RollingUpdate:      MaxUnavailable: ${d.maxUnavailable||'25%'} / MaxSurge: ${d.maxSurge||'25%'}`,'');
+    println(`Pod Template:`,'');
+    println(`  Labels:  ${Object.entries(d.labels||{}).map(([k,v])=>k+'='+v).join(', ')}`,'');
+    println(`  Containers:`,'');
+    println(`    ${d.containerName||d.name}:`,'');
+    println(`      Image:  ${d.image}`,'');
+    println(`Conditions:`,'');
+    println(`  Type           Status  Reason`,'out-dim');
+    println(`  Available      True    MinimumReplicasAvailable`,'');
+    println(`  Progressing    True    NewReplicaSetAvailable`,'');
+    return;
+  }
+
+  if(kind==='service'){
+    const s=services[ns+'/'+rname]||services[currentNS+'/'+rname];
+    if(!s){println(`Error from server (NotFound): services "${rname}" not found`,'out-err');return;}
+    println(`Name:              ${s.name}`,'');
+    println(`Namespace:         ${s.namespace}`,'');
+    println(`Labels:            ${Object.entries(s.labels||{}).map(([k,v])=>k+'='+v).join(', ')||'<none>'}`,'');
+    println(`Selector:          ${Object.entries(s.selector||{}).map(([k,v])=>k+'='+v).join(', ')||'<none>'}`,'');
+    println(`Type:              ${s.type}`,'');
+    println(`IP:                ${s.clusterIP}`,'');
+    println(`Port:              <unset>  ${s.ports}`,'');
+    println(`Endpoints:         ${Object.values(pods).filter(p=>matchLabels(p.labels,s.selector)&&p.namespace===s.namespace).map(p=>p.ip+':80').join(',') ||'<none>'}`,'');
+    println(`Session Affinity:  None`,'');
+    return;
+  }
+
+  if(kind==='configmap'){
+    const c=configmaps[ns+'/'+rname]||configmaps[currentNS+'/'+rname];
+    if(!c){println(`Error from server (NotFound): configmaps "${rname}" not found`,'out-err');return;}
+    println(`Name:      ${c.name}`,'');
+    println(`Namespace: ${c.namespace}`,'');
+    println(`Data`,'out-dim');
+    println(`====`,'out-dim');
+    Object.entries(c.data||{}).forEach(([k,v])=>{
+      println(`${k}:`,'out-blue');
+      println(`----`,'out-dim');
+      println(v,'');
+      println('','');
+    });
+    return;
+  }
+
+  if(kind==='secret'){
+    const s=secrets[ns+'/'+rname]||secrets[currentNS+'/'+rname];
+    if(!s){println(`Error from server (NotFound): secrets "${rname}" not found`,'out-err');return;}
+    println(`Name:      ${s.name}`,'');
+    println(`Namespace: ${s.namespace}`,'');
+    println(`Type:      ${s.type}`,'');
+    println(`Data`,'out-dim');
+    println(`====`,'out-dim');
+    Object.entries(s.data||{}).forEach(([k,v])=>println(`${k}:  ${v}`,''));
+    return;
+  }
+
+  println(`error: the server doesn't have a resource type "${pos[0]}"`, 'out-err');
+}
+
+function matchLabels(podLabels,svcSelector){
+  if(!svcSelector||!Object.keys(svcSelector).length)return false;
+  return Object.entries(svcSelector).every(([k,v])=>podLabels&&podLabels[k]===v);
+}
+
+function cmdCreate(args){
+  if(!args.length){println('error: must specify resource type to create','out-err');return;}
+  const sub=args[0];
+  const rest=args.slice(1);
+  const {flags,pos}=extractFlags(rest);
+  const ns=flags._ns;
+
+  if(sub==='namespace'||sub==='ns'){
+    const name=pos[0];
+    if(!name){println('error: NAME is required argument for namespace','out-err');return;}
+    if(namespaces[name]){println(`Error from server (AlreadyExists): namespaces "${name}" already exists`,'out-err');return;}
+    namespaces[name]={status:'Active',age:'0s'};
+    println(`namespace/${name} created`,'out-ok');return;
+  }
+
+  if(sub==='deployment'){
+    const name=pos[0];
+    if(!name||!flags['image']){println('error: --image is required','out-err');return;}
+    const ns2=ns==='*'?currentNS:ns;
+    const key=ns2+'/'+name;
+    if(deployments[key]){println(`Error from server (AlreadyExists): deployments.apps "${name}" already exists`,'out-err');return;}
+    const replicas=parseInt(flags['replicas']||'1');
+    const image=flags['image'];
+    const {names,hash}=createPodsForDeployment(name,ns2,replicas,image,name,{app:name});
+    deployments[key]={name,namespace:ns2,replicas,ready:replicas,available:replicas,upToDate:replicas,image,containerName:name,age:'0s',labels:{app:name},selector:{app:name},strategy:'RollingUpdate',maxSurge:'25%',maxUnavailable:'25%',podHash:hash,pods:names};
+    rolloutHistory[key]=[{revision:1,change:'<none>',image}];
+    println(`deployment.apps/${name} created`,'out-ok');return;
+  }
+
+  if(sub==='configmap'||sub==='cm'){
+    const name=pos[0];
+    if(!name){println('error: NAME is required argument for configmap','out-err');return;}
+    const ns2=ns==='*'?currentNS:ns;
+    const data={};
+    flags.literals.forEach(lit=>{const eq=lit.indexOf('=');if(eq>-1)data[lit.slice(0,eq)]=lit.slice(eq+1);});
+    configmaps[ns2+'/'+name]={name,namespace:ns2,age:'0s',data};
+    println(`configmap/${name} created`,'out-ok');return;
+  }
+
+  if(sub==='secret'){
+    const stype=args[1];
+    const rest2=args.slice(2);
+    const {flags:f2,pos:p2}=extractFlags(rest2);
+    const ns2=f2._ns==='*'?currentNS:f2._ns;
+    if(stype==='generic'){
+      const name=p2[0];
+      if(!name){println('error: NAME is required for secret','out-err');return;}
+      const data={};
+      f2.literals.forEach(lit=>{const eq=lit.indexOf('=');if(eq>-1)data[lit.slice(0,eq)]='['+lit.slice(eq+1).length+' bytes]';});
+      secrets[ns2+'/'+name]={name,namespace:ns2,type:'Opaque',age:'0s',data};
+      println(`secret/${name} created`,'out-ok');
+    } else {
+      println(`error: unsupported secret type "${stype}". Use "generic"`, 'out-err');
+    }
+    return;
+  }
+
+  println(`error: unknown resource type "${sub}"`, 'out-err');
+}
+
+function cmdRun(args){
+  const {flags,pos}=extractFlags(args);
+  const name=pos[0];
+  if(!name||!flags['image']){println('error: NAME and --image are required','out-err');return;}
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+  const key=ns+'/'+name;
+  if(pods[key]){println(`Error from server (AlreadyExists): pods "${name}" already exists`,'out-err');return;}
+  pods[key]={name,namespace:ns,image:flags['image'],status:'Running',ready:'1/1',restarts:0,age:'0s',node:pickNode(),ip:nextIP(),labels:{run:name},containers:[{name,image:flags['image'],status:'Running',ready:true}]};
+  println(`pod/${name} created`,'out-ok');
+}
+
+function cmdExpose(args){
+  if(!args.length){println('error: resource type and name required','out-err');return;}
+  const {flags,pos}=extractFlags(args);
+  const sub=args[0];
+  const {kind,name}=resolveResource(pos[0]);
+  const rname=name||pos[1];
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+  if(!flags['port']){println('error: --port is required','out-err');return;}
+  const depKey=ns+'/'+rname;
+  const dep=deployments[depKey];
+  if(!dep&&kind==='deployment'){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+  const svcName=flags['name']||rname;
+  const stype=flags['type']||'ClusterIP';
+  const port=flags['port'];
+  const targetPort=flags['target-port']||port;
+  const portStr=stype==='NodePort'?port+':3'+port+'/TCP':port+'/TCP';
+  const clusterIP='10.'+((Math.random()*200+50)|0)+'.'+((Math.random()*200+10)|0)+'.'+((Math.random()*200+10)|0);
+  services[ns+'/'+svcName]={name:svcName,namespace:ns,type:stype,clusterIP,externalIP:'<none>',ports:portStr,age:'0s',selector:dep?dep.selector:{},labels:{app:rname}};
+  println(`service/${svcName} exposed`,'out-ok');
+}
+
+function cmdApply(args){
+  const {flags,pos}=extractFlags(args);
+  const file=flags['filename']||flags['f']||pos[0];
+  if(!file){println('error: must specify -f filename','out-err');return;}
+  println(`Applying manifest: ${file}`,'out-dim');
+  // simulate applying known files
+  if(/nginx.*deploy/i.test(file)){println('deployment.apps/nginx-deployment configured','out-ok');}
+  else if(/nginx.*service|svc/i.test(file)){println('service/nginx-service configured','out-ok');}
+  else if(/configmap|config/i.test(file)){println('configmap/app-config configured','out-ok');}
+  else if(/secret/i.test(file)){println('secret/db-secret configured','out-ok');}
+  else{println(`resource/unknown configured (simulated)`,'out-ok');}
+}
+
+function cmdDelete(args){
+  if(!args.length){println('error: must specify resource','out-err');return;}
+  const {flags,pos}=extractFlags(args);
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+
+  if(pos[0]==='-f'||flags['f']||flags['filename']){
+    println('resource deleted (simulated)','out-ok');return;
+  }
+
+  const {kind,name}=resolveResource(pos[0]);
+  const rname=name||pos[1];
+
+  if(!rname){println('error: must specify resource name','out-err');return;}
+
+  if(kind==='pod'){
+    const key=ns+'/'+rname;
+    if(pods[key])delete pods[key];
+    else{println(`Error from server (NotFound): pods "${rname}" not found`,'out-err');return;}
+    println(`pod "${rname}" deleted`,'out-ok');return;
+  }
+  if(kind==='deployment'){
+    const key=ns+'/'+rname;
+    const dep=deployments[key];
+    if(!dep){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+    (dep.pods||[]).forEach(pn=>delete pods[ns+'/'+pn]);
+    delete deployments[key];
+    println(`deployment.apps "${rname}" deleted`,'out-ok');return;
+  }
+  if(kind==='service'){
+    const key=ns+'/'+rname;
+    if(services[key])delete services[key];
+    else{println(`Error from server (NotFound): services "${rname}" not found`,'out-err');return;}
+    println(`service "${rname}" deleted`,'out-ok');return;
+  }
+  if(kind==='configmap'){
+    const key=ns+'/'+rname;
+    if(configmaps[key])delete configmaps[key];
+    else{println(`Error from server (NotFound): configmaps "${rname}" not found`,'out-err');return;}
+    println(`configmap "${rname}" deleted`,'out-ok');return;
+  }
+  if(kind==='secret'){
+    const key=ns+'/'+rname;
+    if(secrets[key])delete secrets[key];
+    else{println(`Error from server (NotFound): secrets "${rname}" not found`,'out-err');return;}
+    println(`secret "${rname}" deleted`,'out-ok');return;
+  }
+  if(kind==='namespace'){
+    if(!namespaces[rname]){println(`Error from server (NotFound): namespaces "${rname}" not found`,'out-err');return;}
+    const protect=['default','kube-system','kube-public','kube-node-lease'];
+    if(protect.includes(rname)){println(`error: cannot delete system namespace "${rname}"`, 'out-err');return;}
+    Object.keys(pods).filter(k=>k.startsWith(rname+'/')).forEach(k=>delete pods[k]);
+    Object.keys(deployments).filter(k=>k.startsWith(rname+'/')).forEach(k=>delete deployments[k]);
+    Object.keys(services).filter(k=>k.startsWith(rname+'/')).forEach(k=>delete services[k]);
+    delete namespaces[rname];
+    println(`namespace "${rname}" deleted`,'out-ok');return;
+  }
+  println(`resource "${rname}" deleted`,'out-ok');
+}
+
+function cmdLogs(args){
+  const {flags,pos}=extractFlags(args);
+  const name=pos[0];
+  if(!name){println('error: pod name required','out-err');return;}
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+  const p=pods[ns+'/'+name]||pods[currentNS+'/'+name];
+  if(!p){println(`Error from server (NotFound): pods "${name}" not found`,'out-err');return;}
+  const tail=parseInt(flags['tail']||'10');
+  const lines=[
+    '192.168.1.10 - - ['+new Date().toUTCString()+'] "GET / HTTP/1.1" 200 615 "-" "curl/7.88.1"',
+    '192.168.1.11 - - ['+new Date().toUTCString()+'] "GET /healthz HTTP/1.1" 200 2 "-" "kube-probe/1.28"',
+    '10.244.0.1 - - ['+new Date().toUTCString()+'] "GET /metrics HTTP/1.1" 200 4532 "-" "Prometheus/2.47.0"',
+    '192.168.1.10 - - ['+new Date().toUTCString()+'] "GET /api/v1/status HTTP/1.1" 200 128 "-" "HTTPie/3.2.2"',
+    '192.168.1.12 - - ['+new Date().toUTCString()+'] "POST /api/v1/data HTTP/1.1" 201 256 "-" "python-requests/2.31.0"',
+  ];
+  for(let i=0;i<Math.min(tail,lines.length);i++)println(lines[i],'out-dim');
+  if(flags['follow'])println('[streaming logs... press Ctrl+C to stop]','out-warn');
+}
+
+function cmdExec(args){
+  const {flags,pos}=extractFlags(args);
+  // find pod name (skip -i -t flags)
+  const clean=pos.filter(p=>p!=='-it'&&p!=='-i'&&p!=='-t');
+  const dIdx=clean.indexOf('--');
+  const podName=clean[0];
+  const execCmd=dIdx>-1?clean.slice(dIdx+1):clean.slice(1);
+  if(!podName){println('error: pod name required','out-err');return;}
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+  const p=pods[ns+'/'+podName]||pods[currentNS+'/'+podName];
+  if(!p){println(`Error from server (NotFound): pods "${podName}" not found`,'out-err');return;}
+  const cmd=(execCmd.join(' ')||'sh').trim();
+  println(`Executing "${cmd}" in pod ${podName}...`,'out-dim');
+  if(/^(sh|bash|\/bin\/(sh|bash))$/.test(cmd)){println(`[Simulated shell — type 'exit' to quit]`,'out-warn');}
+  else if(/^ls/.test(cmd)){println(`bin  boot  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var`,'');}
+  else if(/^cat \/etc\/hostname/.test(cmd)){println(podName,'');}
+  else if(/^env/.test(cmd)){println(`HOSTNAME=${podName}\nKUBERNETES_SERVICE_HOST=10.96.0.1\nKUBERNETES_PORT=tcp://10.96.0.1:443\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,'');}
+  else if(/^pwd/.test(cmd)){println('/','');}
+  else if(/^whoami/.test(cmd)){println('root','');}
+  else if(/^ps/.test(cmd)){println(`PID   USER     TIME  COMMAND\n    1 root      0:00 nginx: master process nginx -g daemon off;\n    7 nginx     0:00 nginx: worker process`,'');}
+  else{println(`${cmd}: simulated output`,'');}
+}
+
+function cmdScale(args){
+  const {flags,pos}=extractFlags(args);
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+  const {kind,name}=resolveResource(pos[0]);
+  const rname=name||pos[1];
+  const replicas=parseInt(flags['replicas']);
+  if(isNaN(replicas)){println('error: --replicas required','out-err');return;}
+  const key=ns+'/'+rname;
+  const dep=deployments[key];
+  if(!dep){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+  const old=dep.replicas;
+  dep.replicas=replicas;dep.ready=replicas;dep.available=replicas;dep.upToDate=replicas;
+  // adjust pods
+  if(replicas>old){
+    const {names,hash}=createPodsForDeployment(dep.name,dep.namespace,replicas-old,dep.image,dep.containerName,{app:dep.name,'pod-template-hash':dep.podHash});
+    dep.pods=[...(dep.pods||[]),...names];
+  } else if(replicas<old){
+    const toRemove=(dep.pods||[]).slice(replicas);
+    toRemove.forEach(pn=>delete pods[ns+'/'+pn]);
+    dep.pods=(dep.pods||[]).slice(0,replicas);
+  }
+  println(`deployment.apps/${rname} scaled`,'out-ok');
+}
+
+function cmdRollout(args){
+  if(!args.length){println('error: subcommand required: status | history | undo | restart','out-err');return;}
+  const sub=args[0];
+  const rest=args.slice(1);
+  const {flags,pos}=extractFlags(rest);
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+  const {kind,name}=resolveResource(pos[0]);
+  const rname=name||pos[0];
+  const key=ns+'/'+rname;
+  const dep=deployments[key];
+
+  if(sub==='status'){
+    if(!dep){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+    println(`Waiting for deployment "${rname}" rollout to finish: 0 of ${dep.replicas} updated replicas are available...`,'out-warn');
+    println(`deployment "${rname}" successfully rolled out`,'out-ok');return;
+  }
+  if(sub==='history'){
+    if(!dep){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+    const hist=rolloutHistory[key]||[];
+    println(`deployment.apps/${rname}`,'');
+    println(`REVISION  CHANGE-CAUSE`,'out-dim');
+    hist.forEach(h=>println(`${h.revision}         ${h.change}  [${h.image}]`,''));
+    return;
+  }
+  if(sub==='undo'){
+    if(!dep){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+    const hist=rolloutHistory[key]||[];
+    const rev=parseInt(flags['to-revision']||'0');
+    if(hist.length<2&&!rev){println('error: no previous revision to undo to','out-err');return;}
+    const target=rev?hist.find(h=>h.revision===rev):hist[hist.length-2];
+    if(!target){println('error: revision not found','out-err');return;}
+    dep.image=target.image;
+    (dep.pods||[]).forEach(pn=>{if(pods[ns+'/'+pn])pods[ns+'/'+pn].image=target.image;});
+    const newRev=(hist[hist.length-1]?.revision||1)+1;
+    hist.push({revision:newRev,change:'Rolled back to revision '+target.revision,image:target.image});
+    println(`deployment.apps/${rname} rolled back`,'out-ok');return;
+  }
+  if(sub==='restart'){
+    if(!dep){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+    println(`deployment.apps/${rname} restarted`,'out-ok');return;
+  }
+  println(`error: unknown rollout subcommand "${sub}"`, 'out-err');
+}
+
+function cmdSet(args){
+  if(!args.length){println('error: subcommand required: image','out-err');return;}
+  const sub=args[0];
+  if(sub!=='image'){println(`error: unknown set subcommand "${sub}"`, 'out-err');return;}
+  const rest=args.slice(1);
+  const {flags,pos}=extractFlags(rest);
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+  const {kind,name}=resolveResource(pos[0]);
+  const rname=name||pos[0];
+  const key=ns+'/'+rname;
+  const dep=deployments[key];
+  if(!dep){println(`Error from server (NotFound): deployments.apps "${rname}" not found`,'out-err');return;}
+  // pos[1] = container=image
+  const imgSpec=pos[1];
+  if(!imgSpec||!imgSpec.includes('=')){println('error: expected container=image format','out-err');return;}
+  const [cname,newImage]=imgSpec.split('=');
+  dep.image=newImage;
+  (dep.pods||[]).forEach(pn=>{if(pods[ns+'/'+pn]){pods[ns+'/'+pn].image=newImage;}});
+  const hist=rolloutHistory[key]||[];
+  const newRev=(hist[hist.length-1]?.revision||0)+1;
+  hist.push({revision:newRev,change:`image updated: ${cname}=${newImage}`,image:newImage});
+  rolloutHistory[key]=hist;
+  println(`deployment.apps/${rname} image updated`,'out-ok');
+}
+
+function cmdLabel(args){
+  const {flags,pos}=extractFlags(args);
+  const ns=flags._ns==='*'?currentNS:flags._ns;
+  const kind=normalizeKind(pos[0]);
+  const rname=pos[1];
+  const labelPair=pos[2];
+  if(!rname||!labelPair){println('error: must specify resource name and label=value','out-err');return;}
+  const [k,v]=labelPair.split('=');
+  if(kind==='pod'){
+    const p=pods[ns+'/'+rname]||pods[currentNS+'/'+rname];
+    if(!p){println(`Error from server (NotFound): pods "${rname}" not found`,'out-err');return;}
+    p.labels=p.labels||{};
+    p.labels[k]=v;
+    println(`pod/${rname} labeled`,'out-ok');
+  } else if(kind==='node'){
+    const n=NODES[rname];
+    if(!n){println(`Error from server (NotFound): nodes "${rname}" not found`,'out-err');return;}
+    n.labels=n.labels||{};n.labels[k]=v;
+    println(`node/${rname} labeled`,'out-ok');
+  } else {
+    println(`${kind}/${rname} labeled`,'out-ok');
+  }
+}
+
+function cmdAnnotate(args){
+  const {flags,pos}=extractFlags(args);
+  const kind=normalizeKind(pos[0]);
+  const rname=pos[1];
+  if(!rname||!pos[2]){println('error: must specify resource name and annotation=value','out-err');return;}
+  println(`${kind}/${rname} annotated`,'out-ok');
+}
+
+function cmdConfig(args){
+  const sub=args[0];
+  if(sub==='get-contexts'){
+    println('CURRENT   NAME       CLUSTER    AUTHINFO   NAMESPACE','out-dim');
+    println('*         minikube   minikube   minikube   '+currentNS,'');
+    println('          kind-k8s   kind-k8s   kind-k8s   default','out-dim');
+    return;
+  }
+  if(sub==='use-context'){
+    const ctx=args[1];
+    if(!ctx){println('error: context name required','out-err');return;}
+    currentContext=ctx;
+    println(`Switched to context "${ctx}".`,'out-ok');return;
+  }
+  if(sub==='current-context'){
+    println(currentContext,'');return;
+  }
+  if(sub==='set-context'){
+    println(`Context updated`,'out-ok');return;
+  }
+  println(`error: unknown config command "${sub}"`, 'out-err');
+}
+
+function cmdTop(args){
+  const sub=args[0];
+  const rest=args.slice(1);
+  const {flags}=extractFlags(rest);
+  if(sub==='nodes'){
+    table(['NAME','CPU(cores)','CPU%','MEMORY(bytes)','MEMORY%'],[
+      ['minikube',     '243m','6%', '1124Mi','14%'],
+      ['minikube-m02', '89m', '4%', '562Mi', '14%'],
+      ['minikube-m03', '72m', '3%', '489Mi', '12%'],
+    ]);return;
+  }
+  if(sub==='pods'){
+    const ns=flags._ns==='*'?'*':flags._ns;
+    const list=getPodsInNS(ns);
+    const hdrs=ns==='*'?['NAMESPACE','NAME','CPU(cores)','MEMORY(bytes)']:['NAME','CPU(cores)','MEMORY(bytes)'];
+    const rows=list.map(p=>{
+      const cpu=(Math.random()*100|0)+'m';
+      const mem=(Math.random()*100+10|0)+'Mi';
+      return ns==='*'?[p.namespace,p.name,cpu,mem]:[p.name,cpu,mem];
+    });
+    table(hdrs,rows);return;
+  }
+  println('error: subcommand required: nodes | pods','out-err');
+}
+
+function cmdCordon(name,uncordon){
+  if(!name){println('error: node name required','out-err');return;}
+  const n=NODES[name];
+  if(!n){println(`Error from server (NotFound): nodes "${name}" not found`,'out-err');return;}
+  n.cordoned=!uncordon;
+  println(`node/${name} ${uncordon?'uncordoned':'cordoned'}`,'out-ok');
+}
+
+function cmdDrain(args){
+  const {flags,pos}=extractFlags(args);
+  const name=pos[0];
+  if(!name){println('error: node name required','out-err');return;}
+  const n=NODES[name];
+  if(!n){println(`Error from server (NotFound): nodes "${name}" not found`,'out-err');return;}
+  n.cordoned=true;
+  println(`node/${name} cordoned`,'out-ok');
+  // evict pods on that node that aren't daemonsets
+  const evict=Object.entries(pods).filter(([k,p])=>p.node===name&&!p.labels?.['k8s-app']&&p.namespace!=='kube-system');
+  evict.forEach(([k,p])=>{delete pods[k];println(`evicting pod/${p.name}`,'out-warn');});
+  println(`node/${name} drained`,'out-ok');
+}
+
+function cmdTaint(args){
+  const {pos}=extractFlags(args);
+  const name=pos[0];
+  if(!name||!pos[1]){println('error: node name and taint required','out-err');return;}
+  const n=NODES[name];
+  if(!n){println(`Error from server (NotFound): nodes "${name}" not found`,'out-err');return;}
+  n.taints=n.taints||[];
+  if(pos[1].endsWith('-')){
+    const key=pos[1].slice(0,-1);
+    n.taints=n.taints.filter(t=>!t.startsWith(key));
+    println(`node/${name} untainted`,'out-ok');
+  } else {
+    n.taints.push(pos[1]);
+    println(`node/${name} tainted`,'out-ok');
+  }
+}
+
+function cmdPortForward(args){
+  const {pos}=extractFlags(args);
+  const resource=pos[0];
+  const portPair=pos[1];
+  if(!resource||!portPair){println('error: resource and port required: kubectl port-forward pod/NAME 8080:80','out-err');return;}
+  const [lp,rp]=portPair.split(':');
+  println(`Forwarding from 127.0.0.1:${lp} -> ${rp||lp}`,'out-ok');
+  println(`Forwarding from [::1]:${lp} -> ${rp||lp}`,'out-ok');
+  println(`(Simulated — Ctrl+C to stop)`,'out-dim');
+}
+
+function cmdCp(args){
+  if(args.length<2){println('error: src and dst required','out-err');return;}
+  println(`Copying ${args[0]} -> ${args[1]} (simulated)`,'out-ok');
+}
+
+// ── Helm ───────────────────────────────────────────────────────────────────────
+function handleHelm(args){
+  if(!args.length){println('Helm — The Kubernetes Package Manager\n  Usage: helm [command]\n  Run helm --help for details','out-info');return;}
+  const sub=args[0];
+  const rest=args.slice(1);
+  switch(sub){
+    case 'version':
+      println('version.BuildInfo{Version:"v3.13.1", GitCommit:"3547a4b5bf5edb5478ce352e18858d8a552a4110", GitTreeState:"clean", GoVersion:"go1.21.3"}','out-info');break;
+    case 'list':
+    case 'ls': {
+      const {flags}=extractFlags(rest);
+      const ns=flags._ns==='*'?'*':flags._ns;
+      const releases=Object.values(helmReleases).filter(r=>ns==='*'||r.namespace===ns||ns===currentNS);
+      table(['NAME','NAMESPACE','REVISION','UPDATED','STATUS','CHART','APP VERSION'],
+        releases.map(r=>[r.name,r.namespace,String(r.revision),r.updated.slice(0,19),r.status,r.chart,r.app||'']));
+      break;
+    }
+    case 'install': {
+      const {pos,flags}=extractFlags(rest);
+      if(pos.length<2){println('error: helm install requires release name and chart','out-err');return;}
+      const [relName,chart]=pos;
+      const ns=flags._ns==='*'?currentNS:flags._ns;
+      helmReleases[relName]={name:relName,namespace:ns,chart,app:'latest',status:'deployed',revision:1,updated:ts()};
+      println(`NAME: ${relName}`,'');
+      println(`NAMESPACE: ${ns}`,'');
+      println(`STATUS: deployed`,'out-ok');
+      println(`NOTES:\nThank you for installing ${chart}!`,'out-dim');
+      break;
+    }
+    case 'uninstall': {
+      const {pos}=extractFlags(rest);
+      if(!pos[0]){println('error: release name required','out-err');return;}
+      if(!helmReleases[pos[0]]){println(`Error: release: "${pos[0]}" not found`,'out-err');return;}
+      delete helmReleases[pos[0]];
+      println(`release "${pos[0]}" uninstalled`,'out-ok');break;
+    }
+    case 'upgrade': {
+      const {pos}=extractFlags(rest);
+      if(pos.length<2){println('error: helm upgrade requires release name and chart','out-err');return;}
+      const [relName,chart]=pos;
+      if(!helmReleases[relName]){println(`Error: release: "${relName}" not found\nUse --install to install it`,'out-err');return;}
+      helmReleases[relName].revision++;
+      helmReleases[relName].chart=chart;
+      helmReleases[relName].updated=ts();
+      println(`Release "${relName}" has been upgraded.`,'out-ok');break;
+    }
+    case 'repo': {
+      const sub2=rest[0];
+      if(sub2==='add'){
+        const [name,url]=rest.slice(1);
+        if(!name||!url){println('error: helm repo add requires name and URL','out-err');return;}
+        helmRepos[name]={name,url,updated:ts()};
+        println(`"${name}" has been added to your repositories`,'out-ok');
+      } else if(sub2==='list'||sub2==='ls'){
+        if(!Object.keys(helmRepos).length){println('no repositories found','out-dim');}
+        else table(['NAME','URL'],Object.values(helmRepos).map(r=>[r.name,r.url]));
+      } else if(sub2==='update'){
+        Object.values(helmRepos).forEach(r=>{r.updated=ts();println(`...Successfully got an update from the "${r.name}" chart repository`,'');});
+        if(!Object.keys(helmRepos).length)println('no repositories to update','out-dim');
+        else println('Update Complete. ⎈Happy Helming!⎈','out-ok');
+      } else println(`error: unknown helm repo subcommand "${sub2}"`, 'out-err');
+      break;
+    }
+    case 'search': println(`(Simulated) Searching charts...`,'out-dim');println(`bitnami/nginx\t  15.9.1\t  1.25.3\t  NGINX Open Source is a web server that can be...`,'');break;
+    default: println(`Error: unknown command "${sub}" for "helm"\nRun 'helm --help' for usage.`,'out-err');
+  }
+}
+
+// ── Manifest show ──────────────────────────────────────────────────────────────
+function handleManifest(args){
+  const sub=args[0];
+  const type=args[1];
+  if(sub!=='show'){println('Usage: manifest show <nginx|service|configmap|secret>','out-warn');return;}
+  switch(type){
+    case 'nginx':
+    case 'deployment':
+      println(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10`,'out-purple');break;
+    case 'service':
+      println(`apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: default
+spec:
+  selector:
+    app: nginx
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP`,'out-purple');break;
+    case 'configmap':
+      println(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: default
+data:
+  APP_ENV: "production"
+  APP_PORT: "8080"
+  LOG_LEVEL: "info"
+  DATABASE_HOST: "postgres-svc"`,'out-purple');break;
+    case 'secret':
+      println(`apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+  namespace: default
+type: Opaque
+data:
+  DB_PASSWORD: c2VjcmV0MTIz          # base64 encoded
+  DB_USER: YWRtaW4=                  # base64 encoded
+  DB_NAME: bXlkYXRhYmFzZQ==         # base64 encoded`,'out-purple');break;
+    default: println(`Usage: manifest show <nginx|service|configmap|secret>`, 'out-warn');
+  }
+}
+
+// ── Help ───────────────────────────────────────────────────────────────────────
+function printHelp(){
+  println(`&#x2388;  Kubernetes Terminal — Command Reference`,'out-blue');
+  println('','');
+  println(`  CLUSTER`,'out-dim');
+  println(`    kubectl version              kubectl cluster-info`,'');
+  println(`    kubectl get nodes [-o wide]  kubectl top nodes`,'');
+  println(`    kubectl config get-contexts  kubectl config use-context <name>`,'');
+  println('','');
+  println(`  PODS`,'out-dim');
+  println(`    kubectl run <n> --image=<img>              kubectl get pods [-A] [-n ns] [-l label]`,'');
+  println(`    kubectl describe pod <n>                   kubectl logs <pod> [-f] [--tail=N]`,'');
+  println(`    kubectl exec -it <pod> -- sh               kubectl delete pod <n>`,'');
+  println('','');
+  println(`  DEPLOYMENTS`,'out-dim');
+  println(`    kubectl create deployment <n> --image=<i>  kubectl get deployments`,'');
+  println(`    kubectl scale deployment <n> --replicas=N  kubectl describe deployment <n>`,'');
+  println(`    kubectl set image deployment/<n> c=image   kubectl rollout status/history/undo deploy/<n>`,'');
+  println('','');
+  println(`  SERVICES`,'out-dim');
+  println(`    kubectl expose deployment <n> --port=P     kubectl get services`,'');
+  println(`    kubectl port-forward svc/<n> 8080:80       kubectl describe service <n>`,'');
+  println('','');
+  println(`  NAMESPACES / CONFIG`,'out-dim');
+  println(`    kubectl create namespace <n>               kubectl get pods -n <ns>`,'');
+  println(`    kubectl get all -A                         kubectl create configmap / secret`,'');
+  println('','');
+  println(`  NODES`,'out-dim');
+  println(`    kubectl cordon <node>   kubectl drain <node> --ignore-daemonsets   kubectl uncordon <node>`,'');
+  println('','');
+  println(`  HELM`,'out-dim');
+  println(`    helm version   helm list   helm install <rel> <chart>   helm uninstall <rel>`,'');
+  println(`    helm repo add <name> <url>   helm repo update`,'');
+  println('','');
+  println(`  MANIFEST EXAMPLES`,'out-dim');
+  println(`    manifest show nginx|service|configmap|secret`,'');
+}
+
+// ── Exercises ─────────────────────────────────────────────────────────────────
+const EXERCISES=[
+  {id:'e1',title:'Explore the Cluster',badge:'easy',desc:'Inspect nodes, namespaces and cluster info.',tasks:[
+    {id:'t1',text:'Check kubectl version: <code>kubectl version</code>',hint:'kubectl version',check:c=>/^kubectl\s+version/.test(c)},
+    {id:'t2',text:'View cluster info: <code>kubectl cluster-info</code>',hint:'kubectl cluster-info',check:c=>/^kubectl\s+cluster-info/.test(c)},
+    {id:'t3',text:'List all nodes: <code>kubectl get nodes</code>',hint:'kubectl get nodes',check:c=>/^kubectl\s+get\s+(nodes|no)/.test(c)},
+    {id:'t4',text:'List all namespaces: <code>kubectl get namespaces</code>',hint:'kubectl get namespaces',check:c=>/^kubectl\s+get\s+(namespaces|ns)/.test(c)},
+  ]},
+  {id:'e2',title:'First Pod',badge:'easy',desc:'Run a pod, inspect it, view logs and exec into it.',tasks:[
+    {id:'t1',text:'Run a pod: <code>kubectl run mypod --image=nginx:alpine</code>',hint:'kubectl run mypod --image=nginx:alpine',check:c=>/^kubectl\s+run\s+\w+\s+--image/.test(c)},
+    {id:'t2',text:'List pods: <code>kubectl get pods</code>',hint:'kubectl get pods',check:c=>/^kubectl\s+get\s+(po|pods)\s*$/.test(c)},
+    {id:'t3',text:'Describe a pod: <code>kubectl describe pod mypod</code>',hint:'kubectl describe pod mypod',check:c=>/^kubectl\s+describe\s+pod\s+\w+/.test(c)},
+    {id:'t4',text:'View pod logs: <code>kubectl logs mypod</code>',hint:'kubectl logs mypod',check:c=>/^kubectl\s+logs\s+\w+/.test(c)},
+  ]},
+  {id:'e3',title:'Deployments',badge:'medium',desc:'Create, inspect and scale a Deployment.',tasks:[
+    {id:'t1',text:'Create deployment: <code>kubectl create deployment my-app --image=nginx:alpine --replicas=3</code>',hint:'kubectl create deployment my-app --image=nginx:alpine --replicas=3',check:c=>/^kubectl\s+create\s+deployment\s+\w+\s+--image/.test(c)},
+    {id:'t2',text:'Get deployments: <code>kubectl get deployments</code>',hint:'kubectl get deployments',check:c=>/^kubectl\s+get\s+(deployments|deploy)/.test(c)},
+    {id:'t3',text:'Describe it: <code>kubectl describe deployment my-app</code>',hint:'kubectl describe deployment my-app',check:c=>/^kubectl\s+describe\s+(deployment|deploy)\s+\w+/.test(c)},
+    {id:'t4',text:'Scale to 5: <code>kubectl scale deployment my-app --replicas=5</code>',hint:'kubectl scale deployment my-app --replicas=5',check:c=>/^kubectl\s+scale\s+(deployment|deploy).*--replicas/.test(c)},
+  ]},
+  {id:'e4',title:'Services & Networking',badge:'medium',desc:'Expose a deployment and inspect the service.',tasks:[
+    {id:'t1',text:'Expose deployment: <code>kubectl expose deployment nginx-deployment --port=80 --type=NodePort</code>',hint:'kubectl expose deployment nginx-deployment --port=80 --type=NodePort',check:c=>/^kubectl\s+expose\s+(deployment|deploy)/.test(c)},
+    {id:'t2',text:'List services: <code>kubectl get services</code>',hint:'kubectl get services',check:c=>/^kubectl\s+get\s+(services|svc)/.test(c)},
+    {id:'t3',text:'Describe service: <code>kubectl describe service nginx-deployment</code>',hint:'kubectl describe service nginx-deployment',check:c=>/^kubectl\s+describe\s+(service|svc)\s+\w+/.test(c)},
+    {id:'t4',text:'Port forward: <code>kubectl port-forward svc/nginx-service 8080:80</code>',hint:'kubectl port-forward svc/nginx-service 8080:80',check:c=>/^kubectl\s+port-forward/.test(c)},
+  ]},
+  {id:'e5',title:'ConfigMaps & Secrets',badge:'medium',desc:'Create and inspect ConfigMaps and Secrets.',tasks:[
+    {id:'t1',text:'Create configmap: <code>kubectl create configmap app-settings --from-literal=ENV=staging --from-literal=PORT=3000</code>',hint:'kubectl create configmap app-settings --from-literal=ENV=staging',check:c=>/^kubectl\s+create\s+(configmap|cm)/.test(c)},
+    {id:'t2',text:'Get configmaps: <code>kubectl get configmaps</code>',hint:'kubectl get configmaps',check:c=>/^kubectl\s+get\s+(configmaps|cm)/.test(c)},
+    {id:'t3',text:'Create secret: <code>kubectl create secret generic api-secret --from-literal=API_KEY=mysecretkey</code>',hint:'kubectl create secret generic api-secret --from-literal=API_KEY=mysecretkey',check:c=>/^kubectl\s+create\s+secret\s+generic/.test(c)},
+    {id:'t4',text:'Describe secret: <code>kubectl describe secret api-secret</code>',hint:'kubectl describe secret api-secret',check:c=>/^kubectl\s+describe\s+secret\s+\w+/.test(c)},
+  ]},
+  {id:'e6',title:'Namespaces',badge:'easy',desc:'Create namespaces and filter resources by namespace.',tasks:[
+    {id:'t1',text:'Create namespace: <code>kubectl create namespace staging</code>',hint:'kubectl create namespace staging',check:c=>/^kubectl\s+create\s+(namespace|ns)\s+\w+/.test(c)},
+    {id:'t2',text:'List pods in kube-system: <code>kubectl get pods -n kube-system</code>',hint:'kubectl get pods -n kube-system',check:c=>/^kubectl\s+get\s+po.*(-n\s+kube-system|--namespace.*kube-system)/.test(c)},
+    {id:'t3',text:'List all pods everywhere: <code>kubectl get pods -A</code>',hint:'kubectl get pods -A',check:c=>/^kubectl\s+get\s+po.*(--all-namespaces|-A)/.test(c)},
+    {id:'t4',text:'Get all resources: <code>kubectl get all</code>',hint:'kubectl get all',check:c=>/^kubectl\s+get\s+all/.test(c)},
+  ]},
+  {id:'e7',title:'Labels & Selectors',badge:'medium',desc:'Organize and filter resources using labels.',tasks:[
+    {id:'t1',text:'Show pod labels: <code>kubectl get pods --show-labels</code>',hint:'kubectl get pods --show-labels',check:c=>/^kubectl\s+get\s+po.*--show-labels/.test(c)},
+    {id:'t2',text:'Filter by label: <code>kubectl get pods -l app=nginx</code>',hint:'kubectl get pods -l app=nginx',check:c=>/^kubectl\s+get\s+po.*-l\s+\S+=\S+/.test(c)},
+    {id:'t3',text:'Label a pod: <code>kubectl label pod nginx-deployment-7c79c4bf97-k8xp2 tier=frontend</code>',hint:'kubectl label pod nginx-deployment-7c79c4bf97-k8xp2 tier=frontend',check:c=>/^kubectl\s+label\s+pod\s+\S+\s+\S+=\S+/.test(c)},
+    {id:'t4',text:'Filter by new label: <code>kubectl get pods -l tier=frontend</code>',hint:'kubectl get pods -l tier=frontend',check:c=>/^kubectl\s+get\s+po.*-l\s+tier=/.test(c)},
+  ]},
+  {id:'e8',title:'Rolling Updates',badge:'medium',desc:'Update images and manage rollouts.',tasks:[
+    {id:'t1',text:'Update image: <code>kubectl set image deployment/nginx-deployment nginx=nginx:alpine</code>',hint:'kubectl set image deployment/nginx-deployment nginx=nginx:alpine',check:c=>/^kubectl\s+set\s+image\s+(deployment|deploy)/.test(c)},
+    {id:'t2',text:'Check rollout: <code>kubectl rollout status deployment/nginx-deployment</code>',hint:'kubectl rollout status deployment/nginx-deployment',check:c=>/^kubectl\s+rollout\s+status\s+(deployment|deploy)/.test(c)},
+    {id:'t3',text:'View history: <code>kubectl rollout history deployment/nginx-deployment</code>',hint:'kubectl rollout history deployment/nginx-deployment',check:c=>/^kubectl\s+rollout\s+history\s+(deployment|deploy)/.test(c)},
+    {id:'t4',text:'Undo rollout: <code>kubectl rollout undo deployment/nginx-deployment</code>',hint:'kubectl rollout undo deployment/nginx-deployment',check:c=>/^kubectl\s+rollout\s+undo\s+(deployment|deploy)/.test(c)},
+  ]},
+  {id:'e9',title:'Node Operations',badge:'hard',desc:'Monitor resources and manage node scheduling.',tasks:[
+    {id:'t1',text:'Node resource usage: <code>kubectl top nodes</code>',hint:'kubectl top nodes',check:c=>/^kubectl\s+top\s+nodes/.test(c)},
+    {id:'t2',text:'Pod resource usage: <code>kubectl top pods -A</code>',hint:'kubectl top pods -A',check:c=>/^kubectl\s+top\s+pods/.test(c)},
+    {id:'t3',text:'Cordon a node: <code>kubectl cordon minikube-m03</code>',hint:'kubectl cordon minikube-m03',check:c=>/^kubectl\s+cordon\s+\S+/.test(c)},
+    {id:'t4',text:'Drain the node: <code>kubectl drain minikube-m03 --ignore-daemonsets</code>',hint:'kubectl drain minikube-m03 --ignore-daemonsets',check:c=>/^kubectl\s+drain\s+\S+/.test(c)},
+    {id:'t5',text:'Uncordon: <code>kubectl uncordon minikube-m03</code>',hint:'kubectl uncordon minikube-m03',check:c=>/^kubectl\s+uncordon\s+\S+/.test(c)},
+  ]},
+  {id:'e10',title:'Helm Package Manager',badge:'medium',desc:'Install and manage apps with Helm.',tasks:[
+    {id:'t1',text:'Check helm version: <code>helm version</code>',hint:'helm version',check:c=>/^helm\s+version/.test(c)},
+    {id:'t2',text:'List releases: <code>helm list</code>',hint:'helm list',check:c=>/^helm\s+(list|ls)/.test(c)},
+    {id:'t3',text:'Add bitnami repo: <code>helm repo add bitnami https://charts.bitnami.com/bitnami</code>',hint:'helm repo add bitnami https://charts.bitnami.com/bitnami',check:c=>/^helm\s+repo\s+add\s+\S+\s+https/.test(c)},
+    {id:'t4',text:'Install a chart: <code>helm install my-nginx bitnami/nginx</code>',hint:'helm install my-nginx bitnami/nginx',check:c=>/^helm\s+install\s+\w+\s+\S+/.test(c)},
+    {id:'t5',text:'Uninstall release: <code>helm uninstall my-nginx</code>',hint:'helm uninstall my-nginx',check:c=>/^helm\s+uninstall\s+\w+/.test(c)},
+  ]},
+];
+
+// ── Cheatsheet ─────────────────────────────────────────────────────────────────
+const CHEATSHEET=[
+  {title:'Cluster Info',cmds:[
+    {name:'kubectl version',desc:'Show kubectl & server version'},
+    {name:'kubectl cluster-info',desc:'Cluster endpoint URLs'},
+    {name:'kubectl get nodes -o wide',desc:'Nodes with IP and OS info'},
+    {name:'kubectl top nodes',desc:'CPU & memory usage per node'},
+    {name:'kubectl config get-contexts',desc:'List all kubectl contexts'},
+    {name:'kubectl config use-context X',desc:'Switch to context X'},
+  ]},
+  {title:'Pods',cmds:[
+    {name:'kubectl run n --image=img',desc:'Run a standalone pod'},
+    {name:'kubectl get pods',desc:'List pods in current namespace'},
+    {name:'kubectl get pods -A',desc:'All pods in all namespaces'},
+    {name:'kubectl get pods -l app=nginx',desc:'Filter by label selector'},
+    {name:'kubectl get pods --show-labels',desc:'Show all labels per pod'},
+    {name:'kubectl describe pod NAME',desc:'Detailed pod information'},
+    {name:'kubectl logs NAME [-f]',desc:'View/follow container logs'},
+    {name:'kubectl exec -it NAME -- sh',desc:'Open shell in container'},
+    {name:'kubectl delete pod NAME',desc:'Delete a pod'},
+  ]},
+  {title:'Deployments',cmds:[
+    {name:'kubectl create deployment n --image=i',desc:'Create a deployment'},
+    {name:'kubectl get deployments',desc:'List deployments'},
+    {name:'kubectl describe deployment n',desc:'Detailed deployment info'},
+    {name:'kubectl scale deploy n --replicas=N',desc:'Scale replica count'},
+    {name:'kubectl set image deploy/n c=img',desc:'Update container image'},
+    {name:'kubectl rollout status deploy/n',desc:'Check rollout progress'},
+    {name:'kubectl rollout history deploy/n',desc:'View revision history'},
+    {name:'kubectl rollout undo deploy/n',desc:'Rollback to last revision'},
+    {name:'kubectl rollout restart deploy/n',desc:'Restart all pods'},
+  ]},
+  {title:'Services',cmds:[
+    {name:'kubectl expose deploy n --port=P',desc:'Create ClusterIP service'},
+    {name:'kubectl expose deploy n --type=NodePort',desc:'Expose as NodePort'},
+    {name:'kubectl get services',desc:'List services'},
+    {name:'kubectl describe svc NAME',desc:'Service details & endpoints'},
+    {name:'kubectl port-forward svc/n 8080:80',desc:'Forward local port to service'},
+  ]},
+  {title:'ConfigMaps & Secrets',cmds:[
+    {name:'kubectl create configmap n --from-literal=k=v',desc:'Create ConfigMap'},
+    {name:'kubectl create secret generic n --from-literal=k=v',desc:'Create Secret'},
+    {name:'kubectl get cm / secrets [-n ns]',desc:'List configmaps/secrets'},
+    {name:'kubectl describe configmap NAME',desc:'Show configmap data'},
+    {name:'kubectl describe secret NAME',desc:'Show secret keys (values hidden)'},
+  ]},
+  {title:'Namespaces & Labels',cmds:[
+    {name:'kubectl create namespace NAME',desc:'Create namespace'},
+    {name:'kubectl get pods -n NAMESPACE',desc:'Pods in specific namespace'},
+    {name:'kubectl get all -A',desc:'All resources across namespaces'},
+    {name:'kubectl label pod NAME key=val',desc:'Add label to pod'},
+    {name:'kubectl get pods -l key=val',desc:'Filter by label'},
+  ]},
+  {title:'Node Management',cmds:[
+    {name:'kubectl top nodes/pods',desc:'Resource utilization'},
+    {name:'kubectl cordon NODE',desc:'Disable scheduling on node'},
+    {name:'kubectl uncordon NODE',desc:'Re-enable scheduling'},
+    {name:'kubectl drain NODE --ignore-daemonsets',desc:'Evict pods & cordon node'},
+    {name:'kubectl taint nodes n k=v:Effect',desc:'Add node taint'},
+  ]},
+  {title:'Helm',cmds:[
+    {name:'helm version',desc:'Show helm version'},
+    {name:'helm list',desc:'List installed releases'},
+    {name:'helm repo add name URL',desc:'Add chart repository'},
+    {name:'helm repo update',desc:'Refresh repo index'},
+    {name:'helm install rel chart',desc:'Install chart as release'},
+    {name:'helm upgrade rel chart',desc:'Upgrade release'},
+    {name:'helm uninstall rel',desc:'Remove release'},
+  ]},
+  {title:'Manifest Examples',cmds:[
+    {name:'manifest show nginx',desc:'Sample Deployment YAML'},
+    {name:'manifest show service',desc:'Sample Service YAML'},
+    {name:'manifest show configmap',desc:'Sample ConfigMap YAML'},
+    {name:'manifest show secret',desc:'Sample Secret YAML'},
+  ]},
+];
+
+// ── Tab handling ────────────────────────────────────────────────────────────────
+function showTab(name,el){
+  ['exercises','cheatsheet','state'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===name?'':'none';
+  });
+  document.querySelectorAll('.stab').forEach(s=>s.classList.remove('active'));
+  if(el)el.classList.add('active');
+  if(name==='state')updateState();
+}
+
+// ── State panel ────────────────────────────────────────────────────────────────
+function updateState(){
+  // Nodes
+  const nc=document.getElementById('state-nodes');
+  nc.innerHTML=Object.entries(NODES).map(([n,d])=>{
+    const cls=d.cordoned?'badge-notready':'badge-ready';
+    const st=d.cordoned?'SchedulingDisabled':'Ready';
+    return `<div class="state-item">${n} <span class="state-badge ${cls}">${st}</span><br><span style="color:var(--gray);font-size:10px;">${d.role} &bull; ${d.cpu}CPU ${d.mem}</span></div>`;
+  }).join('');
+  // Pods
+  const pc=document.getElementById('state-pods');
+  const defPods=getPodsInNS(currentNS);
+  if(!defPods.length)pc.innerHTML='<span style="color:var(--gray);font-size:11px;">No pods in default</span>';
+  else pc.innerHTML=defPods.map(p=>`<div class="state-item">${p.name.length>28?p.name.slice(0,25)+'...':p.name} <span class="state-badge badge-${p.status==='Running'?'running':'pending'}">${p.status}</span></div>`).join('');
+  // Deployments
+  const dc=document.getElementById('state-deployments');
+  const deps=Object.values(deployments).filter(d=>d.namespace===currentNS);
+  if(!deps.length)dc.innerHTML='<span style="color:var(--gray);font-size:11px;">No deployments</span>';
+  else dc.innerHTML=deps.map(d=>`<div class="state-item">${d.name} <span class="state-badge badge-running">${d.ready}/${d.replicas}</span></div>`).join('');
+  // Services
+  const sc=document.getElementById('state-services');
+  const svcs=Object.values(services).filter(s=>s.namespace===currentNS);
+  if(!svcs.length)sc.innerHTML='<span style="color:var(--gray);font-size:11px;">No services</span>';
+  else sc.innerHTML=svcs.map(s=>`<div class="state-item">${s.name} <span style="color:var(--gray);font-size:10px;">${s.type}</span></div>`).join('');
+  // Helm
+  const hc=document.getElementById('state-helm');
+  const hrels=Object.values(helmReleases);
+  if(!hrels.length)hc.innerHTML='<span style="color:var(--gray);font-size:11px;">No releases</span>';
+  else hc.innerHTML=hrels.map(r=>`<div class="state-item">${r.name} <span class="state-badge badge-deployed">${r.status}</span><br><span style="color:var(--gray);font-size:10px;">${r.chart}</span></div>`).join('');
+}
+
+// ── Exercise UI ────────────────────────────────────────────────────────────────
+function buildExerciseList(){
+  const el=document.getElementById('ex-list');
+  el.innerHTML=EXERCISES.map(ex=>`
+    <div class="ex-item ${doneMap[ex.id]?'done':''}" id="ex-${ex.id}" onclick="selectExercise('${ex.id}')">
+      <div class="ex-title">${doneMap[ex.id]?'&#x2705;':''} ${ex.title} <span class="ex-badge badge-${ex.badge}">${ex.badge}</span></div>
+      <div class="ex-desc">${ex.desc}</div>
+    </div>`).join('');
+  const total=EXERCISES.reduce((a,e)=>a+e.tasks.length,0);
+  const done=EXERCISES.reduce((a,e)=>a+(doneMap[e.id]?e.tasks.length:0),0);
+  document.getElementById('prog-text').textContent=done+' / '+total+' done';
+  document.getElementById('prog-fill').style.width=(total?done/total*100:0)+'%';
+}
+
+function selectExercise(id){
+  document.querySelectorAll('.ex-item').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById('ex-'+id);
+  if(el)el.classList.add('active');
+  currentExercise=EXERCISES.find(e=>e.id===id);
+  currentTaskIdx=0;
+  showCurrentTask();
+}
+
+function showCurrentTask(){
+  const bar=document.getElementById('challenge-bar');
+  if(!currentExercise){bar.style.display='none';return;}
+  bar.style.display='block';
+  if(currentTaskIdx>=currentExercise.tasks.length){
+    document.getElementById('challenge-text').innerHTML=`&#x1F389; Exercise complete! All ${currentExercise.tasks.length} tasks done.`;
+    document.getElementById('challenge-hint').classList.remove('visible');
+    doneMap[currentExercise.id]=true;
+    buildExerciseList();
+    return;
+  }
+  const task=currentExercise.tasks[currentTaskIdx];
+  document.getElementById('challenge-text').innerHTML=`Task ${currentTaskIdx+1}/${currentExercise.tasks.length}: ${task.text}`;
+  document.getElementById('challenge-hint').classList.remove('visible');
+}
+
+function checkTask(cmd){
+  if(!currentExercise||currentTaskIdx>=currentExercise.tasks.length)return;
+  const task=currentExercise.tasks[currentTaskIdx];
+  if(task.check(cmd)){
+    currentTaskIdx++;
+    if(currentTaskIdx<currentExercise.tasks.length){
+      println('&#x2705; Task complete! Next task loaded.','out-ok');
+    }
+    showCurrentTask();
+  }
+}
+
+function showHint(){
+  if(!currentExercise||currentTaskIdx>=currentExercise.tasks.length)return;
+  const task=currentExercise.tasks[currentTaskIdx];
+  const h=document.getElementById('challenge-hint');
+  h.textContent='Hint: try — '+task.hint;
+  h.classList.add('visible');
+}
+
+function skipChallenge(){
+  if(!currentExercise||currentTaskIdx>=currentExercise.tasks.length)return;
+  currentTaskIdx++;
+  println('&#x23ED; Task skipped.','out-warn');
+  showCurrentTask();
+}
+
+function resetExercise(){
+  if(!currentExercise)return;
+  currentTaskIdx=0;
+  showCurrentTask();
+  println('&#x1F504; Exercise reset.','out-warn');
+}
+
+// ── Cheatsheet UI ──────────────────────────────────────────────────────────────
+function buildCheatsheet(){
+  const el=document.getElementById('cheatsheet-content');
+  el.innerHTML=CHEATSHEET.map(sec=>`
+    <div class="cs-section">
+      <div class="cs-title">${sec.title}</div>
+      ${sec.cmds.map(c=>`<div class="cs-cmd" onclick="insertCmd('${c.name}')"><span class="cs-cmd-name">${escHtml(c.name)}</span><span class="cs-cmd-desc">${c.desc}</span></div>`).join('')}
+    </div>`).join('');
+}
+
+function insertCmd(cmd){
+  const inp=document.getElementById('cmd-input');
+  inp.value=cmd;
+  inp.focus();
+  showTab('exercises',document.querySelector('.stab'));
+  document.querySelectorAll('.stab')[0].classList.add('active');
+}
+
+// ── Input handling ─────────────────────────────────────────────────────────────
+function focusInput(){document.getElementById('cmd-input').focus();}
+
+function handleKey(e){
+  const inp=e.target;
+  if(e.key==='Enter'){
+    const val=inp.value;
+    inp.value='';
+    runCommand(val);
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    if(histIndex<cmdHistory.length-1){histIndex++;inp.value=cmdHistory[histIndex];}
+  } else if(e.key==='ArrowDown'){
+    e.preventDefault();
+    if(histIndex>0){histIndex--;inp.value=cmdHistory[histIndex];}
+    else{histIndex=-1;inp.value='';}
+  } else if(e.key==='Tab'){
+    e.preventDefault();
+    tabComplete(inp);
+  }
+}
+
+function tabComplete(inp){
+  const val=inp.value;
+  const args=parseArgs(val);
+  if(args.length===0)return;
+  if(args.length===1){
+    const cmds=['kubectl','helm','manifest','clear','help'];
+    const m=cmds.filter(c=>c.startsWith(args[0]));
+    if(m.length===1){inp.value=m[0]+' ';}
+    return;
+  }
+  if(args[0]==='kubectl'){
+    if(args.length===2){
+      const subs=['get','describe','create','run','expose','apply','delete','logs','exec','scale','rollout','set','label','annotate','config','top','cordon','uncordon','drain','port-forward','taint','cp','version','cluster-info'];
+      const m=subs.filter(s=>s.startsWith(args[1]));
+      if(m.length===1)inp.value='kubectl '+m[0]+' ';
+    } else if(args.length===3&&(args[1]==='get'||args[1]==='describe'||args[1]==='delete')){
+      const resources=['pods','deployments','services','configmaps','secrets','namespaces','nodes','replicasets','events','all'];
+      const m=resources.filter(r=>r.startsWith(args[2]));
+      if(m.length===1)inp.value=args.slice(0,2).join(' ')+' '+m[0]+' ';
+    }
+  }
+}
+
+// ── Welcome message ────────────────────────────────────────────────────────────
+function welcome(){
+  println(`&#x2388;  Kubernetes Lab &#x2014; kubectl simulator`,'out-blue');
+  println(`   Cluster: minikube (3 nodes) &nbsp;&bull;&nbsp; Context: minikube &nbsp;&bull;&nbsp; Namespace: default`,'out-dim');
+  println(`   Version: v1.28.4 &nbsp;&bull;&nbsp; Engine: simulated &nbsp;&bull;&nbsp; Helm v3.13.1`,'out-dim');
+  println('','');
+  println(`   Type <span class="out-yellow">help</span>                  to list all commands`,'');
+  println(`   Type <span class="out-yellow">kubectl get nodes</span>     to start exploring`,'');
+  println(`   Type <span class="out-yellow">kubectl get pods -A</span>   to see all pods`,'');
+  println(`   Type <span class="out-yellow">manifest show nginx</span>   to view a sample Deployment YAML`,'');
+  println('','');
+  println(`   &#x2500;&#x2500;&#x2500;&#x2500; 10 exercises in the Exercises tab &#x2500;&#x2500;&#x2500;&#x2500;`,'out-dim');
+  println('','');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+buildExerciseList();
+buildCheatsheet();
+updateState();
+welcome();
+focusInput();
+</script>
+</body>
+</html>

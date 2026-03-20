@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux Terminal — Hands-On Lab</title>
+<style>
+:root{--bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--border:#30363D;--green:#3FB950;--green2:#2EA043;--cyan:#79C0FF;--yellow:#E3B341;--orange:#F0883E;--red:#FF7B72;--purple:#D2A8FF;--white:#C9D1D9;--gray:#8B949E;--prompt-color:#3FB950;--header-bg:#0C4A6E;--radius:8px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--white);}
+.site-header{background:var(--header-bg);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0;}
+.site-header h1{font-size:16px;font-weight:700;}
+.site-header p{font-size:11px;color:#BAE6FD;margin-top:1px;}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;}
+.nav-link{font-size:11px;padding:3px 10px;border-radius:5px;background:rgba(255,255,255,.12);color:#BAE6FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.app{display:flex;height:calc(100vh - 58px);overflow:hidden;}
+
+/* Sidebar */
+.sidebar{width:280px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+.stab{flex:1;padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--gray);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.stab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.stab:hover{color:var(--white);}
+.sidebar-content{flex:1;overflow-y:auto;padding:10px;}
+.sidebar-content::-webkit-scrollbar{width:4px;}
+.sidebar-content::-webkit-scrollbar-track{background:transparent;}
+.sidebar-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* Exercises */
+.ex-section{margin-bottom:16px;}
+.ex-section-title{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.ex-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.ex-item:hover{border-color:var(--cyan);background:#1c2733;}
+.ex-item.active{border-color:var(--cyan);background:#1c2733;}
+.ex-item.done{border-color:var(--green2);}
+.ex-title{font-size:12px;font-weight:600;color:var(--white);display:flex;align-items:center;gap:6px;}
+.ex-badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:700;}
+.badge-easy{background:#1a3a1a;color:var(--green);}
+.badge-medium{background:#3a2a0a;color:var(--yellow);}
+.badge-hard{background:#3a0a0a;color:var(--red);}
+.ex-desc{font-size:11px;color:var(--gray);margin-top:4px;line-height:1.5;}
+.ex-done-mark{color:var(--green);font-size:12px;}
+
+/* Cheatsheet */
+.cs-section{margin-bottom:14px;}
+.cs-title{font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.cs-cmd{display:flex;gap:8px;margin-bottom:4px;padding:4px 6px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.cs-cmd:hover{background:var(--bg3);}
+.cs-cmd-name{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;color:var(--yellow);min-width:90px;flex-shrink:0;}
+.cs-cmd-desc{font-size:11px;color:var(--gray);line-height:1.4;}
+.cs-cmd-title{font-size:9px;color:var(--gray);margin-top:2px;font-style:italic;}
+
+/* Challenge panel */
+.challenge-bar{background:var(--bg2);border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0;}
+.challenge-title{font-size:10px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.challenge-text{font-size:12px;color:var(--white);line-height:1.5;}
+.challenge-hint{font-size:11px;color:var(--gray);margin-top:4px;display:none;}
+.challenge-hint.visible{display:block;}
+.challenge-btns{display:flex;gap:6px;margin-top:8px;}
+.cbtn{font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-weight:600;background:var(--bg3);color:var(--gray);transition:all .2s;}
+.cbtn:hover{color:var(--white);}
+.cbtn.skip{color:var(--orange);border-color:var(--orange);}
+.cbtn.hint{color:var(--purple);border-color:var(--purple);}
+
+/* Terminal */
+.terminal-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.term-top-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.term-dot{width:12px;height:12px;border-radius:50%;}
+.dot-red{background:#FF5F57;}
+.dot-yellow{background:#FFBD2E;}
+.dot-green{background:#28CA41;}
+.term-title{font-size:12px;color:var(--gray);margin-left:4px;flex:1;}
+.term-info{font-size:10px;color:var(--gray);}
+.terminal{flex:1;overflow-y:auto;padding:14px 16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.6;cursor:text;}
+.terminal::-webkit-scrollbar{width:6px;}
+.terminal::-webkit-scrollbar-track{background:transparent;}
+.terminal::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.line{display:flex;gap:0;flex-wrap:wrap;align-items:baseline;}
+.prompt{color:var(--prompt-color);white-space:nowrap;flex-shrink:0;}
+.cmd-echo{color:var(--white);}
+.out-line{color:var(--white);white-space:pre-wrap;word-break:break-all;display:block;padding-left:0;}
+.out-error{color:var(--red);}
+.out-success{color:var(--green);}
+.out-info{color:var(--cyan);}
+.out-warn{color:var(--yellow);}
+.out-dim{color:var(--gray);}
+.out-dir{color:var(--cyan);font-weight:700;}
+.out-exec{color:var(--green);font-weight:700;}
+.out-link{color:var(--purple);}
+.input-row{display:flex;align-items:center;gap:0;margin-top:2px;}
+.input-prompt{color:var(--prompt-color);white-space:nowrap;flex-shrink:0;}
+#cmd-input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-family:inherit;font-size:13px;caret-color:var(--white);}
+
+/* Progress bar */
+.prog-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:6px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green2),var(--green));border-radius:99px;transition:width .4s;}
+.prog-label{font-size:9px;color:var(--gray);margin-top:3px;text-align:right;}
+
+@media(max-width:768px){.sidebar{width:220px;}.site-header h1{font-size:14px;}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <h1>🐧 Linux Terminal — Hands-On Interpreter</h1>
+    <p>Interactive shell emulator · 50+ commands · Guided exercises</p>
+  </div>
+  <div class="nav-links">
+    <a href="../personal_site/index.html" class="nav-link">🏠 Home</a>
+    <a href="../personal_site/learning.html" class="nav-link">📚 Learning Hub</a>
+    <a href="index.html" class="nav-link">☁️ IaaS Labs</a>
+    <a href="iam.html" class="nav-link">🔒 IAM</a>
+    <a href="az700.html" class="nav-link">🌐 AZ-700</a>
+    <a href="docker-terminal.html" class="nav-link">🐳 Docker Lab</a>
+    <a href="k8s-terminal.html" class="nav-link">☸ K8s Lab</a>
+    <a href="ps-terminal.html" class="nav-link">💻 PS Lab</a>
+    <a href="soa-c02.html" class="nav-link">🔧 SOA-C02</a>
+  </div>
+</header>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="stab active" onclick="showTab('exercises',this)">Exercises</div>
+      <div class="stab" onclick="showTab('cheatsheet',this)">Cheatsheet</div>
+      <div class="stab" onclick="showTab('filesystem',this)">Filesystem</div>
+    </div>
+    <div class="sidebar-content" id="tab-exercises">
+      <div id="progress-section" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:11px;font-weight:700;color:var(--white);">Lab Progress</span>
+          <span style="font-size:10px;color:var(--green);" id="prog-text">0 / 0 done</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div id="ex-list"></div>
+    </div>
+    <div class="sidebar-content" id="tab-cheatsheet" style="display:none;">
+      <div id="cheatsheet-content"></div>
+    </div>
+    <div class="sidebar-content" id="tab-filesystem" style="display:none;">
+      <div style="font-size:10px;font-weight:700;color:var(--cyan);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Virtual Filesystem</div>
+      <pre id="fs-tree" style="font-size:11px;color:var(--gray);line-height:1.7;font-family:'Cascadia Code','Fira Code','Consolas',monospace;"></pre>
+    </div>
+  </div>
+
+  <!-- Terminal area -->
+  <div class="terminal-wrap">
+    <div class="term-top-bar">
+      <span class="term-dot dot-red"></span>
+      <span class="term-dot dot-yellow"></span>
+      <span class="term-dot dot-green"></span>
+      <span class="term-title">user@linux-lab: ~</span>
+      <span class="term-info" id="term-info">Type <code style="color:var(--yellow)">help</code> to get started · Click any cheatsheet command to insert it</span>
+    </div>
+    <div class="terminal" id="terminal" onclick="focusInput()">
+      <div id="output"></div>
+      <div class="input-row">
+        <span class="input-prompt" id="live-prompt"></span>
+        <input type="text" id="cmd-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleKey(event)" oninput="updateInputWidth()">
+      </div>
+    </div>
+    <div class="challenge-bar" id="challenge-bar" style="display:none;">
+      <div class="challenge-title">🎯 Current Challenge</div>
+      <div class="challenge-text" id="challenge-text"></div>
+      <div class="challenge-hint" id="challenge-hint"></div>
+      <div class="challenge-btns">
+        <button class="cbtn hint" onclick="showHint()">💡 Hint</button>
+        <button class="cbtn skip" onclick="skipChallenge()">⏭ Skip</button>
+        <button class="cbtn" onclick="resetChallenge()" style="color:var(--red);border-color:var(--red);">🔄 Reset Lab</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Virtual Filesystem ──────────────────────────────────────────────────────
+const FS = {
+  '/': { type:'dir', children:['home','etc','var','tmp','usr','bin'] },
+  '/home': { type:'dir', children:['user'] },
+  '/home/user': { type:'dir', children:['documents','scripts','logs','.bashrc','.bash_history'] },
+  '/home/user/documents': { type:'dir', children:['notes.txt','report.txt','hosts_backup.txt'] },
+  '/home/user/scripts': { type:'dir', children:['backup.sh','monitor.sh','deploy.sh'] },
+  '/home/user/logs': { type:'dir', children:['app.log','error.log'] },
+  '/home/user/.bashrc': { type:'file', content:'# .bashrc\nexport PS1="\\u@\\h:\\w\\$ "\nexport EDITOR=vim\nalias ll="ls -la"\nalias gs="git status"\n' },
+  '/home/user/.bash_history': { type:'file', content:'ls -la\npwd\ncd documents\ncat notes.txt\n' },
+  '/home/user/documents/notes.txt': { type:'file', content:'Linux Administration Notes\n==========================\n\nKey commands to remember:\n- ps aux        : list all processes\n- netstat -tlnp : list open ports\n- df -h         : disk usage\n- free -h       : memory usage\n- top           : realtime process monitor\n- journalctl -f : follow system logs\n\nFile permissions:\n  r=4, w=2, x=1\n  chmod 755 = rwxr-xr-x\n  chmod 644 = rw-r--r--\n' },
+  '/home/user/documents/report.txt': { type:'file', content:'Monthly Infrastructure Report\n==============================\nDate: March 2025\n\nServer Status: All systems operational\nUptime: 99.98%\nIncidents: 0 critical, 2 minor\n\nStorage:\n  /         : 45% used (of 100GB)\n  /var/log  : 12% used (of 20GB)\n  /home     : 67% used (of 50GB)\n\nAction Items:\n1. Rotate logs older than 30 days\n2. Update SSL certificates (due April)\n3. Review firewall rules\n' },
+  '/home/user/documents/hosts_backup.txt': { type:'file', content:'# Hosts backup - 2025-03-01\n127.0.0.1   localhost\n10.0.1.10   webserver01.internal\n10.0.1.11   webserver02.internal\n10.0.2.10   dbserver01.internal\n10.0.2.11   dbserver02.internal\n10.0.3.10   jumpbox.internal\n' },
+  '/home/user/scripts/backup.sh': { type:'file', content:'#!/bin/bash\n# Backup script\nBACKUP_DIR="/var/backups"\nDATE=$(date +%Y%m%d)\nSOURCE="/home/user/documents"\n\necho "Starting backup: $DATE"\ntar -czf "$BACKUP_DIR/docs-$DATE.tar.gz" "$SOURCE"\necho "Backup complete: docs-$DATE.tar.gz"\n' },
+  '/home/user/scripts/monitor.sh': { type:'file', content:'#!/bin/bash\n# System monitor script\necho "=== System Status ==="\necho "Date: $(date)"\necho "Uptime: $(uptime -p)"\necho ""\necho "=== Memory ==="\nfree -h\necho ""\necho "=== Disk ==="\ndf -h /\necho ""\necho "=== Top Processes ==="\nps aux --sort=-%cpu | head -6\n' },
+  '/home/user/scripts/deploy.sh': { type:'file', content:'#!/bin/bash\n# Deployment script\nAPP_NAME="myapp"\nDEPLOY_DIR="/opt/myapp"\nGIT_REPO="https://github.com/example/myapp"\n\necho "[DEPLOY] Starting deployment of $APP_NAME"\ncd $DEPLOY_DIR || exit 1\ngit pull origin main\nnpm install --production\nnpm run build\nsystemctl restart $APP_NAME\necho "[DEPLOY] Done! Status:"\nsystemctl status $APP_NAME --no-pager\n' },
+  '/home/user/logs/app.log': { type:'file', content:'2025-03-19 08:00:01 INFO  Server started on port 8080\n2025-03-19 08:01:23 INFO  Database connection established\n2025-03-19 08:15:44 INFO  User login: admin@example.com\n2025-03-19 09:23:11 WARN  High memory usage: 87%\n2025-03-19 09:45:02 ERROR Disk write failed: /var/data full\n2025-03-19 10:00:00 INFO  Scheduled backup started\n2025-03-19 10:05:33 INFO  Backup completed: 1.2GB\n2025-03-19 11:12:07 ERROR Connection timeout: db-replica-02\n2025-03-19 11:12:10 INFO  Failover to db-replica-01 successful\n2025-03-19 12:00:00 INFO  Health check: OK\n' },
+  '/home/user/logs/error.log': { type:'file', content:'2025-03-19 09:45:02 CRITICAL Disk write failed on /var/data\n2025-03-19 11:12:07 ERROR   Connection timeout: db-replica-02 (retry 1/3)\n2025-03-19 11:12:08 ERROR   Connection timeout: db-replica-02 (retry 2/3)\n2025-03-19 11:12:09 ERROR   Connection timeout: db-replica-02 (retry 3/3)\n2025-03-19 11:12:10 INFO    Failover initiated\n' },
+  '/etc': { type:'dir', children:['hosts','passwd','group','fstab','crontab','ssh'] },
+  '/etc/hosts': { type:'file', content:'127.0.0.1   localhost\n127.0.1.1   linux-lab\n::1         localhost ip6-localhost ip6-loopback\n10.0.1.10   webserver01\n10.0.2.10   dbserver01\n' },
+  '/etc/passwd': { type:'file', content:'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\nuser:x:1000:1000:Lab User:/home/user:/bin/bash\nnginx:x:1001:1001:nginx user:/var/www:/usr/sbin/nologin\nmysql:x:1002:1002:MySQL Server:/var/lib/mysql:/bin/bash\n' },
+  '/etc/group': { type:'file', content:'root:x:0:\nsudo:x:27:user\nwww-data:x:33:nginx\nuser:x:1000:\ndocker:x:998:user\n' },
+  '/etc/fstab': { type:'file', content:'# /etc/fstab\nUUID=1234-5678  /       ext4  defaults  0 1\nUUID=8765-4321  /boot   ext4  defaults  0 2\ntmpfs           /tmp    tmpfs defaults  0 0\n' },
+  '/etc/crontab': { type:'file', content:'# m h dom mon dow command\n0 2 * * *   root  /home/user/scripts/backup.sh\n*/5 * * * * user  /home/user/scripts/monitor.sh >> /home/user/logs/monitor.log 2>&1\n0 0 1 * *   root  find /var/log -name "*.log" -mtime +30 -delete\n' },
+  '/etc/ssh': { type:'dir', children:['sshd_config'] },
+  '/etc/ssh/sshd_config': { type:'file', content:'# SSH Server Configuration\nPort 22\nProtocol 2\nHostKey /etc/ssh/ssh_host_rsa_key\nPermitRootLogin no\nPasswordAuthentication no\nPubkeyAuthentication yes\nAuthorizedKeysFile .ssh/authorized_keys\nAllowUsers user\nMaxAuthTries 3\nClientAliveInterval 300\nX11Forwarding no\n' },
+  '/var': { type:'dir', children:['log'] },
+  '/var/log': { type:'dir', children:['syslog','auth.log','kern.log'] },
+  '/var/log/syslog': { type:'file', content:'Mar 19 08:00:01 linux-lab systemd[1]: Started Session 1.\nMar 19 08:00:05 linux-lab kernel: eth0: Link is Up\nMar 19 08:01:00 linux-lab sshd[1234]: Accepted publickey for user\nMar 19 09:00:01 linux-lab CRON[5678]: CMD (/home/user/scripts/backup.sh)\nMar 19 09:00:33 linux-lab CRON[5678]: Done\nMar 19 11:00:01 linux-lab systemd[1]: Starting Daily Cleanup...\n' },
+  '/var/log/auth.log': { type:'file', content:'Mar 19 08:01:00 linux-lab sshd[1234]: Accepted publickey for user from 10.0.3.10 port 54321\nMar 19 08:01:00 linux-lab sshd[1234]: pam_unix(sshd:session): session opened for user\nMar 19 10:30:11 linux-lab sudo[9999]: user : TTY=pts/0 ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/apt update\nMar 19 10:30:12 linux-lab sudo[9999]: pam_unix(sudo:session): session opened for root\n' },
+  '/var/log/kern.log': { type:'file', content:'Mar 19 08:00:00 linux-lab kernel: Linux version 5.15.0-94-generic\nMar 19 08:00:00 linux-lab kernel: Command line: BOOT_IMAGE=/vmlinuz-5.15.0-94-generic root=/dev/sda1\nMar 19 08:00:01 linux-lab kernel: EXT4-fs (sda1): mounted filesystem\nMar 19 08:00:02 linux-lab kernel: eth0: renamed from veth1234abcd\n' },
+  '/tmp': { type:'dir', children:[] },
+  '/usr': { type:'dir', children:['bin','local','share'] },
+  '/usr/bin': { type:'dir', children:['python3','bash','grep','awk','sed','curl','wget'] },
+  '/usr/local': { type:'dir', children:['bin'] },
+  '/usr/local/bin': { type:'dir', children:[] },
+  '/usr/share': { type:'dir', children:[] },
+  '/bin': { type:'dir', children:['bash','sh','ls','cat','cp','mv','rm','mkdir','chmod','chown'] },
+};
+
+// ─── Exercises ───────────────────────────────────────────────────────────────
+const EXERCISES = [
+  { id:'ex1', title:'Navigation Basics', badge:'easy', done:false,
+    desc:'Explore the filesystem using pwd, ls, and cd commands.',
+    tasks:[
+      { id:'t1', text:'Run <code>pwd</code> to see your current directory', check: cmd => cmd.trim()==='pwd' },
+      { id:'t2', text:'Run <code>ls</code> to list files in current directory', check: cmd => /^ls(\s|$)/.test(cmd.trim()) },
+      { id:'t3', text:'Run <code>cd documents</code> to enter the documents folder', check: cmd => /^cd\s+(documents|\/home\/user\/documents)\s*$/.test(cmd.trim()) },
+      { id:'t4', text:'Run <code>ls -la</code> to see all files with details', check: cmd => /^ls\s+.*-.*l.*a|ls\s+.*-la|ls\s+.*-al/.test(cmd.trim()) },
+      { id:'t5', text:'Run <code>cd ~</code> or <code>cd</code> to go back home', check: cmd => /^cd(\s*~?\s*$)/.test(cmd.trim()) },
+    ]},
+  { id:'ex2', title:'Reading Files', badge:'easy', done:false,
+    desc:'Use cat, head, tail, and less to read file contents.',
+    tasks:[
+      { id:'t1', text:'Read the file <code>documents/notes.txt</code> using <code>cat</code>', check: cmd => /^cat\s+.*notes\.txt/.test(cmd) },
+      { id:'t2', text:'Show first 5 lines of <code>logs/error.log</code> using <code>head -5</code>', check: cmd => /^head\s+-5\s+.*error\.log/.test(cmd) || /^head\s+.*error\.log\s+-5/.test(cmd) },
+      { id:'t3', text:'Show last 3 lines of <code>logs/app.log</code> using <code>tail -3</code>', check: cmd => /^tail\s+-3\s+.*app\.log/.test(cmd) || /^tail\s+.*app\.log\s+-3/.test(cmd) },
+      { id:'t4', text:'Count lines in <code>documents/notes.txt</code> using <code>wc -l</code>', check: cmd => /^wc\s+-l\s+.*notes\.txt/.test(cmd) },
+    ]},
+  { id:'ex3', title:'Searching & Filtering', badge:'medium', done:false,
+    desc:'Use grep, find, and piping to search through files and directories.',
+    tasks:[
+      { id:'t1', text:'Search for "ERROR" in <code>logs/app.log</code> using grep', check: cmd => /^grep\s+.*ERROR.*app\.log/.test(cmd) || /^grep\s+.*app\.log.*ERROR/.test(cmd) },
+      { id:'t2', text:'Search case-insensitively for "warn" using <code>grep -i</code>', check: cmd => /^grep\s+.*-i.*warn|grep\s+.*warn.*-i/.test(cmd.toLowerCase()) },
+      { id:'t3', text:'Count ERROR lines: <code>grep -c "ERROR" logs/app.log</code>', check: cmd => /^grep\s+.*-c.*ERROR|grep\s+.*ERROR.*-c/.test(cmd) },
+      { id:'t4', text:'List only .sh files: <code>find scripts -name "*.sh"</code>', check: cmd => /^find\s+.*\.sh.*/.test(cmd) },
+      { id:'t5', text:'Pipe ls to grep: <code>ls documents | grep .txt</code>', check: cmd => /ls.*\|.*grep/.test(cmd) },
+    ]},
+  { id:'ex4', title:'File Operations', badge:'medium', done:false,
+    desc:'Create, copy, move, and delete files and directories.',
+    tasks:[
+      { id:'t1', text:'Create a new directory: <code>mkdir projects</code>', check: cmd => /^mkdir\s+/.test(cmd) },
+      { id:'t2', text:'Create an empty file: <code>touch projects/readme.txt</code>', check: cmd => /^touch\s+/.test(cmd) },
+      { id:'t3', text:'Copy a file: <code>cp documents/notes.txt projects/</code>', check: cmd => /^cp\s+/.test(cmd) },
+      { id:'t4', text:'Move/rename: <code>mv projects/notes.txt projects/linux-notes.txt</code>', check: cmd => /^mv\s+/.test(cmd) },
+      { id:'t5', text:'Delete file: <code>rm projects/linux-notes.txt</code>', check: cmd => /^rm\s+/.test(cmd) },
+    ]},
+  { id:'ex5', title:'Permissions & Ownership', badge:'medium', done:false,
+    desc:'Understand and modify file permissions using chmod and chown.',
+    tasks:[
+      { id:'t1', text:'Check permissions: <code>ls -la scripts/</code>', check: cmd => /^ls\s+.*-l.*scripts|ls\s+.*scripts.*-l/.test(cmd) },
+      { id:'t2', text:'Make script executable: <code>chmod +x scripts/backup.sh</code>', check: cmd => /^chmod\s+.*\+x.*\.sh/.test(cmd) },
+      { id:'t3', text:'Set numeric permission: <code>chmod 644 documents/notes.txt</code>', check: cmd => /^chmod\s+\d{3}\s+/.test(cmd) },
+      { id:'t4', text:'View permissions result: <code>ls -l scripts/backup.sh</code>', check: cmd => /^ls\s+.*-l.*backup/.test(cmd) },
+    ]},
+  { id:'ex6', title:'Processes & System', badge:'hard', done:false,
+    desc:'Monitor and manage system processes, disk, and memory.',
+    tasks:[
+      { id:'t1', text:'View running processes: <code>ps aux</code>', check: cmd => /^ps(\s+aux|\s+a|\s+-e)/.test(cmd) },
+      { id:'t2', text:'Check disk usage: <code>df -h</code>', check: cmd => /^df\s+.*-h|df\s*$/.test(cmd) },
+      { id:'t3', text:'Check memory: <code>free -h</code>', check: cmd => /^free\s+.*-h|free\s*$/.test(cmd) },
+      { id:'t4', text:'Check uptime: <code>uptime</code>', check: cmd => /^uptime\s*$/.test(cmd) },
+      { id:'t5', text:'View environment variables: <code>env</code> or <code>printenv</code>', check: cmd => /^env\s*$|^printenv\s*/.test(cmd) },
+    ]},
+  { id:'ex7', title:'Text Processing', badge:'hard', done:false,
+    desc:'Use awk, sed, and sort for advanced text manipulation.',
+    tasks:[
+      { id:'t1', text:'Print 1st column: <code>awk \'{print $1}\' logs/app.log</code>', check: cmd => /^awk\s+/.test(cmd) },
+      { id:'t2', text:'Replace text: <code>sed \'s/INFO/LOG/g\' logs/app.log</code>', check: cmd => /^sed\s+/.test(cmd) },
+      { id:'t3', text:'Sort file: <code>sort documents/hosts_backup.txt</code>', check: cmd => /^sort\s+/.test(cmd) },
+      { id:'t4', text:'Unique lines: <code>sort logs/app.log | uniq -c</code>', check: cmd => /uniq\s+/.test(cmd) || /sort.*\|.*uniq/.test(cmd) },
+    ]},
+  { id:'ex8', title:'Archiving & Compression', badge:'hard', done:false,
+    desc:'Create and extract tar archives, compress files with gzip.',
+    tasks:[
+      { id:'t1', text:'Create archive: <code>tar -czf backup.tar.gz documents/</code>', check: cmd => /^tar\s+.*-c.*z.*f|tar\s+.*czf/.test(cmd) },
+      { id:'t2', text:'List archive contents: <code>tar -tzf backup.tar.gz</code>', check: cmd => /^tar\s+.*-t.*z|tar\s+.*tzf/.test(cmd) },
+      { id:'t3', text:'Extract archive: <code>tar -xzf backup.tar.gz</code>', check: cmd => /^tar\s+.*-x.*z|tar\s+.*xzf/.test(cmd) },
+    ]},
+];
+
+// ─── Cheatsheet ──────────────────────────────────────────────────────────────
+const CHEATSHEET = [
+  { section:'Navigation', cmds:[
+    { cmd:'pwd', desc:'Print working directory' },
+    { cmd:'ls -la', desc:'List all files with details' },
+    { cmd:'cd ~', desc:'Go to home directory' },
+    { cmd:'cd ..', desc:'Go up one level' },
+    { cmd:'cd /etc', desc:'Go to absolute path' },
+  ]},
+  { section:'File Operations', cmds:[
+    { cmd:'cat file.txt', desc:'Display file contents' },
+    { cmd:'head -10 file', desc:'First 10 lines' },
+    { cmd:'tail -f file', desc:'Follow log file (live)' },
+    { cmd:'wc -l file', desc:'Count lines in file' },
+    { cmd:'touch file.txt', desc:'Create empty file' },
+    { cmd:'mkdir -p dir/sub', desc:'Create nested directories' },
+    { cmd:'cp -r src/ dest/', desc:'Copy directory recursively' },
+    { cmd:'mv file newname', desc:'Move or rename' },
+    { cmd:'rm -rf dir/', desc:'Delete directory (careful!)' },
+  ]},
+  { section:'Search & Filter', cmds:[
+    { cmd:'grep -i "text" file', desc:'Case-insensitive search' },
+    { cmd:'grep -r "text" dir/', desc:'Recursive search' },
+    { cmd:'grep -n "text" file', desc:'Show line numbers' },
+    { cmd:'find . -name "*.sh"', desc:'Find files by name' },
+    { cmd:'find . -mtime -7', desc:'Files modified last 7 days' },
+    { cmd:'ls | grep .log', desc:'Pipe ls output to grep' },
+  ]},
+  { section:'Permissions', cmds:[
+    { cmd:'chmod 755 file', desc:'rwxr-xr-x (execute for all)' },
+    { cmd:'chmod 644 file', desc:'rw-r--r-- (read-only for others)' },
+    { cmd:'chmod +x script.sh', desc:'Add execute permission' },
+    { cmd:'chown user:group file', desc:'Change owner and group' },
+    { cmd:'ls -la', desc:'View permissions (-rwxr-xr-x)' },
+  ]},
+  { section:'Processes', cmds:[
+    { cmd:'ps aux', desc:'All running processes' },
+    { cmd:'ps aux | grep nginx', desc:'Find specific process' },
+    { cmd:'kill -9 PID', desc:'Force kill process' },
+    { cmd:'top', desc:'Realtime process monitor' },
+    { cmd:'df -h', desc:'Disk usage (human readable)' },
+    { cmd:'free -h', desc:'Memory usage' },
+    { cmd:'uptime', desc:'System uptime and load' },
+  ]},
+  { section:'Text Processing', cmds:[
+    { cmd:"awk '{print $1}' file", desc:'Print first column' },
+    { cmd:"sed 's/old/new/g' file", desc:'Replace text globally' },
+    { cmd:'sort file | uniq -c', desc:'Count unique lines' },
+    { cmd:'cut -d: -f1 /etc/passwd', desc:'Cut first field by delimiter' },
+    { cmd:'tr a-z A-Z', desc:'Transform lowercase to upper' },
+  ]},
+  { section:'Archiving', cmds:[
+    { cmd:'tar -czf out.tar.gz dir/', desc:'Create compressed archive' },
+    { cmd:'tar -xzf file.tar.gz', desc:'Extract archive' },
+    { cmd:'tar -tzf file.tar.gz', desc:'List archive contents' },
+    { cmd:'gzip file', desc:'Compress file (.gz)' },
+    { cmd:'gunzip file.gz', desc:'Decompress .gz file' },
+  ]},
+  { section:'Networking', cmds:[
+    { cmd:'ping -c 4 host', desc:'Ping host 4 times' },
+    { cmd:'curl -I https://url', desc:'HTTP headers only' },
+    { cmd:'wget -O out.html url', desc:'Download file' },
+    { cmd:'netstat -tlnp', desc:'Open TCP listening ports' },
+    { cmd:'ss -tlnp', desc:'Socket statistics (modern)' },
+    { cmd:'cat /etc/hosts', desc:'View hosts file' },
+  ]},
+];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let cwd = '/home/user';
+let currentUser = 'user';
+let history = [];
+let histIndex = -1;
+let currentExercise = null;
+let currentTaskIndex = 0;
+let exDoneMap = {};
+let aliases = { ll: 'ls -la', la: 'ls -a', '..' : 'cd ..' };
+let envVars = {
+  HOME: '/home/user', USER: 'user', SHELL: '/bin/bash',
+  PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+  EDITOR: 'vim', LANG: 'en_US.UTF-8', TERM: 'xterm-256color',
+  HOSTNAME: 'linux-lab', PWD: '/home/user'
+};
+
+// ─── Filesystem helpers ───────────────────────────────────────────────────────
+function resolvePath(p) {
+  if (!p || p === '~') return '/home/user';
+  if (p.startsWith('~/')) return '/home/user/' + p.slice(2);
+  if (p.startsWith('/')) return normPath(p);
+  return normPath(cwd + '/' + p);
+}
+
+function normPath(p) {
+  const parts = p.split('/').filter(Boolean);
+  const res = [];
+  for (const part of parts) {
+    if (part === '..') { if (res.length) res.pop(); }
+    else if (part !== '.') res.push(part);
+  }
+  return '/' + res.join('/');
+}
+
+function getNode(p) { return FS[p] || null; }
+
+function listDir(p) {
+  const node = getNode(p);
+  if (!node || node.type !== 'dir') return null;
+  return node.children || [];
+}
+
+// ─── Output helpers ───────────────────────────────────────────────────────────
+function output(html, cls='') {
+  const div = document.createElement('div');
+  div.className = 'out-line' + (cls ? ' '+cls : '');
+  div.innerHTML = html;
+  document.getElementById('output').appendChild(div);
+}
+
+function printPrompt(cmd) {
+  const div = document.createElement('div');
+  div.className = 'line';
+  div.innerHTML = `<span class="prompt">${promptStr()}</span><span class="cmd-echo">${escHtml(cmd)}</span>`;
+  document.getElementById('output').appendChild(div);
+}
+
+function promptStr() {
+  const rel = cwd === '/home/user' ? '~' : cwd.startsWith('/home/user/') ? '~' + cwd.slice('/home/user'.length) : cwd;
+  return `<span style="color:#79C0FF">${currentUser}</span><span style="color:var(--gray)">@linux-lab</span><span style="color:var(--gray)">:</span><span style="color:#E3B341">${rel}</span><span style="color:var(--gray)">$</span>&nbsp;`;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function scroll() { const t = document.getElementById('terminal'); t.scrollTop = t.scrollHeight; }
+
+// ─── Command executor ─────────────────────────────────────────────────────────
+function exec(raw) {
+  const cmd = raw.trim();
+  if (!cmd) return;
+  history.unshift(cmd);
+  histIndex = -1;
+  printPrompt(cmd);
+  updateTitleBar();
+
+  // Check exercise task
+  checkTask(cmd);
+
+  // Handle pipes
+  if (cmd.includes('|')) { runPipe(cmd); scroll(); return; }
+
+  // Handle redirects
+  if (cmd.match(/\s*>>\s*|\s*>\s*/)) {
+    const m = cmd.match(/^(.+?)\s*(>>|>)\s*(.+)$/);
+    if (m) { handleRedirect(m[1].trim(), m[2], m[3].trim()); scroll(); return; }
+  }
+
+  // Expand aliases
+  let args = parseArgs(cmd);
+  if (args.length === 0) return;
+  const baseCmd = aliases[args[0]] ? aliases[args[0]] : null;
+  if (baseCmd) {
+    args = [...parseArgs(baseCmd), ...args.slice(1)];
+  }
+
+  // Expand env vars
+  args = args.map(a => a.replace(/\$(\w+)/g, (_,k)=> envVars[k]||''));
+
+  runCmd(args, cmd);
+  scroll();
+}
+
+function parseArgs(cmd) {
+  const args = [];
+  let cur = '';
+  let inQ = false;
+  let qChar = '';
+  for (let i = 0; i < cmd.length; i++) {
+    const c = cmd[i];
+    if (inQ) { if (c === qChar) inQ = false; else cur += c; }
+    else if (c === '"' || c === "'") { inQ = true; qChar = c; }
+    else if (c === ' ' || c === '\t') { if (cur) { args.push(cur); cur = ''; } }
+    else cur += c;
+  }
+  if (cur) args.push(cur);
+  return args;
+}
+
+function runPipe(cmd) {
+  const parts = cmd.split('|').map(p => p.trim());
+  let inputLines = null;
+  for (let i = 0; i < parts.length; i++) {
+    const args = parseArgs(parts[i]);
+    if (args.length === 0) continue;
+    inputLines = runCmdCapture(args, inputLines);
+  }
+  if (inputLines !== null) {
+    inputLines.forEach(l => output(escHtml(l)));
+  }
+}
+
+function handleRedirect(cmdStr, op, file) {
+  const args = parseArgs(cmdStr);
+  const lines = runCmdCapture(args, null);
+  const content = (lines || []).join('\n') + '\n';
+  const fpath = resolvePath(file.replace(/^~\//, '/home/user/').replace(/^~$/, '/home/user'));
+  const dir = fpath.substring(0, fpath.lastIndexOf('/')) || '/';
+  const fname = fpath.substring(fpath.lastIndexOf('/') + 1);
+  if (!FS[dir] || FS[dir].type !== 'dir') { output(`bash: ${escHtml(file)}: No such file or directory`, 'out-error'); return; }
+  const existing = FS[fpath];
+  const newContent = (op === '>>' && existing) ? existing.content + content : content;
+  FS[fpath] = { type: 'file', content: newContent };
+  if (!FS[dir].children.includes(fname)) FS[dir].children.push(fname);
+  output(``, 'out-dim');
+}
+
+// Commands that return captured output (for pipes)
+function runCmdCapture(args, inputLines) {
+  const name = args[0];
+  const captured = [];
+  const _out = (s) => captured.push(s);
+
+  // If input lines are piped in, pass to commands that accept stdin
+  const lines = inputLines || [];
+
+  switch(name) {
+    case 'echo': _out(args.slice(1).join(' ')); break;
+    case 'cat': {
+      if (lines.length > 0) { lines.forEach(l => _out(l)); break; }
+      args.slice(1).forEach(fp => {
+        const p = resolvePath(fp);
+        const n = getNode(p);
+        if (!n || n.type !== 'file') { _out(`cat: ${fp}: No such file or directory`); }
+        else { n.content.split('\n').forEach(l => _out(l)); }
+      });
+      break;
+    }
+    case 'grep': {
+      const opts = args.filter(a => a.startsWith('-'));
+      const caseI = opts.some(o => o.includes('i'));
+      const showCount = opts.some(o => o.includes('c'));
+      const showN = opts.some(o => o.includes('n'));
+      const nonOpts = args.slice(1).filter(a => !a.startsWith('-'));
+      let pattern = nonOpts[0] || '';
+      const files = nonOpts.slice(1);
+      if (!pattern) break;
+      const re = new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), caseI ? 'gi' : 'g');
+      let searchLines = [];
+      if (files.length > 0) {
+        files.forEach(fp => {
+          const p = resolvePath(fp);
+          const n = getNode(p);
+          if (n && n.type === 'file') searchLines.push(...n.content.split('\n').map((l,i)=>({l,i:i+1,f:fp})));
+        });
+      } else { searchLines = lines.map((l,i)=>({l,i:i+1,f:''})); }
+      const matches = searchLines.filter(({l}) => re.test(l));
+      if (showCount) { _out(String(matches.length)); }
+      else matches.forEach(({l,i,f}) => {
+        let out = l;
+        if (showN) out = `${i}:${l}`;
+        if (files.length > 1) out = `${f}:${out}`;
+        _out(out);
+      });
+      break;
+    }
+    case 'head': {
+      const n = args.indexOf('-n') >= 0 ? parseInt(args[args.indexOf('-n')+1]||'10') : args.find(a=>/^-\d+$/.test(a)) ? parseInt(args.find(a=>/^-\d+$/.test(a)).slice(1)) : 10;
+      const files = args.slice(1).filter(a => !a.startsWith('-') && !/^\d+$/.test(a));
+      if (files.length > 0) {
+        const p = resolvePath(files[0]);
+        const node = getNode(p);
+        if (node && node.type === 'file') node.content.split('\n').slice(0, n).forEach(l => _out(l));
+      } else { lines.slice(0, n).forEach(l => _out(l)); }
+      break;
+    }
+    case 'tail': {
+      const n = args.indexOf('-n') >= 0 ? parseInt(args[args.indexOf('-n')+1]||'10') : args.find(a=>/^-\d+$/.test(a)) ? parseInt(args.find(a=>/^-\d+$/.test(a)).slice(1)) : 10;
+      const files = args.slice(1).filter(a => !a.startsWith('-') && !/^\d+$/.test(a));
+      if (files.length > 0) {
+        const p = resolvePath(files[0]);
+        const node = getNode(p);
+        if (node && node.type === 'file') { const ls = node.content.split('\n'); ls.slice(-n).forEach(l => _out(l)); }
+      } else { lines.slice(-n).forEach(l => _out(l)); }
+      break;
+    }
+    case 'wc': {
+      const showLines = args.includes('-l') || args.length === 1;
+      const files = args.slice(1).filter(a => !a.startsWith('-'));
+      if (files.length > 0) {
+        files.forEach(fp => {
+          const p = resolvePath(fp); const node = getNode(p);
+          if (node && node.type === 'file') {
+            const lc = node.content.split('\n').filter(Boolean).length;
+            const wc = node.content.split(/\s+/).filter(Boolean).length;
+            const cc = node.content.length;
+            if (args.includes('-l')) _out(`${lc} ${fp}`);
+            else if (args.includes('-w')) _out(`${wc} ${fp}`);
+            else if (args.includes('-c')) _out(`${cc} ${fp}`);
+            else _out(`${lc}\t${wc}\t${cc} ${fp}`);
+          }
+        });
+      } else { _out(String(lines.length)); }
+      break;
+    }
+    case 'sort': {
+      const r = args.includes('-r');
+      const toSort = lines.length > 0 ? [...lines] : (() => {
+        const fs = args.slice(1).filter(a=>!a.startsWith('-'));
+        if (!fs.length) return [];
+        const node = getNode(resolvePath(fs[0]));
+        return node && node.type==='file' ? node.content.split('\n').filter(Boolean) : [];
+      })();
+      toSort.sort((a,b) => r ? b.localeCompare(a) : a.localeCompare(b));
+      toSort.forEach(l => _out(l));
+      break;
+    }
+    case 'uniq': {
+      const count = args.includes('-c');
+      const input = lines.length > 0 ? lines : [];
+      const res = [];
+      let prev = null; let cnt = 0;
+      for (const l of input) {
+        if (l === prev) { cnt++; }
+        else { if (prev !== null) res.push(count ? `${cnt} ${prev}` : prev); prev = l; cnt = 1; }
+      }
+      if (prev !== null) res.push(count ? `${cnt} ${prev}` : prev);
+      res.forEach(l => _out(l));
+      break;
+    }
+    case 'awk': {
+      const prog = args[1] || '';
+      const files = args.slice(2).filter(a=>!a.startsWith('-'));
+      let srcLines = lines;
+      if (files.length > 0 && lines.length === 0) {
+        const node = getNode(resolvePath(files[0]));
+        if (node && node.type==='file') srcLines = node.content.split('\n').filter(Boolean);
+      }
+      const printMatch = prog.match(/\{print \$(\d+)\}/);
+      if (printMatch) {
+        const col = parseInt(printMatch[1]) - 1;
+        srcLines.forEach(l => { const parts = l.split(/\s+/); _out(parts[col] || ''); });
+      } else { srcLines.forEach(l => _out(l)); }
+      break;
+    }
+    case 'sed': {
+      const script = args[1] || '';
+      const files = args.slice(2).filter(a=>!a.startsWith('-'));
+      let srcLines = lines;
+      if (files.length > 0 && lines.length === 0) {
+        const node = getNode(resolvePath(files[0]));
+        if (node && node.type==='file') srcLines = node.content.split('\n').filter(Boolean);
+      }
+      const subMatch = script.match(/^s\/([^\/]*)\/([^\/]*)\/(.*)$/);
+      if (subMatch) {
+        const [,from,to,flags] = subMatch;
+        const re = new RegExp(from, flags.includes('g') ? 'g' : '');
+        srcLines.forEach(l => _out(l.replace(re, to)));
+      } else { srcLines.forEach(l => _out(l)); }
+      break;
+    }
+    case 'cut': {
+      const dIdx = args.indexOf('-d');
+      const fIdx = args.indexOf('-f');
+      const delim = dIdx >= 0 ? args[dIdx+1] : '\t';
+      const field = fIdx >= 0 ? parseInt(args[fIdx+1])-1 : 0;
+      const files = args.slice(1).filter(a=>!a.startsWith('-'));
+      let srcLines = lines;
+      if (files.length > 0 && lines.length === 0) {
+        const node = getNode(resolvePath(files[0]));
+        if (node && node.type==='file') srcLines = node.content.split('\n').filter(Boolean);
+      }
+      srcLines.forEach(l => _out(l.split(delim)[field]||''));
+      break;
+    }
+    case 'tr': {
+      const from = args[1]||''; const to = args[2]||'';
+      lines.forEach(l => {
+        let res = l;
+        if (from === 'a-z' && to === 'A-Z') res = l.toUpperCase();
+        else if (from === 'A-Z' && to === 'a-z') res = l.toLowerCase();
+        _out(res);
+      });
+      break;
+    }
+    case 'ls': {
+      const hasL = args.some(a => a.includes('l'));
+      const hasA = args.some(a => a.includes('a'));
+      const paths = args.slice(1).filter(a => !a.startsWith('-'));
+      const target = paths.length ? resolvePath(paths[0]) : cwd;
+      const node = getNode(target);
+      if (!node) { _out(`ls: cannot access '${paths[0]}': No such file or directory`); break; }
+      const children = node.type==='dir' ? (node.children||[]) : [target.split('/').pop()];
+      let items = children;
+      if (hasA) items = ['.', '..', ...items];
+      items.forEach(name => _out(name));
+      break;
+    }
+    case 'find': {
+      const dir = args[1] ? resolvePath(args[1]) : cwd;
+      const nameIdx = args.indexOf('-name');
+      const namePattern = nameIdx >= 0 ? args[nameIdx+1] : null;
+      const results = [];
+      const walk = (p) => {
+        const n = getNode(p);
+        if (!n) return;
+        const rel = p.replace(dir, dir==='/'?'':'.') || '.';
+        if (!namePattern || matchGlob(p.split('/').pop(), namePattern)) results.push(rel||p);
+        if (n.type==='dir') (n.children||[]).forEach(c => walk(p==='/'?'/'+c:p+'/'+c));
+      };
+      walk(dir);
+      results.forEach(r => _out(r));
+      break;
+    }
+    default: _out(`${name}: command not found`);
+  }
+  return captured;
+}
+
+function matchGlob(name, pattern) {
+  const re = new RegExp('^' + pattern.replace(/\./g,'\\.').replace(/\*/g,'.*').replace(/\?/g,'.') + '$');
+  return re.test(name);
+}
+
+// ─── Main command runner ──────────────────────────────────────────────────────
+function runCmd(args, raw) {
+  const name = args[0];
+
+  switch(name) {
+    case 'pwd':
+      output(escHtml(cwd));
+      break;
+
+    case 'cd': {
+      const target = args[1] ? resolvePath(args[1]) : '/home/user';
+      const node = getNode(target);
+      if (!node) output(`bash: cd: ${escHtml(args[1]||'')}: No such file or directory`, 'out-error');
+      else if (node.type !== 'dir') output(`bash: cd: ${escHtml(args[1])}: Not a directory`, 'out-error');
+      else { cwd = target; envVars.PWD = cwd; }
+      updateTitleBar();
+      break;
+    }
+
+    case 'ls': {
+      const opts = args.filter(a => a.startsWith('-')).join('');
+      const hasL = opts.includes('l');
+      const hasA = opts.includes('a');
+      const hasH = opts.includes('h');
+      const paths = args.slice(1).filter(a => !a.startsWith('-'));
+      const target = paths.length ? resolvePath(paths[0]) : cwd;
+      const node = getNode(target);
+      if (!node) { output(`ls: cannot access '${escHtml(paths[0]||'')}': No such file or directory`, 'out-error'); break; }
+
+      let items = [];
+      if (node.type === 'dir') {
+        items = node.children || [];
+        if (hasA) items = ['.', '..', ...items];
+      } else {
+        items = [target.split('/').pop()];
+      }
+
+      if (hasL) {
+        if (hasA || node.type==='dir') {
+          output(`total ${items.length * 4}`, 'out-dim');
+        }
+        items.forEach(name => {
+          if (name === '.' || name === '..') {
+            output(`drwxr-xr-x 2 user user 4096 Mar 19 12:00 <span class="out-dir">${name}</span>`);
+            return;
+          }
+          const childPath = target === '/' ? '/'+name : target+'/'+name;
+          const child = getNode(childPath);
+          const isDir = child && child.type==='dir';
+          const size = child ? (child.content ? child.content.length : 4096) : 0;
+          const perm = isDir ? 'drwxr-xr-x' : name.endsWith('.sh') ? '-rwxr-xr-x' : '-rw-r--r--';
+          const color = isDir ? 'out-dir' : name.endsWith('.sh') ? 'out-exec' : '';
+          output(`${perm} 1 user user ${size.toString().padStart(5)} Mar 19 12:00 <span class="${color}">${name}</span>`);
+        });
+      } else {
+        const parts = [];
+        items.forEach(name => {
+          const childPath = target === '/' ? '/'+name : target+'/'+name;
+          const child = getNode(childPath);
+          const isDir = child && child.type==='dir';
+          const color = isDir ? 'out-dir' : name.endsWith('.sh') ? 'out-exec' : '';
+          parts.push(`<span class="${color}">${name}</span>`);
+        });
+        output(parts.join('  '));
+      }
+      break;
+    }
+
+    case 'cat': {
+      if (args.length === 1) { output('(waiting for stdin — type Ctrl+D to end. Use cat file.txt instead.)', 'out-dim'); break; }
+      args.slice(1).forEach(fp => {
+        const p = resolvePath(fp);
+        const n = getNode(p);
+        if (!n) output(`cat: ${escHtml(fp)}: No such file or directory`, 'out-error');
+        else if (n.type === 'dir') output(`cat: ${escHtml(fp)}: Is a directory`, 'out-error');
+        else n.content.split('\n').forEach(l => output(escHtml(l)));
+      });
+      break;
+    }
+
+    case 'head': {
+      const nVal = args.find(a=>/^-\d+$/.test(a));
+      const n = nVal ? parseInt(nVal.slice(1)) : (args.indexOf('-n')>=0 ? parseInt(args[args.indexOf('-n')+1]||10) : 10);
+      const files = args.slice(1).filter(a=>!a.startsWith('-'));
+      if (!files.length) { output('(reading from stdin - use head -N file)', 'out-dim'); break; }
+      const p = resolvePath(files[0]); const node = getNode(p);
+      if (!node || node.type!=='file') { output(`head: cannot open '${escHtml(files[0])}' for reading: No such file or directory`, 'out-error'); break; }
+      node.content.split('\n').slice(0, n).forEach(l => output(escHtml(l)));
+      break;
+    }
+
+    case 'tail': {
+      const nVal = args.find(a=>/^-\d+$/.test(a));
+      const n = nVal ? parseInt(nVal.slice(1)) : (args.indexOf('-n')>=0 ? parseInt(args[args.indexOf('-n')+1]||10) : 10);
+      const files = args.slice(1).filter(a=>!a.startsWith('-'));
+      if (!files.length) { output('(reading from stdin - use tail -N file)', 'out-dim'); break; }
+      const p = resolvePath(files[0]); const node = getNode(p);
+      if (!node || node.type!=='file') { output(`tail: cannot open '${escHtml(files[0])}' for reading: No such file or directory`, 'out-error'); break; }
+      const ls = node.content.split('\n');
+      ls.slice(-n).forEach(l => output(escHtml(l)));
+      break;
+    }
+
+    case 'wc': {
+      const lines = runCmdCapture(args, null);
+      lines.forEach(l => output(escHtml(l)));
+      break;
+    }
+
+    case 'grep': case 'sort': case 'uniq': case 'awk': case 'sed': case 'cut': case 'tr': case 'find': {
+      const lines = runCmdCapture(args, null);
+      lines.forEach(l => output(escHtml(l)));
+      break;
+    }
+
+    case 'echo': {
+      let s = args.slice(1).join(' ');
+      s = s.replace(/\$(\w+)/g, (_,k) => envVars[k] || '');
+      output(escHtml(s));
+      break;
+    }
+
+    case 'touch': {
+      if (args.length < 2) { output('touch: missing file operand', 'out-error'); break; }
+      args.slice(1).forEach(fp => {
+        const p = resolvePath(fp);
+        const dir = p.substring(0, p.lastIndexOf('/')) || '/';
+        const fname = p.substring(p.lastIndexOf('/') + 1);
+        if (!FS[dir] || FS[dir].type !== 'dir') { output(`touch: cannot touch '${escHtml(fp)}': No such file or directory`, 'out-error'); return; }
+        if (!FS[p]) {
+          FS[p] = { type: 'file', content: '' };
+          if (!FS[dir].children.includes(fname)) FS[dir].children.push(fname);
+        }
+      });
+      break;
+    }
+
+    case 'mkdir': {
+      if (args.length < 2) { output('mkdir: missing operand', 'out-error'); break; }
+      const mkP = args.includes('-p');
+      const dirs = args.slice(1).filter(a => !a.startsWith('-'));
+      dirs.forEach(fp => {
+        const p = resolvePath(fp);
+        const parts = p.split('/').filter(Boolean);
+        let cur = '';
+        for (const part of parts) {
+          const next = cur + '/' + part;
+          if (!FS[next]) {
+            const parent = cur || '/';
+            if (!FS[parent] || FS[parent].type !== 'dir') { if (!mkP) { output(`mkdir: cannot create directory '${escHtml(fp)}': No such file or directory`, 'out-error'); break; } }
+            FS[next] = { type: 'dir', children: [] };
+            if (FS[parent] && !FS[parent].children.includes(part)) FS[parent].children.push(part);
+          }
+          cur = next;
+        }
+      });
+      break;
+    }
+
+    case 'rmdir': {
+      args.slice(1).forEach(fp => {
+        const p = resolvePath(fp);
+        const node = getNode(p);
+        if (!node || node.type !== 'dir') { output(`rmdir: failed to remove '${escHtml(fp)}': No such file or directory`, 'out-error'); return; }
+        if (node.children && node.children.length > 0) { output(`rmdir: failed to remove '${escHtml(fp)}': Directory not empty`, 'out-error'); return; }
+        const parent = p.substring(0, p.lastIndexOf('/')) || '/';
+        const fname = p.substring(p.lastIndexOf('/') + 1);
+        if (FS[parent]) FS[parent].children = FS[parent].children.filter(c => c !== fname);
+        delete FS[p];
+      });
+      break;
+    }
+
+    case 'rm': {
+      if (args.length < 2) { output('rm: missing operand', 'out-error'); break; }
+      const rf = args.includes('-rf') || (args.includes('-r') && args.includes('-f')) || args.includes('-r');
+      const files = args.slice(1).filter(a => !a.startsWith('-'));
+      files.forEach(fp => {
+        const p = resolvePath(fp);
+        const node = getNode(p);
+        if (!node) { output(`rm: cannot remove '${escHtml(fp)}': No such file or directory`, 'out-error'); return; }
+        if (node.type === 'dir' && !rf) { output(`rm: cannot remove '${escHtml(fp)}': Is a directory`, 'out-error'); return; }
+        const parent = p.substring(0, p.lastIndexOf('/')) || '/';
+        const fname = p.substring(p.lastIndexOf('/') + 1);
+        const removeTree = (path) => {
+          const n = FS[path];
+          if (n && n.type==='dir') (n.children||[]).forEach(c => removeTree(path==='/'?'/'+c:path+'/'+c));
+          delete FS[path];
+        };
+        if (FS[parent]) FS[parent].children = FS[parent].children.filter(c => c !== fname);
+        removeTree(p);
+      });
+      break;
+    }
+
+    case 'cp': {
+      if (args.length < 3) { output('cp: missing file operand', 'out-error'); break; }
+      const r = args.includes('-r') || args.includes('-R');
+      const fargs = args.slice(1).filter(a => !a.startsWith('-'));
+      const src = resolvePath(fargs[0]);
+      let dest = resolvePath(fargs[1]);
+      const srcNode = getNode(src);
+      if (!srcNode) { output(`cp: cannot stat '${escHtml(fargs[0])}': No such file or directory`, 'out-error'); break; }
+      const destNode = getNode(dest);
+      if (destNode && destNode.type === 'dir') dest = dest + '/' + src.split('/').pop();
+      const dir = dest.substring(0, dest.lastIndexOf('/')) || '/';
+      const fname = dest.substring(dest.lastIndexOf('/') + 1);
+      if (!FS[dir] || FS[dir].type !== 'dir') { output(`cp: cannot create '${escHtml(fargs[1])}': No such file or directory`, 'out-error'); break; }
+      FS[dest] = { ...srcNode };
+      if (!FS[dir].children.includes(fname)) FS[dir].children.push(fname);
+      break;
+    }
+
+    case 'mv': {
+      if (args.length < 3) { output('mv: missing file operand', 'out-error'); break; }
+      const fargs = args.slice(1).filter(a => !a.startsWith('-'));
+      const src = resolvePath(fargs[0]);
+      let dest = resolvePath(fargs[1]);
+      const srcNode = getNode(src);
+      if (!srcNode) { output(`mv: cannot stat '${escHtml(fargs[0])}': No such file or directory`, 'out-error'); break; }
+      const destNode = getNode(dest);
+      if (destNode && destNode.type === 'dir') dest = dest + '/' + src.split('/').pop();
+      const srcDir = src.substring(0, src.lastIndexOf('/')) || '/';
+      const srcName = src.substring(src.lastIndexOf('/') + 1);
+      const destDir = dest.substring(0, dest.lastIndexOf('/')) || '/';
+      const destName = dest.substring(dest.lastIndexOf('/') + 1);
+      FS[dest] = srcNode;
+      if (FS[destDir] && !FS[destDir].children.includes(destName)) FS[destDir].children.push(destName);
+      if (FS[srcDir]) FS[srcDir].children = FS[srcDir].children.filter(c => c !== srcName);
+      delete FS[src];
+      break;
+    }
+
+    case 'chmod': {
+      if (args.length < 3) { output('chmod: missing operand', 'out-error'); break; }
+      const mode = args[1];
+      const files = args.slice(2).filter(a => !a.startsWith('-'));
+      files.forEach(fp => {
+        const p = resolvePath(fp);
+        if (!getNode(p)) output(`chmod: cannot access '${escHtml(fp)}': No such file or directory`, 'out-error');
+        else output(``, 'out-dim');
+      });
+      break;
+    }
+
+    case 'chown': {
+      if (args.length < 3) { output('chown: missing operand', 'out-error'); break; }
+      const files = args.slice(2).filter(a => !a.startsWith('-'));
+      files.forEach(fp => {
+        const p = resolvePath(fp);
+        if (!getNode(p)) output(`chown: cannot access '${escHtml(fp)}': No such file or directory`, 'out-error');
+      });
+      break;
+    }
+
+    case 'ps': {
+      const all = args.includes('aux') || args.some(a => a.includes('a'));
+      output('USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND', 'out-dim');
+      const procs = [
+        ['root','1','0.0','0.1','168928','13184','?','Ss','08:00','0:01','/sbin/init'],
+        ['root','2','0.0','0.0','0','0','?','S','08:00','0:00','[kthreadd]'],
+        ['root','1001','0.0','0.2','272748','22016','?','Ss','08:00','0:00','/usr/sbin/sshd'],
+        ['www-data','1234','0.1','1.2','312624','101244','?','S','08:01','0:14','nginx: worker'],
+        ['mysql','1235','0.3','5.6','1948264','460224','?','Sl','08:01','1:23','/usr/sbin/mysqld'],
+        ['user','2001','0.0','0.2','12284','17100','pts/0','Ss','08:01','0:00','/bin/bash'],
+        ['user','9999','0.0','0.1','11456','4032','pts/0','R+','12:00','0:00','ps aux'],
+      ];
+      procs.forEach(p => {
+        output(`${p[0].padEnd(12)} ${p[1].padStart(5)} ${p[2].padStart(4)} ${p[3].padStart(4)} ${p[4].padStart(6)} ${p[5].padStart(6)} ${p[6].padEnd(8)} ${p[7].padEnd(4)} ${p[8].padEnd(7)} ${p[9].padEnd(7)} ${p[10]}`);
+      });
+      break;
+    }
+
+    case 'top': output('<span class="out-info">top - Simulated output. Use Ctrl+C to exit.</span>'); output('Tasks: 142 total, 1 running, 141 sleeping'); output('%Cpu(s): 2.1 us, 0.4 sy, 0.0 ni, 97.3 id, 0.1 wa'); output('MiB Mem: 7982.7 total, 3254.1 free, 2891.4 used'); output(''); output('  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND'); output(' 1235 mysql     20   0 1902264 460224  18932 S   0.3   5.6  1:23.01 mysqld'); output(' 1234 www-data  20   0  312624 101244   4120 S   0.1   1.2  0:14.32 nginx'); output(' 2001 user      20   0   12284  17100   5432 S   0.0   0.2  0:00.15 bash'); break;
+
+    case 'df': {
+      output('Filesystem      Size  Used Avail Use% Mounted on', 'out-dim');
+      output('/dev/sda1        98G   44G   49G  48% /');
+      output('tmpfs           3.9G     0  3.9G   0% /tmp');
+      output('/dev/sda2        19G  2.3G   16G  13% /var/log');
+      output('/dev/sdb1        49G   33G   14G  71% /home');
+      break;
+    }
+
+    case 'free': {
+      output('               total        used        free      shared  buff/cache   available', 'out-dim');
+      output('Mem:           7982        4637        1245         412        2099        2713');
+      output('Swap:          2047           0        2047');
+      break;
+    }
+
+    case 'uptime': output(`12:00:00 up 4:00,  1 user,  load average: 0.12, 0.08, 0.05`); break;
+
+    case 'whoami': output(escHtml(currentUser)); break;
+    case 'hostname': output('linux-lab'); break;
+    case 'uname': {
+      if (args.includes('-a')) output('Linux linux-lab 5.15.0-94-generic #104-Ubuntu SMP x86_64 GNU/Linux');
+      else output('Linux');
+      break;
+    }
+    case 'date': output(new Date().toString()); break;
+
+    case 'env': case 'printenv': {
+      const k = args[1];
+      if (k) output(escHtml(envVars[k] || ''));
+      else Object.entries(envVars).forEach(([k,v]) => output(escHtml(`${k}=${v}`)));
+      break;
+    }
+
+    case 'export': {
+      if (args.length < 2) { Object.entries(envVars).forEach(([k,v]) => output(`declare -x ${k}="${escHtml(v)}"`)); break; }
+      args.slice(1).forEach(a => {
+        const [k,v] = a.split('=');
+        if (v !== undefined) envVars[k] = v;
+      });
+      break;
+    }
+
+    case 'alias': {
+      if (args.length < 2) { Object.entries(aliases).forEach(([k,v]) => output(`alias ${k}='${v}'`)); break; }
+      args.slice(1).forEach(a => { const eq = a.indexOf('='); if (eq>0) aliases[a.slice(0,eq)] = a.slice(eq+1).replace(/^['"]|['"]$/g,''); });
+      break;
+    }
+
+    case 'which': args.slice(1).forEach(cmd => output(`/usr/bin/${escHtml(cmd)}`)); break;
+
+    case 'man': {
+      const topic = args[1];
+      const manPages = {
+        ls: 'LS(1) - list directory contents\n\nSYNOPSIS: ls [OPTION]... [FILE]...\n\nOptions:\n  -a  do not ignore entries starting with .\n  -l  use long listing format\n  -h  human-readable sizes\n  -R  recursive\n  -t  sort by modification time',
+        grep: 'GREP(1) - print lines that match patterns\n\nSYNOPSIS: grep [OPTION]... PATTERNS [FILE]...\n\nOptions:\n  -i  ignore case\n  -n  show line numbers\n  -r  recursive\n  -c  count matching lines\n  -v  invert match',
+        chmod: 'CHMOD(1) - change file mode bits\n\nSYNOPSIS: chmod [OPTION]... MODE FILE...\n\nNumeric modes:\n  4=read, 2=write, 1=execute\n  755 = rwxr-xr-x\n  644 = rw-r--r--\n  600 = rw-------',
+        tar: 'TAR(1) - an archiving utility\n\nSYNOPSIS: tar [OPTION]... FILE...\n\nCommon:\n  -c  create archive\n  -x  extract archive\n  -t  list contents\n  -z  gzip compression\n  -f  specify filename\n  -v  verbose',
+      };
+      if (!topic) { output('What manual page do you want?', 'out-warn'); output('Example: man ls', 'out-dim'); }
+      else if (manPages[topic]) { output(`<pre style="color:var(--white);white-space:pre-wrap">${manPages[topic]}</pre>`); }
+      else { output(`No manual entry for ${escHtml(topic)}`, 'out-warn'); }
+      break;
+    }
+
+    case 'history': {
+      const n = args[1] ? parseInt(args[1]) : 20;
+      history.slice(0, n).reverse().forEach((cmd, i) => output(`  ${(i+1).toString().padStart(4)}  ${escHtml(cmd)}`));
+      break;
+    }
+
+    case 'ping': {
+      const host = args.find(a => !a.startsWith('-') && a !== 'ping') || 'localhost';
+      const c = args.indexOf('-c') >= 0 ? parseInt(args[args.indexOf('-c')+1]) : 4;
+      output(`PING ${escHtml(host)} (93.184.216.34): 56 data bytes`, 'out-info');
+      for (let i = 0; i < Math.min(c, 4); i++) {
+        output(`64 bytes from 93.184.216.34: icmp_seq=${i} ttl=55 time=${(20+Math.random()*5).toFixed(3)} ms`);
+      }
+      output(`--- ${escHtml(host)} ping statistics ---`, 'out-dim');
+      output(`${c} packets transmitted, ${c} received, 0% packet loss`, 'out-success');
+      break;
+    }
+
+    case 'curl': {
+      const url = args.find(a => !a.startsWith('-') && a !== 'curl');
+      if (args.includes('-I')) { output(`HTTP/2 200`, 'out-success'); output(`Content-Type: text/html; charset=utf-8\nServer: nginx/1.24.0\nDate: ${new Date().toUTCString()}`); }
+      else output(`<html><body>Response from ${escHtml(url||'unknown')}</body></html>`);
+      break;
+    }
+
+    case 'wget': { const u = args.find(a=>!a.startsWith('-')&&a!=='wget'); output(`--${new Date().toISOString()}--  ${escHtml(u||'')}`); output(`Resolving... connected.`); output(`HTTP request sent, awaiting response... 200 OK`,'out-success'); output(`Download complete.`,'out-success'); break; }
+
+    case 'tar': {
+      const create = args.includes('-c') || args.some(a=>a.includes('c')&&a.startsWith('-'));
+      const extract = args.includes('-x') || args.some(a=>a.includes('x')&&a.startsWith('-'));
+      const list = args.includes('-t') || args.some(a=>a.includes('t')&&a.startsWith('-'));
+      const file = args[args.indexOf('-f')+1] || args.find(a=>a.endsWith('.tar.gz')||a.endsWith('.tgz'));
+      if (create) { output(`Creating archive: ${escHtml(file||'archive.tar.gz')}`, 'out-success'); }
+      else if (list && file) { output(`documents/notes.txt\ndocuments/report.txt\ndocuments/hosts_backup.txt`); }
+      else if (extract) { output(`Extracting ${escHtml(file||'archive.tar.gz')}...`, 'out-info'); output('Done.', 'out-success'); }
+      break;
+    }
+
+    case 'gzip': { output(`${escHtml(args[1]||'file')}.gz created`,'out-success'); break; }
+    case 'gunzip': { output(`Decompressed: ${escHtml((args[1]||'file').replace('.gz',''))}`,'out-success'); break; }
+
+    case 'ssh': { output(`ssh: connect to host ${escHtml(args[args.length-1])}: Simulated connection`,'out-warn'); output(`(SSH connections are simulated in this lab environment)`,'out-dim'); break; }
+
+    case 'netstat': case 'ss': {
+      output('Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program', 'out-dim');
+      output('tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1001/sshd');
+      output('tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      1234/nginx');
+      output('tcp        0      0 0.0.0.0:3306            0.0.0.0:*               LISTEN      1235/mysqld');
+      output('tcp        0      0 127.0.0.1:6379          0.0.0.0:*               LISTEN      1236/redis-server');
+      break;
+    }
+
+    case 'kill': {
+      const pid = args.find(a=>/^\d+$/.test(a));
+      if (!pid) { output('kill: usage: kill [-s sigspec | -n signum | -sigspec] pid|jobspec', 'out-error'); break; }
+      output(`Process ${pid} killed`, 'out-success');
+      break;
+    }
+
+    case 'clear': document.getElementById('output').innerHTML = ''; break;
+
+    case 'reset': document.getElementById('output').innerHTML = ''; showWelcome(); break;
+
+    case 'help':
+      output('<span class="out-info">🐧 Linux Terminal — Available Commands</span>');
+      output('');
+      output('<b>Navigation:</b> <span class="out-dim">pwd, cd, ls</span>');
+      output('<b>Files:</b>      <span class="out-dim">cat, head, tail, touch, mkdir, cp, mv, rm, wc</span>');
+      output('<b>Search:</b>     <span class="out-dim">grep, find</span>');
+      output('<b>Permissions:</b><span class="out-dim">chmod, chown</span>');
+      output('<b>Processes:</b>  <span class="out-dim">ps, top, kill, uptime, df, free</span>');
+      output('<b>Text:</b>       <span class="out-dim">awk, sed, sort, uniq, cut, tr, wc</span>');
+      output('<b>Archive:</b>    <span class="out-dim">tar, gzip, gunzip</span>');
+      output('<b>Network:</b>    <span class="out-dim">ping, curl, wget, netstat, ssh</span>');
+      output('<b>System:</b>     <span class="out-dim">uname, hostname, whoami, date, env, export, alias, man, history</span>');
+      output('<b>Shell:</b>      <span class="out-dim">echo, clear, reset, help</span>');
+      output('');
+      output('<span class="out-dim">Pipes supported: cmd1 | cmd2 | cmd3</span>');
+      output('<span class="out-dim">Redirects: cmd > file, cmd >> file</span>');
+      output('<span class="out-dim">↑↓ arrow keys for command history · Tab for autocomplete</span>');
+      break;
+
+    default:
+      if (name) output(`bash: ${escHtml(name)}: command not found`, 'out-error');
+  }
+}
+
+// ─── Tab completion ───────────────────────────────────────────────────────────
+function tabComplete() {
+  const input = document.getElementById('cmd-input');
+  const val = input.value;
+  const parts = val.split(' ');
+  const last = parts[parts.length - 1];
+  if (!last) return;
+
+  if (parts.length === 1) {
+    // Command completion
+    const cmds = ['pwd','cd','ls','cat','head','tail','wc','touch','mkdir','rmdir','rm','cp','mv','chmod','chown','grep','find','echo','ps','top','kill','df','free','uptime','uname','hostname','whoami','date','env','export','alias','which','man','history','ping','curl','wget','netstat','ss','tar','gzip','gunzip','ssh','awk','sed','sort','uniq','cut','tr','clear','reset','help'];
+    const matches = cmds.filter(c => c.startsWith(last));
+    if (matches.length === 1) { input.value = matches[0] + ' '; }
+    else if (matches.length > 1) { output(matches.join('  '), 'out-dim'); }
+    return;
+  }
+
+  // Path completion
+  const targetPath = last.startsWith('/') ? last : (cwd === '/' ? '/' + last : cwd + '/' + last);
+  const dirPart = targetPath.substring(0, targetPath.lastIndexOf('/') + 1);
+  const filePart = targetPath.substring(targetPath.lastIndexOf('/') + 1);
+  const dir = normPath(dirPart || cwd);
+  const node = getNode(dir);
+  if (!node || node.type !== 'dir') return;
+  const matches = (node.children || []).filter(c => c.startsWith(filePart));
+  if (matches.length === 1) {
+    const base = last.substring(0, last.lastIndexOf('/') + 1);
+    input.value = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + base + matches[0];
+    const child = getNode(dir === '/' ? '/' + matches[0] : dir + '/' + matches[0]);
+    if (child && child.type === 'dir') input.value += '/';
+    else input.value += ' ';
+  } else if (matches.length > 1) {
+    output(matches.join('  '), 'out-dim');
+  }
+}
+
+// ─── Exercise system ──────────────────────────────────────────────────────────
+function checkTask(cmd) {
+  if (!currentExercise) return;
+  const task = currentExercise.tasks[currentTaskIndex];
+  if (!task) return;
+  if (task.check(cmd)) {
+    output(`✅ Task complete: ${task.text.replace(/<[^>]*>/g, '')}`, 'out-success');
+    currentTaskIndex++;
+    if (currentTaskIndex >= currentExercise.tasks.length) {
+      output(``, '');
+      output(`🎉 Exercise "${currentExercise.title}" completed!`, 'out-success');
+      currentExercise.done = true;
+      exDoneMap[currentExercise.id] = true;
+      currentExercise = null;
+      currentTaskIndex = 0;
+      document.getElementById('challenge-bar').style.display = 'none';
+      buildExerciseList();
+    } else {
+      updateChallenge();
+    }
+  }
+}
+
+function startExercise(ex) {
+  currentExercise = ex;
+  currentTaskIndex = 0;
+  document.getElementById('challenge-bar').style.display = 'block';
+  updateChallenge();
+  output(``, '');
+  output(`<span class="out-info">▶ Starting: ${ex.title}</span>`);
+  output(`<span class="out-dim">${ex.desc}</span>`);
+  output(`<span class="out-dim">Tasks: ${ex.tasks.length}  · Use ↑/↓ for history · Type "help" for commands</span>`);
+  scroll();
+  buildExerciseList();
+  focusInput();
+}
+
+function updateChallenge() {
+  if (!currentExercise) return;
+  const task = currentExercise.tasks[currentTaskIndex];
+  if (!task) return;
+  document.getElementById('challenge-text').innerHTML =
+    `<span class="out-dim">Task ${currentTaskIndex+1}/${currentExercise.tasks.length}:</span> ${task.text}`;
+  document.getElementById('challenge-hint').classList.remove('visible');
+}
+
+function showHint() {
+  if (!currentExercise) return;
+  const task = currentExercise.tasks[currentTaskIndex];
+  const hintEl = document.getElementById('challenge-hint');
+  hintEl.innerHTML = `💡 <span style="color:var(--yellow)">Hint:</span> ${task.text}`;
+  hintEl.classList.add('visible');
+}
+
+function skipChallenge() {
+  currentTaskIndex++;
+  if (currentExercise && currentTaskIndex >= currentExercise.tasks.length) {
+    output(`⏭ Skipped exercise: ${currentExercise.title}`, 'out-warn');
+    currentExercise = null;
+    currentTaskIndex = 0;
+    document.getElementById('challenge-bar').style.display = 'none';
+    buildExerciseList();
+  } else {
+    output(`⏭ Skipped task`, 'out-warn');
+    updateChallenge();
+  }
+  scroll();
+}
+
+function resetChallenge() {
+  currentExercise = null;
+  currentTaskIndex = 0;
+  document.getElementById('challenge-bar').style.display = 'none';
+  buildExerciseList();
+}
+
+// ─── Build UI ─────────────────────────────────────────────────────────────────
+function buildExerciseList() {
+  const done = Object.keys(exDoneMap).length;
+  const total = EXERCISES.length;
+  document.getElementById('prog-text').textContent = `${done} / ${total} done`;
+  document.getElementById('prog-fill').style.width = (total ? done/total*100 : 0) + '%';
+
+  const el = document.getElementById('ex-list');
+  el.innerHTML = '';
+  const groups = { easy: [], medium: [], hard: [] };
+  EXERCISES.forEach(ex => groups[ex.badge].push(ex));
+
+  ['easy','medium','hard'].forEach(level => {
+    const items = groups[level];
+    if (!items.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'ex-section';
+    sec.innerHTML = `<div class="ex-section-title"><span class="ex-badge badge-${level}">${level.toUpperCase()}</span> ${level === 'easy' ? 'Beginner' : level === 'medium' ? 'Intermediate' : 'Advanced'}</div>`;
+    items.forEach(ex => {
+      const done = exDoneMap[ex.id];
+      const isActive = currentExercise && currentExercise.id === ex.id;
+      const div = document.createElement('div');
+      div.className = `ex-item${isActive?' active':''}${done?' done':''}`;
+      div.onclick = () => startExercise(ex);
+      div.innerHTML = `<div class="ex-title">${done?'<span class="ex-done-mark">✓</span> ':''}<span>${ex.title}</span></div><div class="ex-desc">${ex.desc}</div>`;
+      sec.appendChild(div);
+    });
+    el.appendChild(sec);
+  });
+}
+
+function buildCheatsheet() {
+  const el = document.getElementById('cheatsheet-content');
+  el.innerHTML = '';
+  CHEATSHEET.forEach(section => {
+    const sec = document.createElement('div');
+    sec.className = 'cs-section';
+    sec.innerHTML = `<div class="cs-title">${section.section}</div>`;
+    section.cmds.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'cs-cmd';
+      div.title = 'Click to insert';
+      div.onclick = () => insertCmd(c.cmd);
+      div.innerHTML = `<span class="cs-cmd-name">${escHtml(c.cmd)}</span><span class="cs-cmd-desc">${escHtml(c.desc)}</span>`;
+      sec.appendChild(div);
+    });
+    el.appendChild(sec);
+  });
+}
+
+function buildFsTree() {
+  const lines = [];
+  const walk = (path, prefix) => {
+    const node = FS[path];
+    if (!node || node.type !== 'dir') return;
+    const children = node.children || [];
+    children.forEach((c, i) => {
+      const childPath = path === '/' ? '/'+c : path+'/'+c;
+      const isLast = i === children.length - 1;
+      const icon = FS[childPath] && FS[childPath].type==='dir' ? '📁' : c.endsWith('.sh') ? '📜' : '📄';
+      lines.push(`${prefix}${isLast?'└──':'├──'} ${icon} ${c}`);
+      if (FS[childPath] && FS[childPath].type==='dir' && path.split('/').length < 4) {
+        walk(childPath, prefix + (isLast ? '    ' : '│   '));
+      }
+    });
+  };
+  lines.push('📁 /');
+  walk('/', '');
+  document.getElementById('fs-tree').textContent = lines.join('\n');
+}
+
+function showTab(id, el) {
+  document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-exercises').style.display = id==='exercises' ? '' : 'none';
+  document.getElementById('tab-cheatsheet').style.display = id==='cheatsheet' ? '' : 'none';
+  document.getElementById('tab-filesystem').style.display = id==='filesystem' ? '' : 'none';
+  if (id==='filesystem') buildFsTree();
+}
+
+function insertCmd(cmd) {
+  const input = document.getElementById('cmd-input');
+  input.value = cmd;
+  focusInput();
+}
+
+function updateTitleBar() {
+  const rel = cwd === '/home/user' ? '~' : cwd.startsWith('/home/user/') ? '~'+cwd.slice('/home/user'.length) : cwd;
+  document.querySelector('.term-title').textContent = `user@linux-lab: ${rel}`;
+  document.getElementById('live-prompt').innerHTML = promptStr();
+}
+
+function focusInput() { document.getElementById('cmd-input').focus(); }
+function updateInputWidth() {}
+
+// ─── Key handler ─────────────────────────────────────────────────────────────
+function handleKey(e) {
+  const input = document.getElementById('cmd-input');
+  if (e.key === 'Enter') {
+    const cmd = input.value;
+    input.value = '';
+    exec(cmd);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (histIndex < history.length - 1) { histIndex++; input.value = history[histIndex]; }
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (histIndex > 0) { histIndex--; input.value = history[histIndex]; }
+    else { histIndex = -1; input.value = ''; }
+  } else if (e.key === 'Tab') {
+    e.preventDefault();
+    tabComplete();
+    scroll();
+  } else if (e.key === 'c' && e.ctrlKey) {
+    e.preventDefault();
+    output(`^C`, 'out-error');
+    input.value = '';
+    scroll();
+  } else if (e.key === 'l' && e.ctrlKey) {
+    e.preventDefault();
+    document.getElementById('output').innerHTML = '';
+  }
+}
+
+// ─── Welcome ──────────────────────────────────────────────────────────────────
+function showWelcome() {
+  output('<span class="out-info">╔══════════════════════════════════════════════════════╗</span>');
+  output('<span class="out-info">║  🐧 Linux Terminal — Hands-On Lab  v1.0              ║</span>');
+  output('<span class="out-info">╚══════════════════════════════════════════════════════╝</span>');
+  output('');
+  output('<span class="out-dim">Welcome, user! This is a browser-based Linux shell emulator.</span>');
+  output(`<span class="out-dim">50+ commands · pipes · redirects · virtual filesystem</span>`);
+  output('');
+  output('Quick start:');
+  output('  <span class="out-yellow" style="color:var(--yellow)">help</span>              — list all available commands');
+  output('  <span style="color:var(--yellow)">ls -la</span>           — list files in current directory');
+  output('  <span style="color:var(--yellow)">cat documents/notes.txt</span>  — read a file');
+  output('');
+  output('<span class="out-dim">→ Click an Exercise in the sidebar to start a guided lab</span>');
+  output('<span class="out-dim">→ Click any command in the Cheatsheet to insert it</span>');
+  output('');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildExerciseList();
+buildCheatsheet();
+updateTitleBar();
+showWelcome();
+focusInput();
+</script>
+</body>
+</html>

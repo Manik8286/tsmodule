@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAM Lab Tracker — Azure, AWS & GCP</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{--azure:#0078D4;--azure-light:#EFF6FF;--aws:#FF9900;--aws-light:#FFF7ED;--aws-dark:#B45309;--gcp:#4285F4;--gcp-light:#EEF4FF;--gcp-dark:#1A73E8;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#2D1B69;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#C4B5FD;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#C4B5FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.azure .num{color:var(--azure);}
+.stat-block.aws .num{color:var(--aws-dark);}
+.stat-block.gcp .num{color:var(--gcp-dark);}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#7C3AED,#0078D4);transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+.tab.azure-tab.active{background:var(--azure);border-color:var(--azure);}
+.tab.aws-tab.active{background:var(--aws-dark);border-color:var(--aws-dark);}
+.tab.gcp-tab.active{background:var(--gcp-dark);border-color:var(--gcp-dark);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#C4B5FD;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#4ADE80;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.azure-lab{border-left:4px solid var(--azure);background:var(--azure-light);}
+.lab-header.aws-lab{border-left:4px solid var(--aws);background:var(--aws-light);}
+.lab-header.gcp-lab{border-left:4px solid var(--gcp);background:var(--gcp-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.azure-badge{background:var(--azure);}
+.aws-badge{background:var(--aws-dark);}
+.gcp-badge{background:var(--gcp-dark);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.azure-btn{color:var(--azure);}
+.lab-toggle.azure-btn:hover{background:var(--azure);color:white;}
+.lab-toggle.aws-btn{color:var(--aws-dark);}
+.lab-toggle.aws-btn:hover{background:var(--aws-dark);color:white;}
+.lab-toggle.gcp-btn{color:var(--gcp-dark);}
+.lab-toggle.gcp-btn:hover{background:var(--gcp-dark);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--azure);color:var(--azure);}
+.detail-btn.open{background:var(--azure-light);border-color:var(--azure);color:var(--azure);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#F8FAFF;border-left:3px solid var(--azure);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--azure);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#E8F0FE;padding:1px 4px;border-radius:3px;color:#1a56db;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;background:#FFFDF5;}
+.note-textarea::placeholder{color:#9CA3AF;font-size:11px;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#F0FDF4;}
+.val-row:hover{background:#DCFCE7;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #86EFAC;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--azure);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#C4B5FD;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#F0F4FA;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:var(--azure);background:#F8FBFF;}
+.fb-input::placeholder{color:#9CA3AF;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--azure);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;align-items:center;justify-content:center;}
+.user-overlay.open{display:flex;}
+.user-card{background:white;border-radius:16px;padding:36px 40px;max-width:420px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.3);text-align:center;}
+.user-card .u-icon{font-size:48px;margin-bottom:12px;}
+.user-card h3{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.user-card p{font-size:12px;color:var(--gray);margin-bottom:20px;line-height:1.6;}
+.user-card input{width:100%;border:2px solid #E5E7EB;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;color:var(--dark);text-align:center;margin-bottom:14px;}
+.user-card input:focus{outline:none;border-color:var(--azure);}
+.user-card button{width:100%;padding:11px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.user-card button:hover{filter:brightness(1.1);}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+/* Official References */
+.refs-section{margin-top:14px;padding:12px 14px;background:#F5F3FF;border-left:3px solid #7C3AED;border-radius:0 8px 8px 0;}
+.refs-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.refs-title{font-size:10px;font-weight:700;color:#5B21B6;text-transform:uppercase;letter-spacing:.6px;}
+.refs-toggle{font-size:10px;color:#7C3AED;font-weight:700;}
+.refs-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
+.ref-item{display:flex;align-items:flex-start;gap:6px;font-size:12px;}
+.ref-icon{flex-shrink:0;font-size:12px;margin-top:1px;}
+.ref-item a{color:#4F46E5;text-decoration:none;line-height:1.4;}
+.ref-item a:hover{text-decoration:underline;color:#3730A3;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F512; IAM Lab Tracker</h1>
+      <p>Azure Entra ID &amp; AWS IAM &amp; GCP IAM &middot; 6-Phase Deep Dive &middot; Identity &amp; Access Management</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="index.html" class="nav-link">&#x2601;&#xFE0F; IaaS Labs</a>
+      <a href="az700.html" class="nav-link">&#x1F310; AZ-700</a>
+      <a href="az500.html" class="nav-link">&#x1F6E1;&#xFE0F; AZ-500</a>
+      <a href="sc300.html" class="nav-link">&#x1F510; SC-300</a>
+      <a href="soa-c02.html" class="nav-link">&#x1F527; SOA-C02</a>
+      <a href="az400.html" class="nav-link">&#x1F504; AZ-400</a>
+      <span id="user-chip" class="user-chip" onclick="changeUser()" title="Click to change user">&#x1F464; <span id="user-name-display">...</span></span>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+
+<!-- Username modal -->
+<div class="user-overlay" id="user-overlay">
+  <div class="user-card">
+    <div class="u-icon">&#x1F510;</div>
+    <h3>Welcome to IAM Lab Tracker</h3>
+    <p>Enter your name to save your progress. Track your journey through Identity &amp; Access Management labs across Azure, AWS, and GCP.</p>
+    <input type="text" id="user-name-input" placeholder="Your name (e.g. Manikandan)" maxlength="30" onkeydown="if(event.key==='Enter')confirmUser()" />
+    <button onclick="confirmUser()">&#x1F680; Start IAM Labs</button>
+  </div>
+</div>
+
+<!-- Firebase Config Panel -->
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Connect your Firebase Realtime Database to sync IAM lab progress across all your devices.</p>
+    <div class="fb-steps">
+      <b>Quick setup:</b><br>
+      1. Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> &rarr; Create project<br>
+      2. Build &rarr; Realtime Database &rarr; Create database (test mode)<br>
+      3. Project Settings (gear icon) &rarr; Web app &rarr; copy config<br>
+      4. Paste the 3 values below and click Connect
+    </div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey  (e.g. AIzaSy...)" />
+    <input class="fb-input" id="fb-databaseURL" placeholder="databaseURL  (e.g. https://my-project-default-rtdb.firebaseio.com)" />
+    <input class="fb-input" id="fb-projectId" placeholder="projectId  (e.g. my-project-12345)" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions">
+      <button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button>
+      <button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button>
+      <button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- Congrats modal -->
+<div id="congrats">
+  <div class="card">
+    <span class="emoji">&#x1F3C6;</span>
+    <h2>IAM Master!</h2>
+    <p>You've completed all IAM labs across Azure, AWS &amp; GCP. You're ready for enterprise identity architecture!</p>
+    <button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button>
+  </div>
+</div>
+
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block azure"><div class="num" id="stat-azure">0/0</div><div class="lbl">Azure Done</div></div>
+  <div class="stat-block aws"><div class="num" id="stat-aws">0/0</div><div class="lbl">AWS Done</div></div>
+  <div class="stat-block gcp"><div class="num" id="stat-gcp">0/0</div><div class="lbl">GCP Done</div></div>
+  <div class="big-bar-wrap">
+    <div class="big-bar-label"><span>Overall IAM Progress</span><span id="stat-pct">0%</span></div>
+    <div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab azure-tab" onclick="filterTab('azure',this)">&#x1F535; Azure Entra ID</button>
+  <button class="tab aws-tab" onclick="filterTab('aws',this)">&#x1F7E0; AWS IAM</button>
+  <button class="tab gcp-tab" onclick="filterTab('gcp',this)">&#x1F7E2; GCP IAM</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+// ─── IAM Lab Data ────────────────────────────────────────────────────────────
+const PHASES = [
+  {
+    id:'p1', badge:'PHASE 1', title:'Identity & User Management', week:'Week 1–2',
+    labs:[
+      {
+        id:'p1-azure', cloud:'azure', title:'Azure Entra ID — Users & Groups',
+        meta:'Create users, groups, assign roles & licenses in Entra ID',
+        steps:[
+          {id:'s1', text:'Sign in to Azure Portal and navigate to Microsoft Entra ID (formerly Azure Active Directory)', details:['Go to portal.azure.com', 'In the left nav click "Microsoft Entra ID"', 'Explore the Overview — note your Tenant ID and primary domain']},
+          {id:'s2', text:'Create a new cloud user account in Entra ID', details:['Go to Users → New user → Create new user', 'Set Display name: "Lab User One", User principal name: labuser1@<yourdomain>', 'Set a temporary password, click Create']},
+          {id:'s3', text:'Create a Security Group and add the new user', details:['Go to Groups → New group', 'Group type: Security, Group name: "IAM-Lab-Group"', 'Click Members → add labuser1, then click Create']},
+          {id:'s4', text:'Assign a built-in directory role to the user', details:['Go to Users → select labuser1', 'Click Assigned roles → Add assignments', 'Search for "User Administrator" and assign it', 'Verify the role appears under Assigned roles']},
+          {id:'s5', text:'Review sign-in logs and user properties', details:['Go to Users → labuser1 → Sign-in logs', 'Check Identity under Properties tab', 'Note the Object ID — you will use this in later labs']},
+        ],
+        validation:[
+          {id:'v1', text:'User labuser1 exists and can sign in with temporary password'},
+          {id:'v2', text:'Security group "IAM-Lab-Group" shows labuser1 as a member'},
+          {id:'v3', text:'User Administrator role is assigned to labuser1'},
+        ]
+      },
+      {
+        id:'p1-aws', cloud:'aws', title:'AWS IAM — Users, Groups & Policies',
+        meta:'Create IAM users, groups, attach managed and inline policies',
+        steps:[
+          {id:'s1', text:'Sign in to AWS Console and open the IAM service', details:['Go to console.aws.amazon.com', 'Search for "IAM" in the services search bar', 'Review the IAM Dashboard — note the security recommendations']},
+          {id:'s2', text:'Create an IAM user with programmatic access', details:['Go to IAM → Users → Add users', 'Username: lab-user-one, check "Provide user access to the AWS Management Console"', 'Select "I want to create an IAM user", set a password', 'On Permissions step choose "Add user to group" (create group in next step), click Next → Create user']},
+          {id:'s3', text:'Create an IAM Group and attach a managed policy', details:['Go to IAM → User groups → Create group', 'Group name: IAMLab-Admins', 'Attach policy: ReadOnlyAccess', 'Add lab-user-one to the group, click Create group']},
+          {id:'s4', text:'Create a custom inline policy for the user', details:['Go to IAM → Users → lab-user-one → Add permissions → Attach policies directly', 'Click Create policy → JSON tab', 'Paste: {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListAllMyBuckets"],"Resource":"*"}]}', 'Name it: lab-s3-list-policy, click Create policy, then attach it to the user']},
+          {id:'s5', text:'Generate and review IAM credential report', details:['Go to IAM → Credential report → Download Report', 'Open the CSV and review columns: password_last_used, access_key_active, mfa_active', 'Verify lab-user-one appears with expected values']},
+        ],
+        validation:[
+          {id:'v1', text:'IAM user lab-user-one created and can sign in to console'},
+          {id:'v2', text:'User is member of IAMLab-Admins group with ReadOnlyAccess'},
+          {id:'v3', text:'Custom S3 list policy is attached directly to the user'},
+          {id:'v4', text:'Credential report shows the user with MFA not enabled'},
+        ]
+      },
+      {
+        id:'p1-gcp', cloud:'gcp', title:'GCP IAM — Members & Basic Roles',
+        meta:'Manage IAM members, assign primitive and predefined roles',
+        steps:[
+          {id:'s1', text:'Navigate to IAM & Admin in Google Cloud Console', details:['Go to console.cloud.google.com', 'Open the Navigation menu → IAM & Admin → IAM', 'Review current principal bindings on your project']},
+          {id:'s2', text:'Add a new member with a predefined role at project level', details:['Click Grant Access at the top', 'New principals: enter a test Google account email', 'Role: select "Viewer" (roles/viewer)', 'Click Save — verify it appears in the IAM list']},
+          {id:'s3', text:'Assign a more specific predefined role (Storage Object Viewer)', details:['Click on the principal you just added → Edit', 'Click Add another role', 'Search for "Storage Object Viewer" (roles/storage.objectViewer)', 'Save changes']},
+          {id:'s4', text:'Explore IAM policy at the organization/folder level', details:['Go to IAM & Admin → IAM → switch scope to "Organization" in the selector', 'Review inherited roles — understand the resource hierarchy', 'Note which roles are inherited vs directly assigned']},
+          {id:'s5', text:'Use the Policy Analyzer to check effective permissions', details:['Go to IAM & Admin → Policy Analyzer', 'Query: "What resources can <your test user> access?"', 'Run the query and review the results']},
+        ],
+        validation:[
+          {id:'v1', text:'Test member has Viewer and Storage Object Viewer roles at project level'},
+          {id:'v2', text:'Can explain inheritance: org → folder → project → resource'},
+          {id:'v3', text:'Policy Analyzer shows the expected effective permissions'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p2', badge:'PHASE 2', title:'Role-Based Access Control (RBAC)', week:'Week 2–3',
+    labs:[
+      {
+        id:'p2-azure', cloud:'azure', title:'Azure RBAC — Built-in & Custom Roles',
+        meta:'Assign built-in roles at different scopes, create and test custom roles',
+        steps:[
+          {id:'s1', text:'Understand Azure RBAC scope hierarchy (Management Group → Subscription → Resource Group → Resource)', details:['Go to Subscriptions → select your subscription → Access control (IAM)', 'Click Role assignments tab to see current assignments', 'Note the scope column showing inherited vs direct assignments']},
+          {id:'s2', text:'Assign the Contributor role at Resource Group scope', details:['Create a resource group: iam-lab-rg', 'Go to iam-lab-rg → Access control (IAM) → Add → Add role assignment', 'Role: Contributor, Assign access to: User, select labuser1', 'Click Review + assign']},
+          {id:'s3', text:'Create a custom RBAC role with specific permissions', details:['Go to Subscriptions → Access control (IAM) → Add → Add custom role', 'Start from scratch, name it: "IAM Lab Read Storage"', 'Add permissions: Microsoft.Storage/storageAccounts/read and Microsoft.Storage/storageAccounts/listKeys/action', 'Assignable scope: your subscription, Review + create']},
+          {id:'s4', text:'Assign the custom role and verify access', details:['Go to iam-lab-rg → Access control (IAM) → Add role assignment', 'Select the custom role "IAM Lab Read Storage"', 'Assign to labuser1, save', 'Sign in as labuser1 and verify they can view storage accounts but not create new ones']},
+          {id:'s5', text:'Use Azure CLI to review effective permissions', details:['Open Azure Cloud Shell (bash)', 'Run: az role assignment list --assignee <labuser1-object-id> --all', 'Run: az role definition list --custom-role-only true', 'Review the JSON output of the custom role definition']},
+        ],
+        validation:[
+          {id:'v1', text:'labuser1 has Contributor at resource group scope (not subscription)'},
+          {id:'v2', text:'Custom role "IAM Lab Read Storage" exists with correct permissions'},
+          {id:'v3', text:'az role assignment list returns both assignments for labuser1'},
+        ]
+      },
+      {
+        id:'p2-aws', cloud:'aws', title:'AWS IAM Roles & Trust Policies',
+        meta:'Create IAM roles with trust policies, assume roles cross-account',
+        steps:[
+          {id:'s1', text:'Create an IAM role for EC2 with S3 read access', details:['Go to IAM → Roles → Create role', 'Trusted entity type: AWS service, Use case: EC2', 'Attach permission policy: AmazonS3ReadOnlyAccess', 'Role name: EC2-S3ReadOnly-Role, Create role']},
+          {id:'s2', text:'Review and understand the trust policy JSON', details:['Go to IAM → Roles → EC2-S3ReadOnly-Role → Trust relationships', 'Review the trust policy: note the Principal is ec2.amazonaws.com', 'Click Edit trust policy to see the raw JSON', 'Understand: Service principal allows EC2 to assume this role']},
+          {id:'s3', text:'Create a role for cross-account access (assuming another account)', details:['Go to IAM → Roles → Create role', 'Trusted entity: AWS account, enter your own Account ID (simulating cross-account)', 'Attach: ReadOnlyAccess policy', 'Name: CrossAccount-ReadOnly-Role', 'In Trust policy, note the Principal is arn:aws:iam::<account-id>:root']},
+          {id:'s4', text:'Create a permission boundary for a user', details:['Go to IAM → Policies → Create policy', 'JSON: {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*","ec2:Describe*"],"Resource":"*"}]}', 'Name it: dev-permission-boundary', 'Go to lab-user-one → Permissions boundary → Set boundary → select dev-permission-boundary']},
+          {id:'s5', text:'Use AWS CLI to simulate IAM policy evaluation', details:['Run: aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::<id>:user/lab-user-one --action-names s3:ListBuckets', 'Check EvalDecision field — should be "allowed"', 'Try: --action-names ec2:TerminateInstances — check result', 'Review the matched statements in the output']},
+        ],
+        validation:[
+          {id:'v1', text:'EC2-S3ReadOnly-Role has correct trust policy for EC2 service'},
+          {id:'v2', text:'CrossAccount-ReadOnly-Role has trust policy for account root'},
+          {id:'v3', text:'dev-permission-boundary is set on lab-user-one'},
+          {id:'v4', text:'Policy simulation correctly allows s3:ListBuckets'},
+        ]
+      },
+      {
+        id:'p2-gcp', cloud:'gcp', title:'GCP IAM Roles — Predefined & Custom',
+        meta:'Work with predefined roles, create custom roles, understand conditions',
+        steps:[
+          {id:'s1', text:'Explore predefined roles using gcloud CLI', details:['Open Cloud Shell', 'Run: gcloud iam roles list --format="table(name,title)" | head -40', 'Run: gcloud iam roles describe roles/compute.instanceAdmin.v1', 'Review includedPermissions in the output']},
+          {id:'s2', text:'Create a custom IAM role at project level', details:['Run: cat > iam-lab-role.yaml << EOF\ntitle: IAM Lab Storage Lister\ndescription: Can list GCS buckets only\nstage: GA\nincludedPermissions:\n- storage.buckets.list\n- storage.buckets.get\nEOF', 'Run: gcloud iam roles create IamLabStorageLister --project=<PROJECT_ID> --file=iam-lab-role.yaml', 'Verify: gcloud iam roles describe IamLabStorageLister --project=<PROJECT_ID>']},
+          {id:'s3', text:'Bind the custom role to a member', details:['Run: gcloud projects add-iam-policy-binding <PROJECT_ID> --member="user:<test-email>" --role="projects/<PROJECT_ID>/roles/IamLabStorageLister"', 'Verify: gcloud projects get-iam-policy <PROJECT_ID> --flatten="bindings[].members" --filter="bindings.members:<test-email>"']},
+          {id:'s4', text:'Add an IAM condition (time-based access)', details:['Go to Cloud Console → IAM & Admin → IAM', 'Find your test user binding → Edit (pencil icon)', 'Click Add condition → Condition title: Lab Hours Only', 'Condition expression: request.time.getHours("America/New_York") >= 9 && request.time.getHours("America/New_York") < 18', 'Save and review the binding']},
+          {id:'s5', text:'Audit role bindings with gcloud', details:['Run: gcloud projects get-iam-policy <PROJECT_ID> --format=json > iam-policy.json', 'Run: cat iam-policy.json | python3 -m json.tool | grep -A3 "storage"', 'Review all bindings for the storage-related role']},
+        ],
+        validation:[
+          {id:'v1', text:'Custom role IamLabStorageLister created with storage.buckets.list permission'},
+          {id:'v2', text:'Role is bound to test member at project level'},
+          {id:'v3', text:'IAM condition is visible on the binding in Cloud Console'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p3', badge:'PHASE 3', title:'Service Identities & Workload Access', week:'Week 3–4',
+    labs:[
+      {
+        id:'p3-azure', cloud:'azure', title:'Azure Service Principals & Managed Identities',
+        meta:'Create service principals, configure managed identities for Azure resources',
+        steps:[
+          {id:'s1', text:'Create an App Registration (Service Principal) in Entra ID', details:['Go to Entra ID → App registrations → New registration', 'Name: iam-lab-sp, Supported account types: Single tenant', 'Click Register — note the Application (client) ID and Directory (tenant) ID']},
+          {id:'s2', text:'Create a client secret for the Service Principal', details:['Go to your app registration → Certificates & secrets → Client secrets → New client secret', 'Description: lab-secret, Expiry: 90 days, Add', 'COPY the secret value immediately — it will not be shown again', 'Note the Secret ID and Value']},
+          {id:'s3', text:'Assign RBAC role to the Service Principal', details:['Go to iam-lab-rg → Access control (IAM) → Add role assignment', 'Role: Storage Blob Data Reader', 'Assign access to: User, group, or service principal', 'Select your iam-lab-sp service principal, assign']},
+          {id:'s4', text:'Enable System-assigned Managed Identity on a VM', details:['Create a small VM (or use existing) in iam-lab-rg', 'Go to the VM → Identity → System assigned → Status: On → Save', 'Note the Object (principal) ID of the managed identity', 'Assign Storage Blob Data Reader role to this identity on a storage account']},
+          {id:'s5', text:'Test managed identity access from within the VM', details:['SSH into the VM', 'Run: curl "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://storage.azure.com/" -H "Metadata: true"', 'Verify you receive an access_token in the response', 'This proves the VM can authenticate without any stored credentials']},
+        ],
+        validation:[
+          {id:'v1', text:'Service principal iam-lab-sp exists with client secret'},
+          {id:'v2', text:'Managed identity enabled on VM with Storage Blob Data Reader role'},
+          {id:'v3', text:'Token endpoint returns valid access token from within VM'},
+        ]
+      },
+      {
+        id:'p3-aws', cloud:'aws', title:'AWS IAM Roles for Services & Instance Profiles',
+        meta:'Attach IAM roles to EC2, Lambda; use instance metadata service',
+        steps:[
+          {id:'s1', text:'Attach the EC2-S3ReadOnly-Role to an EC2 instance', details:['Launch an EC2 instance (or use existing)', 'In launch wizard → Advanced → IAM instance profile → select EC2-S3ReadOnly-Role', 'Or for existing instance: Actions → Security → Modify IAM role → attach EC2-S3ReadOnly-Role']},
+          {id:'s2', text:'Verify role via Instance Metadata Service (IMDSv2)', details:['SSH into the EC2 instance', 'Get token: TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")', 'Get credentials: curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/iam/security-credentials/', 'Run the second command with the role name appended to see temp credentials']},
+          {id:'s3', text:'Create a Lambda execution role and test it', details:['Go to IAM → Roles → Create role → AWS service → Lambda', 'Attach: AWSLambdaBasicExecutionRole and AmazonDynamoDBReadOnlyAccess', 'Name: LambdaLabExecRole', 'Create a simple Lambda function using this role', 'Add a test that lists DynamoDB tables: import boto3; client=boto3.client("dynamodb"); print(client.list_tables())']},
+          {id:'s4', text:'Enforce IMDSv2 only (security hardening)', details:['Go to your EC2 instance → Actions → Instance settings → Modify instance metadata options', 'Set IMDSv1: Disabled, IMDSv2: Required (token required)', 'Save, then try accessing metadata without a token — should fail', 'Try with a token — should succeed']},
+          {id:'s5', text:'Review AWS STS assumed role credentials lifecycle', details:['On the EC2 instance run: aws sts get-caller-identity', 'Note: the ARN shows assumed-role/EC2-S3ReadOnly-Role/<instance-id>', 'Run: aws s3 ls (should succeed)', 'Run: aws ec2 describe-instances (should fail — no EC2 permissions)']},
+        ],
+        validation:[
+          {id:'v1', text:'EC2 instance has EC2-S3ReadOnly-Role attached via instance profile'},
+          {id:'v2', text:'IMDSv2-only enforced; old IMDSv1 requests return 401'},
+          {id:'v3', text:'Lambda function uses LambdaLabExecRole and can list DynamoDB tables'},
+          {id:'v4', text:'aws sts get-caller-identity shows assumed-role ARN'},
+        ]
+      },
+      {
+        id:'p3-gcp', cloud:'gcp', title:'GCP Service Accounts & Workload Identity',
+        meta:'Create service accounts, generate keys, configure Workload Identity for GKE',
+        steps:[
+          {id:'s1', text:'Create a Service Account with specific roles', details:['Run: gcloud iam service-accounts create iam-lab-sa --display-name="IAM Lab Service Account" --project=<PROJECT_ID>', 'Bind a role: gcloud projects add-iam-policy-binding <PROJECT_ID> --member="serviceAccount:iam-lab-sa@<PROJECT_ID>.iam.gserviceaccount.com" --role="roles/storage.objectViewer"', 'List service accounts: gcloud iam service-accounts list']},
+          {id:'s2', text:'Create and download a service account key (JSON)', details:['Run: gcloud iam service-accounts keys create key.json --iam-account=iam-lab-sa@<PROJECT_ID>.iam.gserviceaccount.com', 'Set env var: export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/key.json"', 'Test: gcloud auth activate-service-account --key-file=key.json', 'Verify: gcloud auth list — note the active account is the service account', 'IMPORTANT: Delete the key after testing (security best practice)']},
+          {id:'s3', text:'Impersonate a service account (keyless)', details:['Grant your user account the role roles/iam.serviceAccountTokenCreator on the service account', 'Run: gcloud auth print-access-token --impersonate-service-account=iam-lab-sa@<PROJECT_ID>.iam.gserviceaccount.com', 'This is the preferred keyless approach — no key file needed']},
+          {id:'s4', text:'Understand service account key rotation and best practices', details:['Run: gcloud iam service-accounts keys list --iam-account=iam-lab-sa@<PROJECT_ID>.iam.gserviceaccount.com', 'Note key types: system-managed vs user-managed', 'Delete the test key: gcloud iam service-accounts keys delete <KEY_ID> --iam-account=iam-lab-sa@<PROJECT_ID>.iam.gserviceaccount.com', 'Best practice: prefer Workload Identity Federation over key files']},
+          {id:'s5', text:'Review service account roles with Policy Analyzer', details:['Go to IAM & Admin → Policy Analyzer', 'Query: "What resources can iam-lab-sa service account access?"', 'Run the analysis and review the results', 'Compare with direct gcloud IAM policy query']},
+        ],
+        validation:[
+          {id:'v1', text:'Service account iam-lab-sa created with Storage Object Viewer role'},
+          {id:'v2', text:'Service account key created, tested, and then deleted'},
+          {id:'v3', text:'Keyless impersonation works using token creator role'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p4', badge:'PHASE 4', title:'Federation & Single Sign-On', week:'Week 4–5',
+    labs:[
+      {
+        id:'p4-azure', cloud:'azure', title:'Azure — Enterprise SSO & SAML Federation',
+        meta:'Configure SAML SSO for an enterprise application in Entra ID',
+        steps:[
+          {id:'s1', text:'Add an Enterprise Application from the gallery (e.g. AWS Console SSO)', details:['Go to Entra ID → Enterprise applications → New application', 'Search for "AWS" in the gallery', 'Select "Amazon Web Services (AWS)" → Create', 'This creates an enterprise app + service principal for SSO']},
+          {id:'s2', text:'Configure SAML-based Single Sign-On', details:['In the enterprise app → Single sign-on → SAML', 'Review the Basic SAML Configuration — note the Entity ID and Reply URL', 'Download the Federation Metadata XML for AWS to consume', 'Note the App Federation Metadata URL']},
+          {id:'s3', text:'Assign users and groups to the enterprise app', details:['Go to the app → Users and groups → Add user/group', 'Add your labuser1 and IAM-Lab-Group', 'Assign a role if prompted (default access is fine)', 'Verify the assignment is listed']},
+          {id:'s4', text:'Configure user attribute mappings (claims)', details:['In Single sign-on → Attributes & Claims', 'Review default claims: email, name, etc.', 'Add a custom claim: name="role", source attribute="user.assignedroles"', 'This is how Entra passes user role info to the SP (e.g. AWS)']},
+          {id:'s5', text:'Test the SAML SSO flow', details:['In the Single sign-on configuration → Test this application', 'Sign in as labuser1', 'Verify the SAML assertion is generated (use browser SAML tracer extension)', 'Review the assertion: confirm email, name, and role claims are present']},
+        ],
+        validation:[
+          {id:'v1', text:'AWS enterprise app added and SAML configured in Entra ID'},
+          {id:'v2', text:'labuser1 assigned to the enterprise application'},
+          {id:'v3', text:'SAML test succeeds with correct claims in the assertion'},
+        ]
+      },
+      {
+        id:'p4-aws', cloud:'aws', title:'AWS IAM Identity Center (SSO)',
+        meta:'Set up IAM Identity Center, configure SAML IdP, assign permission sets',
+        steps:[
+          {id:'s1', text:'Enable IAM Identity Center in your AWS account', details:['Go to AWS Console → IAM Identity Center (successor to AWS SSO)', 'Click Enable — select recommended AWS Organizations integration if available', 'Otherwise choose Single account mode for the lab', 'Note your AWS access portal URL']},
+          {id:'s2', text:'Create a Permission Set', details:['Go to IAM Identity Center → Permission sets → Create permission set', 'Type: Predefined permission set → AdministratorAccess', 'Name: LabAdminAccess, Session duration: 1 hour', 'Create permission set']},
+          {id:'s3', text:'Create a user in the Identity Center directory', details:['Go to IAM Identity Center → Users → Add user', 'Email: labsso@example.com, First name: Lab, Last name: SSO', 'Set a password, confirm creation', 'This user lives in Identity Center — NOT in IAM']},
+          {id:'s4', text:'Assign the user to an account with a permission set', details:['Go to IAM Identity Center → AWS accounts → select your account', 'Click Assign users or groups → Users tab → select labsso user', 'Select the LabAdminAccess permission set', 'Submit assignment']},
+          {id:'s5', text:'Test SSO login via the access portal', details:['Navigate to the AWS access portal URL (from step 1)', 'Sign in as labsso user', 'Verify you see the AWS account tile with LabAdminAccess', 'Click the role and confirm you land in the console with that role']},
+        ],
+        validation:[
+          {id:'v1', text:'IAM Identity Center enabled with at least one account assigned'},
+          {id:'v2', text:'LabAdminAccess permission set created with 1-hour session'},
+          {id:'v3', text:'labsso user can log in via access portal and assume the permission set'},
+        ]
+      },
+      {
+        id:'p4-gcp', cloud:'gcp', title:'GCP Workforce Identity Federation',
+        meta:'Configure external IdP federation for workforce users (OIDC/SAML)',
+        steps:[
+          {id:'s1', text:'Understand Workforce Identity Federation vs Workload Identity Federation', details:['Workforce Identity: for human users from external IdPs (Okta, AzureAD, GitHub SSO)', 'Workload Identity: for non-human workloads (GitHub Actions, K8s, on-prem VMs)', 'Both allow external identities to access GCP without a Google account', 'Review the docs: cloud.google.com/iam/docs/workforce-identity-federation']},
+          {id:'s2', text:'Create a Workforce Identity Pool', details:['Run: gcloud iam workforce-pools create iam-lab-pool --location=global --organization=<ORG_ID> --display-name="IAM Lab Pool"', 'Or in Cloud Console: IAM & Admin → Workforce Identity Federation → Create Pool', 'Note the pool resource name']},
+          {id:'s3', text:'Add an OIDC provider to the pool', details:['Run: gcloud iam workforce-pools providers create-oidc oidc-lab-provider --workforce-pool=iam-lab-pool --location=global --issuer-uri="https://accounts.google.com" --client-id="<YOUR_OIDC_CLIENT_ID>" --attribute-mapping="google.subject=assertion.sub,attribute.email=assertion.email"', 'The issuer-uri would normally be your Okta or AzureAD endpoint']},
+          {id:'s4', text:'Grant IAM access to workforce pool identities', details:['Run: gcloud projects add-iam-policy-binding <PROJECT_ID> --member="principalSet://iam.googleapis.com/locations/global/workforcePools/iam-lab-pool/attribute.email/labuser@example.com" --role="roles/viewer"', 'This maps the external IdP email claim to GCP IAM access without a Google account']},
+          {id:'s5', text:'Understand Workload Identity Federation for CI/CD (GitHub Actions)', details:['Concept: GitHub OIDC token → exchanged for GCP access token via WIF', 'In a real setup: gcloud iam workload-identity-pools create and providers create-oidc', 'The GitHub Actions workflow uses google-github-actions/auth@v2 with workload_identity_provider', 'Key benefit: no service account key files stored in GitHub secrets']},
+        ],
+        validation:[
+          {id:'v1', text:'Workforce Identity Pool created in the organization'},
+          {id:'v2', text:'OIDC provider configured with attribute mapping'},
+          {id:'v3', text:'Can explain the difference between Workforce and Workload Identity Federation'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p5', badge:'PHASE 5', title:'Privileged Access & Zero Trust', week:'Week 5–6',
+    labs:[
+      {
+        id:'p5-azure', cloud:'azure', title:'Azure PIM & Conditional Access',
+        meta:'Configure Privileged Identity Management, set up Conditional Access policies',
+        steps:[
+          {id:'s1', text:'Enable and navigate Azure Privileged Identity Management (PIM)', details:['Search for "Privileged Identity Management" in Azure Portal', 'Click "Manage" to enter PIM', 'Select Azure resources → Discover resources → select your subscription', 'This enables PIM management for Azure RBAC roles']},
+          {id:'s2', text:'Make a role eligible (Just-in-Time access) instead of permanent', details:['In PIM → Azure resources → your subscription → Roles → Owner', 'Click Add assignments → Eligible tab', 'Select labuser1 → Next → Eligible, 30-day expiry → Assign', 'Verify the role shows as Eligible (not Active) for labuser1']},
+          {id:'s3', text:'Activate an eligible role in PIM', details:['Go to PIM → My roles → Azure resource roles', 'Find the eligible Owner role → Activate', 'Enter justification: "Lab testing PIM activation"', 'Set duration: 1 hour', 'Verify the role is now Active for the next hour']},
+          {id:'s4', text:'Configure a Conditional Access policy (require MFA for privileged roles)', details:['Go to Entra ID → Protection → Conditional Access → New policy', 'Name: Require MFA for Privileged Roles', 'Users: select labuser1', 'Cloud apps: All cloud apps', 'Conditions: none for now', 'Grant: Require multifactor authentication', 'Enable: Report-only first, then On']},
+          {id:'s5', text:'Review PIM audit history and alerts', details:['Go to PIM → Audit → Resource audit', 'Filter by operation type: RoleAssignment', 'Review the activation event from step 3', 'Go to PIM → Alerts → review recommended security alerts']},
+        ],
+        validation:[
+          {id:'v1', text:'Owner role configured as Eligible (not permanent) for labuser1 in PIM'},
+          {id:'v2', text:'Successfully activated PIM role with justification'},
+          {id:'v3', text:'Conditional Access policy created requiring MFA (at least report-only)'},
+        ]
+      },
+      {
+        id:'p5-aws', cloud:'aws', title:'AWS IAM Access Analyzer & SCPs',
+        meta:'Use IAM Access Analyzer, configure Service Control Policies in AWS Organizations',
+        steps:[
+          {id:'s1', text:'Enable IAM Access Analyzer for your account', details:['Go to IAM → Access Analyzer → Create analyzer', 'Name: iam-lab-analyzer, Type: Account', 'Click Create analyzer', 'Review any existing findings (publicly accessible resources)']},
+          {id:'s2', text:'Review and remediate Access Analyzer findings', details:['In Access Analyzer, check the Findings tab', 'Click on any finding to see the resource and external access path', 'For S3 findings: review if the bucket policy grants public or cross-account access', 'Archive findings that are intentional, remediate the rest']},
+          {id:'s3', text:'Create a Service Control Policy (SCP) in AWS Organizations', details:['Go to AWS Organizations → Policies → Service control policies → Create policy', 'Policy name: DenyHighRiskActions', 'JSON: {"Version":"2012-10-17","Statement":[{"Sid":"DenyRootAccess","Effect":"Deny","Action":["organizations:LeaveOrganization"],"Resource":"*"},{"Sid":"DenyRegionLock","Effect":"Deny","NotAction":["iam:*","sts:*","support:*"],"Resource":"*","Condition":{"StringNotEquals":{"aws:RequestedRegion":["us-east-1","us-west-2"]}}}]}', 'Review and create']},
+          {id:'s4', text:'Attach the SCP to an Organizational Unit (or account)', details:['Go to Organizations → AWS accounts → select your account (or an OU)', 'Policies tab → Attach → select DenyHighRiskActions', 'Verify: try to perform an action denied by the SCP from an account in that OU', 'Note: SCPs do NOT affect the management (root) account']},
+          {id:'s5', text:'Use IAM Access Advisor to right-size permissions', details:['Go to IAM → Users → lab-user-one → Access Advisor tab', 'Review the "Last accessed" column for each service', 'Identify services that have NEVER been accessed', 'This is the basis for the principle of least privilege — remove unused service permissions']},
+        ],
+        validation:[
+          {id:'v1', text:'IAM Access Analyzer enabled and showing findings (or confirmed zero)'},
+          {id:'v2', text:'SCP DenyHighRiskActions created and attached to an OU/account'},
+          {id:'v3', text:'Access Advisor used to identify unused service permissions for lab-user-one'},
+        ]
+      },
+      {
+        id:'p5-gcp', cloud:'gcp', title:'GCP IAM Recommender & Org Policies',
+        meta:'Use IAM Recommender for least privilege, configure Organization Policy constraints',
+        steps:[
+          {id:'s1', text:'Review IAM Recommender findings', details:['Go to IAM & Admin → IAM → Recommendations column', 'If recommender shows findings, review roles that grant excess permissions', 'Alternatively: gcloud recommender recommendations list --recommender=google.iam.policy.Recommender --location=global --project=<PROJECT_ID>']},
+          {id:'s2', text:'Apply an IAM recommendation (replace broad role with narrower one)', details:['For a recommendation like "Replace roles/editor with roles/storage.admin"', 'In Cloud Console click the recommendation → Apply', 'Or via gcloud: gcloud recommender recommendations mark-claimed <RECOMMENDATION_ID> --location=global --recommender=google.iam.policy.Recommender --project=<PROJECT_ID>', 'Then apply the suggested role change']},
+          {id:'s3', text:'Configure an Organization Policy constraint', details:['Go to IAM & Admin → Organization Policies', 'Search for "Restrict resource locations" (constraints/gcp.resourceLocations)', 'Click the constraint → Manage policy', 'Set policy: Custom → Deny → add all locations except us-central1, europe-west1', 'Save and test by trying to create a resource in an unauthorized region']},
+          {id:'s4', text:'Enforce "Skip default network creation" org policy', details:['Search for constraints/compute.skipDefaultNetworkCreation', 'Enable this constraint at org/folder/project level', 'This ensures no default VPC is created in new projects (security best practice)', 'Verify: create a new test project and confirm no default network is created']},
+          {id:'s5', text:'Audit org policies with gcloud', details:['Run: gcloud resource-manager org-policies list --project=<PROJECT_ID>', 'Run: gcloud resource-manager org-policies describe constraints/gcp.resourceLocations --project=<PROJECT_ID>', 'Review effective policy (inherited + direct)', 'Run: gcloud resource-manager org-policies describe constraints/compute.skipDefaultNetworkCreation --project=<PROJECT_ID>']},
+        ],
+        validation:[
+          {id:'v1', text:'IAM Recommender reviewed and at least one recommendation applied'},
+          {id:'v2', text:'Resource locations org policy restricts to approved regions'},
+          {id:'v3', text:'Skip default network creation policy enabled'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p6', badge:'PHASE 6', title:'Auditing, Compliance & Best Practices', week:'Week 6',
+    labs:[
+      {
+        id:'p6-azure', cloud:'azure', title:'Azure AD Audit Logs & Security Monitoring',
+        meta:'Review audit and sign-in logs, set up alerts, check Secure Score',
+        steps:[
+          {id:'s1', text:'Review Entra ID sign-in logs and audit logs', details:['Go to Entra ID → Monitoring → Sign-in logs', 'Filter by labuser1 — review successful and failed sign-ins', 'Go to Audit logs → filter by category: RoleManagement', 'Export logs to Log Analytics workspace or storage account']},
+          {id:'s2', text:'Configure a Diagnostic Setting to send logs to Log Analytics', details:['Go to Entra ID → Diagnostic settings → Add diagnostic setting', 'Name: iam-lab-diag, check: AuditLogs, SignInLogs', 'Destination: Send to Log Analytics workspace (create one if needed)', 'Save, wait 15 min for first logs to arrive']},
+          {id:'s3', text:'Run KQL queries to detect suspicious IAM activity', details:['Go to Log Analytics workspace → Logs', 'Query: AuditLogs | where OperationName contains "Add member to role" | project TimeGenerated, OperationName, InitiatedBy, TargetResources', 'Query: SignInLogs | where ResultType != "0" | summarize FailedAttempts=count() by UserPrincipalName | order by FailedAttempts desc']},
+          {id:'s4', text:'Review Microsoft Entra ID Secure Score', details:['Go to Entra ID → Overview → Secure score', 'Review improvement actions recommended', 'Note the score out of 100', 'Common recommendations: enable MFA, reduce global admins, enable PIM']},
+          {id:'s5', text:'Set up an alert rule for Global Administrator additions', details:['Go to Entra ID → Monitoring → Audit logs → New alert rule', 'Condition: Signal = "Add member to role", filter for Global Administrator', 'Action group: email yourself', 'Name: Alert-GlobalAdminAdd, Create', 'Test by assigning/removing a role to verify the alert fires']},
+        ],
+        validation:[
+          {id:'v1', text:'Diagnostic settings configured to send AuditLogs and SignInLogs to Log Analytics'},
+          {id:'v2', text:'KQL query returns role assignment events successfully'},
+          {id:'v3', text:'Alert rule created for Global Administrator additions'},
+        ]
+      },
+      {
+        id:'p6-aws', cloud:'aws', title:'AWS CloudTrail IAM Auditing & Best Practices',
+        meta:'Use CloudTrail for IAM audit, generate credential report, apply IAM best practices',
+        steps:[
+          {id:'s1', text:'Verify CloudTrail is enabled and capturing IAM events', details:['Go to CloudTrail → Trails → review your trail', 'If no trail: Create trail → All regions, log to S3 bucket', 'In Event history: filter by Event source = iam.amazonaws.com', 'Review recent IAM API calls (CreateUser, AttachUserPolicy, etc.)']},
+          {id:'s2', text:'Search CloudTrail for specific IAM actions', details:['In CloudTrail → Event history → filter: Event name = AttachUserPolicy', 'Review who attached what policy to whom and when', 'Click an event to see the full JSON payload including sourceIPAddress and userAgent']},
+          {id:'s3', text:'Generate and analyze the IAM Credential Report', details:['Go to IAM → Credential report → Download report (CSV)', 'Review columns: user, password_enabled, password_last_used, mfa_active, access_key_1_active, access_key_1_last_used_date', 'Identify: users with old access keys, users without MFA, users who have never logged in', 'These are your remediation targets']},
+          {id:'s4', text:'Enable MFA for the IAM user and delete unused access keys', details:['Go to IAM → Users → lab-user-one → Security credentials', 'Multi-factor authentication (MFA) → Assign MFA device → Virtual MFA device', 'Scan the QR code with an authenticator app, enter two consecutive codes, Assign MFA', 'If there are access keys that are older than 90 days: Deactivate and then Delete']},
+          {id:'s5', text:'Review AWS IAM best practices checklist', details:['Lock away your root account access keys — verify no root access keys exist', 'Create individual IAM users — no sharing of credentials', 'Use groups to assign permissions — check lab-user-one is in a group', 'Grant least privilege — review permission boundary is active', 'Enable MFA for privileged users — verify with credential report', 'Use access levels to review IAM permissions — check Access Advisor']},
+        ],
+        validation:[
+          {id:'v1', text:'CloudTrail enabled across all regions with IAM events captured'},
+          {id:'v2', text:'Credential report downloaded and security gaps identified'},
+          {id:'v3', text:'MFA enabled for lab-user-one'},
+          {id:'v4', text:'No unused access keys older than 90 days for any user'},
+        ]
+      },
+      {
+        id:'p6-gcp', cloud:'gcp', title:'GCP Cloud Audit Logs & IAM Best Practices',
+        meta:'Enable and query audit logs, run IAM policy check, review security recommendations',
+        steps:[
+          {id:'s1', text:'Enable Data Access Audit Logs for key services', details:['Go to IAM & Admin → Audit logs', 'Select Cloud Storage → check: DATA_READ, DATA_WRITE, ADMIN_READ', 'Select IAM → check: DATA_READ', 'Save — these create detailed logs for every API call', 'Note: Admin Activity logs are always on and cannot be disabled']},
+          {id:'s2', text:'Query audit logs in Cloud Logging', details:['Go to Cloud Logging → Log Explorer', 'Filter: resource.type="project" logName="projects/<PROJECT>/logs/cloudaudit.googleapis.com%2Factivity"', 'Review SetIamPolicy log entries — these show every IAM change', 'Click an entry and review the authorizationInfo and request fields']},
+          {id:'s3', text:'Run a Logs-based metric for IAM changes', details:['In Log Explorer → Create metric (at top right)', 'Filter: protoPayload.methodName="SetIamPolicy"', 'Metric type: Counter, Name: iam_policy_changes', 'Create the metric', 'Go to Cloud Monitoring → create an alert on this metric threshold']},
+          {id:'s4', text:'Use the IAM Policy Troubleshooter', details:['Go to IAM & Admin → Policy Troubleshooter', 'Principal: your test user email', 'Resource: projects/<PROJECT_ID>', 'Permission: storage.buckets.list', 'Check access — review which binding grants or denies the permission']},
+          {id:'s5', text:'Review GCP IAM security best practices checklist', details:['Principle of least privilege: use predefined over primitive roles', 'Service account hygiene: no user-managed keys, prefer workload identity federation', 'Organization policies: enforce resource location, disable service account key creation', 'Audit regularly: use IAM Recommender, Policy Analyzer, and Security Command Center', 'Monitor: set up log-based alerts for SetIamPolicy events', 'Run: gcloud asset search-all-iam-policies --scope=projects/<PROJECT_ID> to get a full dump']},
+        ],
+        validation:[
+          {id:'v1', text:'Data Access Audit Logs enabled for Cloud Storage and IAM'},
+          {id:'v2', text:'SetIamPolicy events visible in Cloud Logging'},
+          {id:'v3', text:'Policy Troubleshooter correctly explains permission grant/deny chain'},
+          {id:'v4', text:'Log-based metric created to track IAM policy changes'},
+        ]
+      }
+    ]
+  }
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const APP_KEY = 'iam_lab_tracker';
+let state = {};  // { steps: {stepId: true}, notes: {stepId: "..."}, labNotes: {labId: "..."}, valChecks: {valId: true} }
+let currentUser = null;
+let db = null;
+let syncRef = null;
+
+// ─── Persist ──────────────────────────────────────────────────────────────────
+function loadState(){
+  const u = currentUser || 'default';
+  const raw = localStorage.getItem(APP_KEY+'_'+u);
+  state = raw ? JSON.parse(raw) : {steps:{},notes:{},labNotes:{},valChecks:{}};
+  if(!state.steps) state.steps={};
+  if(!state.notes) state.notes={};
+  if(!state.labNotes) state.labNotes={};
+  if(!state.valChecks) state.valChecks={};
+}
+function saveState(){
+  const u = currentUser || 'default';
+  localStorage.setItem(APP_KEY+'_'+u, JSON.stringify(state));
+  pushToFirebase();
+}
+
+// ─── Firebase ─────────────────────────────────────────────────────────────────
+function initFirebase(){
+  const cfg = JSON.parse(localStorage.getItem('iam_fb_config')||'null');
+  if(!cfg) return;
+  try{
+    const existing = firebase.apps.find(a=>a.name==='iam-tracker');
+    const app = existing || firebase.initializeApp(cfg,'iam-tracker');
+    db = firebase.database(app);
+    syncRef = db.ref('iam_progress');
+    listenFirebase();
+    setSyncStatus('ok','&#x2714; Synced');
+  } catch(e){ setSyncStatus('err','&#x26A0; Sync Error'); }
+}
+function listenFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).on('value', snap=>{
+    const data = snap.val();
+    if(data){
+      state = data;
+      if(!state.steps) state.steps={};
+      if(!state.notes) state.notes={};
+      if(!state.labNotes) state.labNotes={};
+      if(!state.valChecks) state.valChecks={};
+      saveState();
+      renderAll();
+      updateStats();
+    }
+  });
+}
+function pushToFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).set(state).then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Error'));
+}
+function setSyncStatus(type, html){
+  const el = document.getElementById('sync-status');
+  el.className='sync-status sync-'+type;
+  el.innerHTML=html;
+}
+function openFbPanel(){
+  const cfg = JSON.parse(localStorage.getItem('iam_fb_config')||'null');
+  if(cfg){ document.getElementById('fb-apiKey').value=cfg.apiKey||''; document.getElementById('fb-databaseURL').value=cfg.databaseURL||''; document.getElementById('fb-projectId').value=cfg.projectId||''; }
+  document.getElementById('fb-overlay').classList.add('open');
+}
+function closeFbPanel(){ document.getElementById('fb-overlay').classList.remove('open'); }
+function saveFbConfig(){
+  const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};
+  if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){ showFbMsg('err','Please fill in all 3 fields.'); return; }
+  localStorage.setItem('iam_fb_config',JSON.stringify(cfg));
+  showFbMsg('ok','Connecting...');
+  initFirebase();
+  setTimeout(closeFbPanel,1000);
+}
+function clearFbConfig(){ localStorage.removeItem('iam_fb_config'); db=null; syncRef=null; setSyncStatus('none','&#x1F4BE; Local Only'); closeFbPanel(); }
+function showFbMsg(type,msg){ const el=document.getElementById('fb-msg'); el.className='fb-status-msg '+type; el.innerHTML=msg; }
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+function initUser(){
+  currentUser = localStorage.getItem('iam_current_user');
+  if(!currentUser){ document.getElementById('user-overlay').classList.add('open'); return; }
+  document.getElementById('user-name-display').textContent=currentUser;
+  loadState(); build(); updateStats(); initFirebase();
+}
+function confirmUser(){
+  const v=document.getElementById('user-name-input').value.trim();
+  if(!v) return;
+  currentUser=v; localStorage.setItem('iam_current_user',v);
+  document.getElementById('user-name-display').textContent=v;
+  document.getElementById('user-overlay').classList.remove('open');
+  loadState(); build(); updateStats(); initFirebase();
+}
+function changeUser(){ document.getElementById('user-overlay').classList.add('open'); }
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function countAll(){
+  let total=0, done=0, az=0, azD=0, aw=0, awD=0, gcp=0, gcpD=0;
+  PHASES.forEach(ph=>{
+    ph.labs.forEach(lab=>{
+      total++; const allSteps=lab.steps.length+lab.validation.length;
+      const doneSteps=lab.steps.filter(s=>state.steps[s.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length;
+      const labDone = lab.steps.every(s=>state.steps[s.id]) && lab.validation.every(v=>state.valChecks[v.id]);
+      if(lab.cloud==='azure'){az++;if(labDone)azD++;}
+      else if(lab.cloud==='aws'){aw++;if(labDone)awD++;}
+      else{gcp++;if(labDone)gcpD++;}
+      if(labDone) done++;
+    });
+  });
+  return {total,done,az,azD,aw,awD,gcp,gcpD};
+}
+function countPhase(ph){
+  let s=0,d=0;
+  ph.labs.forEach(lab=>{ s+=lab.steps.length+lab.validation.length; d+=lab.steps.filter(x=>state.steps[x.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length; });
+  return {s,d};
+}
+function updateStats(){
+  const c=countAll();
+  document.getElementById('stat-total').textContent=c.total;
+  document.getElementById('stat-done').textContent=c.done;
+  document.getElementById('stat-azure').textContent=c.azD+'/'+c.az;
+  document.getElementById('stat-aws').textContent=c.awD+'/'+c.aw;
+  document.getElementById('stat-gcp').textContent=c.gcpD+'/'+c.gcp;
+  const pct=c.total?Math.round(c.done/c.total*100):0;
+  document.getElementById('stat-pct').textContent=pct+'%';
+  document.getElementById('big-bar-fill').style.width=pct+'%';
+  PHASES.forEach(ph=>{
+    const {s,d}=countPhase(ph);
+    const fill=document.getElementById('ph-fill-'+ph.id);
+    if(fill) fill.style.width=(s?Math.round(d/s*100):0)+'%';
+  });
+  if(c.done===c.total && c.total>0){ document.getElementById('congrats').style.display='flex'; }
+}
+
+// ─── Toggle step ─────────────────────────────────────────────────────────────
+function toggleStep(id){
+  state.steps[id]=!state.steps[id];
+  if(!state.steps[id]) delete state.steps[id];
+  saveState(); renderAll(); updateStats();
+}
+function toggleVal(id){
+  state.valChecks[id]=!state.valChecks[id];
+  if(!state.valChecks[id]) delete state.valChecks[id];
+  saveState(); renderAll(); updateStats();
+}
+
+// ─── Details & Notes ─────────────────────────────────────────────────────────
+function toggleDetail(btn){
+  const panel=btn.closest('.step-row').querySelector('.step-details');
+  if(!panel) return;
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Hide ▲':'Details ▼';
+}
+function toggleNote(btn){
+  const panel=btn.closest('.step-row').querySelector('.step-note-panel');
+  if(!panel) return;
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Note ▲':'Note ▼';
+}
+function saveNote(id,val){
+  if(val.trim()) state.notes[id]=val; else delete state.notes[id];
+  const btn=document.querySelector('[data-note-btn="'+id+'"]');
+  if(btn) btn.classList.toggle('has-note',!!state.notes[id]);
+  saveState();
+}
+function saveLabNote(id,val){
+  if(val.trim()) state.labNotes[id]=val; else delete state.labNotes[id];
+  saveState();
+}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+let activeFilter='all';
+function filterTab(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.lab-section').forEach(sec=>{
+    sec.style.display=(f==='all'||sec.dataset.cloud===f)?'block':'none';
+  });
+}
+
+// ─── Build UI ─────────────────────────────────────────────────────────────────
+function renderAll(){
+  document.querySelectorAll('.step-row').forEach(row=>{
+    const id=row.dataset.stepId;
+    if(id) row.classList.toggle('done',!!state.steps[id]);
+    const chk=row.querySelector('.step-check');
+    if(chk && id) chk.innerHTML=state.steps[id]?'&#x2714;':'';
+  });
+  document.querySelectorAll('.val-row').forEach(row=>{
+    const id=row.dataset.valId;
+    if(id) row.classList.toggle('done',!!state.valChecks[id]);
+    const chk=row.querySelector('.val-check');
+    if(chk && id) chk.innerHTML=state.valChecks[id]?'&#x2714;':'';
+  });
+  document.querySelectorAll('textarea[data-note-id]').forEach(ta=>{
+    ta.value=state.notes[ta.dataset.noteId]||'';
+  });
+  document.querySelectorAll('[data-note-btn]').forEach(btn=>{
+    btn.classList.toggle('has-note',!!state.notes[btn.dataset.noteBtnId]);
+  });
+  document.querySelectorAll('textarea[data-lab-note]').forEach(ta=>{
+    ta.value=state.labNotes[ta.dataset.labNote]||'';
+  });
+}
+
+function build(){
+  const content=document.getElementById('content');
+  content.innerHTML='';
+  PHASES.forEach(ph=>{
+    const card=document.createElement('div');
+    card.className='phase-card';
+    card.id='phase-'+ph.id;
+    const {s,d}=countPhase(ph);
+    const pct=s?Math.round(d/s*100):0;
+    card.innerHTML=`
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-header-left">
+          <span class="phase-badge">${ph.badge}</span>
+          <div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:#C4B5FD;min-width:32px;text-align:right">${pct}%</span>
+          <span class="chevron">&#x25BC;</span>
+        </div>
+      </div>
+      <div class="phase-body">${ph.labs.map(lab=>buildLab(lab)).join('')}</div>`;
+    content.appendChild(card);
+  });
+}
+
+function buildLab(lab){
+  const cloudClass=lab.cloud+'-lab';
+  const badgeClass=lab.cloud+'-badge';
+  const btnClass=lab.cloud+'-btn';
+  const cloudLabel={azure:'Azure',aws:'AWS',gcp:'GCP'}[lab.cloud];
+  const doneSteps=lab.steps.filter(s=>state.steps[s.id]).length;
+  const doneVals=lab.validation.filter(v=>state.valChecks[v.id]).length;
+  const total=lab.steps.length+lab.validation.length;
+  const done=doneSteps+doneVals;
+  const pct=total?Math.round(done/total*100):0;
+  return `<div class="lab-section" id="lab-${lab.id}" data-cloud="${lab.cloud}">
+    <div class="lab-header ${cloudClass}">
+      <span class="lab-cloud-badge ${badgeClass}">${cloudLabel}</span>
+      <div class="lab-title-area">
+        <div class="lab-title">${lab.title}</div>
+        <div class="lab-meta">${lab.meta} &middot; ${done}/${total} steps</div>
+      </div>
+      <div class="lab-stats">
+        <div style="font-size:11px;font-weight:700;color:var(--gray)">${pct}%</div>
+        <button class="lab-toggle ${btnClass}" onclick="toggleLab('lab-${lab.id}')">&#x25BC; Expand</button>
+      </div>
+    </div>
+    <div class="steps-list">
+      <div class="section-lbl">&#x1F527; Lab Steps</div>
+      ${lab.steps.map((s,i)=>buildStep(s,i+1)).join('')}
+      <div class="section-lbl" style="margin-top:14px">&#x2705; Validation Checks</div>
+      ${lab.validation.map(v=>buildVal(v)).join('')}
+      ${buildRefs(lab.id)}
+      <div class="section-lbl" style="margin-top:14px">&#x1F4DD; Lab Notes</div>
+      <textarea class="notes-area" data-lab-note="${lab.id}" placeholder="Add any overall notes about this lab..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea>
+    </div>
+  </div>`;
+}
+
+function buildStep(s,num){
+  const done=!!state.steps[s.id];
+  const hasDetails=s.details&&s.details.length>0;
+  const hasNote=!!state.notes[s.id];
+  return `<div class="step-row${done?' done':''}" data-step-id="${s.id}">
+    <div class="step-check" onclick="toggleStep('${s.id}')">${done?'&#x2714;':''}</div>
+    <div class="step-main">
+      <div class="step-top">
+        <span class="step-num">${num}.</span>
+        <span class="step-text">${s.text}</span>
+        ${hasDetails?`<button class="detail-btn" onclick="toggleDetail(this)">Details &#x25BC;</button>`:''}
+        <button class="note-btn${hasNote?' has-note':''}" data-note-btn="${s.id}" onclick="toggleNote(this)">Note &#x25BC;</button>
+      </div>
+      ${hasDetails?`<div class="step-details">${s.details.map((d,i)=>`<div class="detail-item"><span class="di-num">${i+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}
+      <div class="step-note-panel">
+        <textarea class="note-textarea" data-note-id="${s.id}" placeholder="Your notes for this step..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea>
+        <div class="note-hint">&#x1F4A1; Notes are saved locally and synced if Firebase is connected.</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildVal(v){
+  const done=!!state.valChecks[v.id];
+  return `<div class="val-row${done?' done':''}" data-val-id="${v.id}" onclick="toggleVal('${v.id}')">
+    <div class="val-check">${done?'&#x2714;':''}</div>
+    <span class="step-text">&#x1F4CB; ${v.text}</span>
+  </div>`;
+}
+
+function togglePhase(header){
+  header.closest('.phase-card').classList.toggle('open');
+}
+function toggleLab(id){
+  const sec=document.getElementById(id);
+  if(!sec) return;
+  sec.classList.toggle('open');
+  const btn=sec.querySelector('.lab-toggle');
+  if(btn) btn.innerHTML=sec.classList.contains('open')?'&#x25B2; Collapse':'&#x25BC; Expand';
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function resetProgress(){
+  if(!confirm('Reset all IAM lab progress for '+currentUser+'? This cannot be undone.')) return;
+  state={steps:{},notes:{},labNotes:{},valChecks:{}};
+  saveState(); build(); updateStats();
+}
+
+// ─── Official References ──────────────────────────────────────────────────────
+const LAB_RESOURCES = {
+  'p1-azure':[
+    {title:'Create a new user in Microsoft Entra ID', url:'https://learn.microsoft.com/en-us/entra/fundamentals/add-users'},
+    {title:'Manage Microsoft Entra groups and group membership', url:'https://learn.microsoft.com/en-us/entra/fundamentals/groups-view-azure-portal'},
+    {title:'Assign directory roles to users', url:'https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/manage-roles-portal'},
+    {title:'Entra ID sign-in logs reference', url:'https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-sign-ins'},
+  ],
+  'p1-aws':[
+    {title:'Creating an IAM user in your AWS account', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html'},
+    {title:'Creating IAM user groups', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_groups_create.html'},
+    {title:'Creating IAM policies (console)', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create-console.html'},
+    {title:'Getting credential reports for your AWS account', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_getting-report.html'},
+  ],
+  'p1-gcp':[
+    {title:'Granting, changing, and revoking access to resources', url:'https://cloud.google.com/iam/docs/granting-changing-revoking-access'},
+    {title:'Understanding IAM — resource hierarchy', url:'https://cloud.google.com/iam/docs/resource-hierarchy-access-control'},
+    {title:'Policy Analyzer overview', url:'https://cloud.google.com/iam/docs/managing-policy-insights'},
+    {title:'Predefined IAM roles reference', url:'https://cloud.google.com/iam/docs/understanding-roles'},
+  ],
+  'p2-azure':[
+    {title:'Azure RBAC — what is it?', url:'https://learn.microsoft.com/en-us/azure/role-based-access-control/overview'},
+    {title:'Assign Azure roles using the Azure portal', url:'https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal'},
+    {title:'Create or update Azure custom roles', url:'https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles-portal'},
+    {title:'List Azure role assignments using Azure CLI', url:'https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-cli'},
+  ],
+  'p2-aws':[
+    {title:'IAM roles — overview', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html'},
+    {title:'Creating a role to delegate permissions to an IAM user', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html'},
+    {title:'IAM JSON policy elements — trust policies', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html'},
+    {title:'IAM permissions boundaries', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html'},
+    {title:'Testing IAM policies with the IAM policy simulator', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_testing-policies.html'},
+  ],
+  'p2-gcp':[
+    {title:'Creating and managing custom roles', url:'https://cloud.google.com/iam/docs/creating-custom-roles'},
+    {title:'Using IAM conditions', url:'https://cloud.google.com/iam/docs/conditions-overview'},
+    {title:'Understanding IAM — predefined roles', url:'https://cloud.google.com/iam/docs/understanding-roles#predefined_roles'},
+    {title:'gcloud iam roles create reference', url:'https://cloud.google.com/sdk/gcloud/reference/iam/roles/create'},
+  ],
+  'p3-azure':[
+    {title:'Application and service principal objects in Microsoft Entra ID', url:'https://learn.microsoft.com/en-us/entra/identity-platform/app-objects-and-service-principals'},
+    {title:'What are managed identities for Azure resources?', url:'https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview'},
+    {title:'How to use managed identities on an Azure VM', url:'https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/how-to-use-vm-token'},
+    {title:'Assign a managed identity access to a resource', url:'https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/howto-assign-access-portal'},
+  ],
+  'p3-aws':[
+    {title:'Using an IAM role to grant permissions to applications on EC2', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html'},
+    {title:'Instance metadata and user data (IMDSv2)', url:'https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html'},
+    {title:'Configure the instance metadata service', url:'https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html'},
+    {title:'Lambda execution role', url:'https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html'},
+  ],
+  'p3-gcp':[
+    {title:'Creating and managing service accounts', url:'https://cloud.google.com/iam/docs/creating-managing-service-accounts'},
+    {title:'Creating and managing service account keys', url:'https://cloud.google.com/iam/docs/creating-managing-service-account-keys'},
+    {title:'Impersonating service accounts', url:'https://cloud.google.com/iam/docs/impersonating-service-accounts'},
+    {title:'Workload Identity Federation overview', url:'https://cloud.google.com/iam/docs/workload-identity-federation'},
+    {title:'Best practices for using service accounts', url:'https://cloud.google.com/iam/docs/best-practices-service-accounts'},
+  ],
+  'p4-azure':[
+    {title:'What is single sign-on in Microsoft Entra ID?', url:'https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/what-is-single-sign-on'},
+    {title:'Configure SAML-based SSO for an enterprise application', url:'https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal-setup-sso'},
+    {title:'Customize SAML token claims', url:'https://learn.microsoft.com/en-us/entra/identity-platform/saml-claims-customization'},
+    {title:'Add users and groups to an enterprise application', url:'https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal-assign-users'},
+  ],
+  'p4-aws':[
+    {title:'What is IAM Identity Center?', url:'https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html'},
+    {title:'Getting started with IAM Identity Center', url:'https://docs.aws.amazon.com/singlesignon/latest/userguide/get-started-prereqs-considerations.html'},
+    {title:'Create a permission set', url:'https://docs.aws.amazon.com/singlesignon/latest/userguide/howtocreatepermissionset.html'},
+    {title:'Assign user access to AWS accounts', url:'https://docs.aws.amazon.com/singlesignon/latest/userguide/useraccess.html'},
+  ],
+  'p4-gcp':[
+    {title:'Workforce Identity Federation overview', url:'https://cloud.google.com/iam/docs/workforce-identity-federation'},
+    {title:'Configure Workforce Identity Federation with OIDC', url:'https://cloud.google.com/iam/docs/workforce-sign-in-oidc'},
+    {title:'Workload Identity Federation for GitHub Actions', url:'https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions'},
+    {title:'Manage workforce identity pools', url:'https://cloud.google.com/iam/docs/manage-workforce-identity-pools-providers'},
+  ],
+  'p5-azure':[
+    {title:'What is Microsoft Entra Privileged Identity Management?', url:'https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure'},
+    {title:'Assign Azure resource roles in PIM', url:'https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-assign-roles'},
+    {title:'Activate Azure resource roles in PIM', url:'https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-activate-your-roles'},
+    {title:'What is Conditional Access?', url:'https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview'},
+    {title:'Building a Conditional Access policy', url:'https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-policies'},
+  ],
+  'p5-aws':[
+    {title:'What is IAM Access Analyzer?', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html'},
+    {title:'Getting started with IAM Access Analyzer', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-getting-started.html'},
+    {title:'Service control policies (SCPs)', url:'https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html'},
+    {title:'SCP syntax and examples', url:'https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_syntax.html'},
+    {title:'Viewing last accessed information for IAM', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_access-advisor-view-data.html'},
+  ],
+  'p5-gcp':[
+    {title:'IAM Recommender overview', url:'https://cloud.google.com/iam/docs/recommender-overview'},
+    {title:'Applying IAM recommendations', url:'https://cloud.google.com/iam/docs/recommender-managing'},
+    {title:'Introduction to Organization Policy Service', url:'https://cloud.google.com/resource-manager/docs/organization-policy/overview'},
+    {title:'Restricting resource locations (org policy)', url:'https://cloud.google.com/resource-manager/docs/organization-policy/defining-locations'},
+    {title:'Disable automatic IAM grants for default service accounts', url:'https://cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints'},
+  ],
+  'p6-azure':[
+    {title:'Audit logs in Microsoft Entra ID', url:'https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-audit-logs'},
+    {title:'Integrate Entra ID logs with Azure Monitor', url:'https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-integrate-activity-logs-with-azure-monitor-logs'},
+    {title:'Analyze Entra ID logs using KQL', url:'https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-analyze-activity-logs-log-analytics'},
+    {title:'What is Microsoft Entra ID Secure Score?', url:'https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-identity-secure-score'},
+    {title:'Create, view, and manage log alerts using Azure Monitor', url:'https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-log-alert-rule'},
+  ],
+  'p6-aws':[
+    {title:'Logging IAM and AWS STS API calls with AWS CloudTrail', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/cloudtrail-integration.html'},
+    {title:'Getting credential reports for your AWS account', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_getting-report.html'},
+    {title:'AWS IAM best practices', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html'},
+    {title:'Enable MFA for your AWS account root user', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/enable-virt-mfa-for-root.html'},
+    {title:'Rotating access keys', url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_RotateAccessKey'},
+  ],
+  'p6-gcp':[
+    {title:'Cloud Audit Logs overview', url:'https://cloud.google.com/logging/docs/audit'},
+    {title:'Configure Data Access audit logs', url:'https://cloud.google.com/logging/docs/audit/configure-data-access'},
+    {title:'Using IAM Policy Troubleshooter', url:'https://cloud.google.com/iam/docs/troubleshooting-access'},
+    {title:'IAM best practices', url:'https://cloud.google.com/iam/docs/using-iam-securely'},
+    {title:'Log-based alerting overview', url:'https://cloud.google.com/logging/docs/alerting/log-based-alerts'},
+    {title:'Security Command Center overview', url:'https://cloud.google.com/security-command-center/docs/concepts-security-command-center-overview'},
+  ],
+};
+
+let expandedRefs = {};
+
+function buildRefs(labId){
+  const refs = LAB_RESOURCES[labId] || [];
+  if(!refs.length) return '';
+  const open = !!expandedRefs[labId];
+  const listHTML = refs.map(r=>`<div class="ref-item"><span class="ref-icon">&#x1F4D6;</span><a href="${r.url}" target="_blank" rel="noopener">${r.title}</a></div>`).join('');
+  return `<div class="refs-section">
+    <div class="refs-header" onclick="expandedRefs['${labId}']=!expandedRefs['${labId}'];build();updateStats()">
+      <span class="refs-title">&#x1F517; Official References (${refs.length})</span>
+      <span class="refs-toggle">${open?'&#x25BC; Hide':'&#x25BA; Show'}</span>
+    </div>
+    ${open?`<div class="refs-list">${listHTML}</div>`:''}
+  </div>`;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', initUser);
+</script>
+</body>
+</html>

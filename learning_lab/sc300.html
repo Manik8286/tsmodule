@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SC-300 Lab Tracker — Identity & Access Administrator</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{--accent:#4C1D95;--accent-light:#F5F3FF;--accent-mid:#6D28D9;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#4C1D95;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#DDD6FE;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#DDD6FE;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--accent);}
+.stat-block.done .num{color:var(--green);}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#4C1D95,#A78BFA);transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--accent);color:white;border-color:var(--accent);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.1);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#DDD6FE;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#4ADE80;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;border-left:4px solid var(--accent-mid);background:var(--accent-light);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid var(--accent-mid);cursor:pointer;font-weight:600;background:white;color:var(--accent-mid);transition:all .2s;}
+.lab-toggle:hover{background:var(--accent-mid);color:white;}
+.mini-bar-wrap{width:60px;}
+.mini-bar{background:#E5E7EB;border-radius:99px;height:5px;overflow:hidden;}
+.mini-bar-fill{height:100%;border-radius:99px;background:var(--green);transition:width .4s;}
+.mini-pct{font-size:9px;color:var(--gray);text-align:right;margin-top:1px;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--accent-mid);color:var(--accent-mid);}
+.detail-btn.open{background:var(--accent-light);border-color:var(--accent-mid);color:var(--accent-mid);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#F5F3FF;border-left:3px solid var(--accent-mid);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--accent-mid);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#EDE9FE;padding:1px 4px;border-radius:3px;color:#6D28D9;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-ta{width:100%;border:1px solid #FDE68A;border-radius:6px;padding:6px 8px;font-size:11.5px;font-family:inherit;resize:vertical;min-height:52px;background:#FFFFF5;}
+.note-ta:focus{outline:none;border-color:#F59E0B;}
+.val-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;margin-bottom:2px;transition:background .15s;}
+.val-row:hover{background:var(--light);}
+.val-row.done{background:var(--green-light);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .2s;font-size:10px;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.val-text{font-size:11.5px;line-height:1.4;}
+.val-row.done .val-text{text-decoration:line-through;color:var(--gray);}
+.lab-notes-area{margin:10px 0 4px;background:#F8FAFF;border-radius:8px;padding:10px 12px;border:1px solid #E0E7FF;}
+.lab-notes-lbl{font-size:10px;font-weight:700;color:var(--accent-mid);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.lab-notes-ta{width:100%;border:1px solid #C4B5FD;border-radius:6px;padding:6px 8px;font-size:11.5px;font-family:inherit;resize:vertical;min-height:44px;background:white;}
+.lab-notes-ta:focus{outline:none;border-color:var(--accent-mid);}
+.refs-section{margin-top:14px;padding:12px 14px;background:var(--accent-light);border-left:3px solid var(--accent-mid);border-radius:0 8px 8px 0;}
+.refs-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.refs-title{font-size:10px;font-weight:700;color:var(--accent-mid);text-transform:uppercase;letter-spacing:.6px;}
+.refs-toggle{font-size:10px;color:var(--gray);}
+.refs-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
+.ref-item{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;}
+.ref-icon{flex-shrink:0;}
+.ref-item a{color:var(--accent-mid);text-decoration:none;}
+.ref-item a:hover{text-decoration:underline;}
+.sync-bar{background:rgba(255,255,255,.08);border-radius:8px;padding:6px 14px;font-size:10px;color:#DDD6FE;display:flex;align-items:center;gap:8px;}
+.fb-dot{width:7px;height:7px;border-radius:50%;background:#4ADE80;}
+.fb-dot.off{background:#9CA3AF;}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>SC-300 — Identity &amp; Access Administrator Lab Tracker</h1>
+      <p>Implement identity solutions, manage authentication and application access</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="sync-bar"><span class="fb-dot off" id="fbDot"></span><span id="fbStatus">Local only</span></div>
+      <div class="nav-links">
+        <a href="../personal_site/index.html" class="nav-link">🏠 Home</a>
+        <a href="index.html" class="nav-link">☁️ IaaS Labs</a>
+        <a href="iam.html" class="nav-link">🔒 IAM Labs</a>
+        <a href="az700.html" class="nav-link">🌐 AZ-700</a>
+        <a href="az500.html" class="nav-link">🛡️ AZ-500</a>
+        <a href="soa-c02.html" class="nav-link">🔧 SOA-C02</a>
+        <a href="az400.html" class="nav-link">&#x1F504; AZ-400</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="totalSteps">0</div><div class="lbl">Total Steps</div></div>
+  <div class="stat-block done"><div class="num" id="doneSteps">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block"><div class="num" id="totalLabs">0</div><div class="lbl">Labs</div></div>
+  <div class="stat-block"><div class="num" id="doneLabs">0</div><div class="lbl">Labs Done</div></div>
+  <div class="big-bar-wrap">
+    <div class="big-bar-label"><span>Overall Progress</span><span id="pctLabel">0%</span></div>
+    <div class="big-bar"><div class="big-bar-fill" id="bigBarFill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterPhase('all',this)">All Phases</button>
+  <button class="tab" onclick="filterPhase('p1',this)">1 · Identity Foundation</button>
+  <button class="tab" onclick="filterPhase('p2',this)">2 · Authentication</button>
+  <button class="tab" onclick="filterPhase('p3',this)">3 · App Access</button>
+  <button class="tab" onclick="filterPhase('p4',this)">4 · Governance</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+const APP_KEY = 'sc300_lab_tracker';
+const FB_PATH = 'sc300_progress';
+
+const PHASES = [
+  {id:'p1',badge:'PHASE 1',title:'Identity Foundation & Azure AD',week:'Week 1-3',labs:[
+    {id:'p1-tenant',title:'Azure AD Tenant Configuration',meta:'Azure Portal · Entra ID',
+     steps:[
+       {id:'sc1s1',text:'Configure tenant-level settings: display name, country, notification emails',details:['Navigate to Entra ID → Overview → Properties','Set organization name and technical contact email','Review Usage Location defaults','Check subscription and license counts']},
+       {id:'sc1s2',text:'Create custom security attributes and attribute sets',details:['Entra ID → Custom security attributes → Add attribute set','Create attribute set: HRData','Add attributes: Department, CostCenter, EmployeeType','Assign custom attributes to a test user']},
+       {id:'sc1s3',text:'Configure company branding for sign-in page',details:['Entra ID → Company branding → Configure','Upload background image, banner logo, square logo','Set sign-in page text and username hint','Test branding by opening private browser to login.microsoftonline.com/yourtenant']},
+       {id:'sc1s4',text:'Create organizational units using Administrative Units',details:['Entra ID → Administrative units → Add','Create AU: SalesTeam, ITDept','Add users and groups to each AU','Assign scoped administrator role to AU (Helpdesk Admin on SalesTeam AU)']},
+     ],
+     validation:[
+       {id:'sc1v1',text:'Custom security attributes visible on user profile'},
+       {id:'sc1v2',text:'Company branding appears on tenant sign-in page'},
+       {id:'sc1v3',text:'Scoped admin can only manage users in their assigned AU'},
+     ]},
+    {id:'p1-users',title:'User & Group Management',meta:'Entra ID · PowerShell · MS Graph',
+     steps:[
+       {id:'sc1s5',text:'Create users with required properties: UPN, display name, job title, department',details:['Entra ID → Users → New user','Fill: Display name, UPN, department, job title, office location','Assign usage location (required for license)','Bulk create 5 test users using CSV upload']},
+       {id:'sc1s6',text:'Create dynamic groups based on user attributes',details:['Groups → New Group → Dynamic membership','Rule: (user.department -eq "Sales")','Create another: (user.jobTitle -contains "Manager")','Verify users auto-populate based on attributes']},
+       {id:'sc1s7',text:'Configure group writeback to on-premises AD',details:['Enable group writeback in Entra Connect','Select cloud groups to write back','Verify groups appear in on-prem AD (if hybrid lab available)','Check sync status in Entra Connect Health']},
+       {id:'sc1s8',text:'Manage guest users and B2B collaboration settings',details:['Entra ID → External Identities → External collaboration settings','Set guest invite restrictions','Invite a test guest user (use personal email)','Configure cross-tenant access settings (outbound/inbound)']},
+     ],
+     validation:[
+       {id:'sc1v4',text:'Dynamic group membership updates automatically when user attribute changes'},
+       {id:'sc1v5',text:'Guest user can access shared resource after invitation acceptance'},
+     ]},
+  ]},
+  {id:'p2',badge:'PHASE 2',title:'Authentication & MFA',week:'Week 4-6',labs:[
+    {id:'p2-mfa',title:'Multi-Factor Authentication & SSPR',meta:'Entra ID · Conditional Access',
+     steps:[
+       {id:'sc2s1',text:'Configure MFA registration policy for all users',details:['Entra ID → Security → MFA → Additional cloud-based MFA settings','Enable per-user MFA or use Conditional Access (preferred)','Create CA policy: Require MFA for All users → All cloud apps','Set policy to Report-only first, then enable']},
+       {id:'sc2s2',text:'Set up Self-Service Password Reset (SSPR) with combined registration',details:['Entra ID → Security → Password reset → Enable for All','Configure authentication methods: Mobile app, Email, Phone','Enable combined registration experience','Set number of methods required to reset: 2']},
+       {id:'sc2s3',text:'Configure authentication methods policies (passwordless)',details:['Entra ID → Security → Authentication methods → Policies','Enable Microsoft Authenticator (passwordless)','Enable FIDO2 Security Keys','Configure Temporary Access Pass (TAP) for onboarding']},
+       {id:'sc2s4',text:'Set up password protection and banned passwords',details:['Entra ID → Security → Authentication methods → Password protection','Enable Azure AD Password Protection','Add custom banned passwords: CompanyName1!, LabPass1!','Deploy on-premises agent if hybrid (optional)']},
+     ],
+     validation:[
+       {id:'sc2v1',text:'User prompted for MFA on first sign-in after CA policy enabled'},
+       {id:'sc2v2',text:'SSPR password reset completes successfully with 2 auth methods'},
+       {id:'sc2v3',text:'Banned password rejected during password change'},
+     ]},
+    {id:'p2-ca',title:'Conditional Access Policies',meta:'Entra ID Premium P2',
+     steps:[
+       {id:'sc2s5',text:'Create baseline Conditional Access policies',details:['Block legacy authentication: condition = client app (legacy), action = block','Require MFA for admin roles: condition = directory roles (Global Admin etc.)','Require compliant device for Microsoft 365 apps','Always use named locations (trusted IP ranges)']},
+       {id:'sc2s6',text:'Configure Named Locations and Continuous Access Evaluation',details:['CA → Named locations → Add IP-based location','Add office public IP ranges, mark as Trusted','Enable Continuous Access Evaluation in tenant settings','Create CA policy: block access from non-trusted countries']},
+       {id:'sc2s7',text:'Implement risk-based Conditional Access with Identity Protection',details:['Entra ID Protection → User risk policy → Enable','Condition: User risk = High → Require secure password change','Sign-in risk policy: Medium → Require MFA','Review risky users and sign-ins dashboard']},
+     ],
+     validation:[
+       {id:'sc2v4',text:'Legacy auth attempt blocked (test with basic auth client)'},
+       {id:'sc2v5',text:'Admin account prompts for MFA on every sign-in'},
+       {id:'sc2v6',text:'Sign-in from unlisted country blocked by named location policy'},
+     ]},
+    {id:'p2-hybrid',title:'Hybrid Identity & Entra Connect',meta:'Windows Server · Entra Connect',
+     steps:[
+       {id:'sc2s8',text:'Install and configure Microsoft Entra Connect',details:['Download Entra Connect on domain member server','Choose Express or Custom settings','Select Password Hash Sync (or Pass-through Auth)','Complete sync and verify users in Entra ID']},
+       {id:'sc2s9',text:'Configure seamless single sign-on (SSO)',details:['In Entra Connect wizard, enable Seamless SSO','Add Entra ID URL to intranet zone via GPO','Test SSO from domain-joined machine (no prompt expected)','Check SSO activity in sign-in logs']},
+       {id:'sc2s10',text:'Set up Entra Connect Health monitoring',details:['Install Entra Connect Health agent on AD FS or ADDS servers','Review sync errors in Entra Connect Health dashboard','Set up email notifications for sync failures']},
+     ],
+     validation:[
+       {id:'sc2v7',text:'On-premises users sync to Entra ID within 30 minutes'},
+       {id:'sc2v8',text:'Domain-joined machine signs in without MFA prompt (Seamless SSO)'},
+     ]},
+  ]},
+  {id:'p3',badge:'PHASE 3',title:'Application Access Management',week:'Week 7-9',labs:[
+    {id:'p3-apps',title:'Enterprise App Registration & SSO',meta:'App Registrations · SAML · OIDC',
+     steps:[
+       {id:'sc3s1',text:'Register a custom application and configure OIDC authentication',details:['Entra ID → App registrations → New registration','Redirect URI: https://jwt.ms (for testing)','Add API permissions: Microsoft Graph → User.Read','Grant admin consent for tenant']},
+       {id:'sc3s2',text:'Configure SAML-based SSO for a Gallery app',details:['Enterprise apps → Add application → search for app (e.g. AWS IAM Identity Center)','Configure SAML: Basic SAML Config, Attributes, Certificates','Download SAML signing certificate and upload to app SP','Test SAML sign-in flow']},
+       {id:'sc3s3',text:'Set up App Proxy for on-premises app publishing',details:['Enterprise apps → Application proxy → Download connector','Install connector on Windows Server on-prem','Publish internal app: internal URL, external URL, pre-auth (Entra ID)','Test access from external network']},
+       {id:'sc3s4',text:'Configure app user assignments and role assignments',details:['Enterprise app → Users and groups → Add user/group','Assign users directly or via group','Create app roles in manifest: {value:"Admin", displayName:"Admin"}','Assign roles to specific users']},
+     ],
+     validation:[
+       {id:'sc3v1',text:'OIDC app successfully returns ID token with user claims'},
+       {id:'sc3v2',text:'SAML SSO completes without prompting credentials'},
+       {id:'sc3v3',text:'App Proxy publishes internal web app accessible from internet'},
+     ]},
+    {id:'p3-perm',title:'API Permissions & Consent Framework',meta:'MS Graph · App Permissions',
+     steps:[
+       {id:'sc3s5',text:'Configure delegated vs application permissions',details:['App registration → API permissions','Add delegated: User.Read, Mail.Read (requires user sign-in)','Add application: User.ReadAll (background service)','Document why each permission is needed']},
+       {id:'sc3s6',text:'Implement admin consent workflow',details:['Entra ID → Enterprise apps → User settings','Enable Admin consent requests','Designate reviewers for consent requests','Test: user requests access, reviewer approves']},
+       {id:'sc3s7',text:'Review OAuth app permission audit logs',details:['Entra ID → Sign-in logs → filter Service Principal sign-ins','Audit logs → filter for Consent to application','Export logs to Log Analytics for long-term retention','Create alert for high-permission app consent']},
+     ],
+     validation:[
+       {id:'sc3v4',text:'Application permission granted only after admin consent'},
+       {id:'sc3v5',text:'Consent audit log records all permission grants'},
+     ]},
+  ]},
+  {id:'p4',badge:'PHASE 4',title:'Identity Governance',week:'Week 10-12',labs:[
+    {id:'p4-pim',title:'Privileged Identity Management (PIM)',meta:'Entra ID P2 · PIM',
+     steps:[
+       {id:'sc4s1',text:'Enable PIM and configure eligible role assignments',details:['Entra ID → Identity Governance → Privileged Identity Management','Roles → Global Administrator → Assignments → Add assignments','Add user as Eligible (not Active) for Global Admin','Set maximum activation duration: 4 hours, require justification']},
+       {id:'sc4s2',text:'Configure PIM activation settings and notifications',details:['PIM → Role settings → Edit for Global Administrator','Require MFA on activation: Yes','Require approval: Yes, select approvers','Set notifications: on activation, on approval']},
+       {id:'sc4s3',text:'Perform access reviews for privileged roles',details:['PIM → Access reviews → New access review','Scope: Privileged roles, select Global Administrator','Frequency: Weekly, reviewer: Managers','Complete review: approve/deny each assignment','Apply results automatically']},
+       {id:'sc4s4',text:'View PIM audit history and alerts',details:['PIM → Audit history → filter by role and user','Review activation requests and approvals','Check PIM alerts: roles assigned outside PIM, too many global admins']},
+     ],
+     validation:[
+       {id:'sc4v1',text:'Eligible user can activate role only with MFA and justification'},
+       {id:'sc4v2',text:'Role activation requires approver action before access granted'},
+       {id:'sc4v3',text:'Access review results remove inactive privileged users'},
+     ]},
+    {id:'p4-entitle',title:'Entitlement Management & Access Packages',meta:'Identity Governance',
+     steps:[
+       {id:'sc4s5',text:'Create a Catalog and Access Package',details:['Identity Governance → Entitlement Management → Catalogs → New catalog','Add resources: Groups, Applications, SharePoint sites','Create access package in catalog','Add resource roles to the package']},
+       {id:'sc4s6',text:'Configure access package policy with approval workflow',details:['Access package → Policies → New policy','Scope: Users in my directory (or external)','Enable approval: first approver = Manager, second = IT Admin','Set access duration and expiration']},
+       {id:'sc4s7',text:'Configure lifecycle workflows for joiner/mover/leaver',details:['Identity Governance → Lifecycle Workflows → Create workflow','Joiner workflow: Send welcome email, Add to groups, Enable account','Leaver workflow: Remove access, Disable account, Send offboarding email','Set trigger: attribute-based (day before start date)']},
+       {id:'sc4s8',text:'Run and monitor access review for group memberships',details:['Identity Governance → Access reviews → New access review','Scope: Group and team members','Select groups: All Microsoft 365 groups with guests','Reviewer: Group owners','Duration: 14 days, auto-apply results']},
+     ],
+     validation:[
+       {id:'sc4v4',text:'External user can request access package and receives access after approval'},
+       {id:'sc4v5',text:'Access expires automatically at configured end date'},
+       {id:'sc4v6',text:'Lifecycle workflow triggers automatically based on user attribute'},
+     ]},
+  ]},
+];
+
+const LAB_RESOURCES = {
+  'p1-tenant':[
+    {title:'Azure AD tenant overview',url:'https://learn.microsoft.com/en-us/entra/fundamentals/whatis'},
+    {title:'Administrative units in Entra ID',url:'https://learn.microsoft.com/en-us/entra/identity/users/directory-administrative-units'},
+  ],
+  'p1-users':[
+    {title:'Manage users in Entra ID',url:'https://learn.microsoft.com/en-us/entra/fundamentals/how-to-create-delete-users'},
+    {title:'Dynamic membership rules for groups',url:'https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership'},
+  ],
+  'p2-mfa':[
+    {title:'Plan an MFA deployment',url:'https://learn.microsoft.com/en-us/entra/identity/authentication/howto-mfa-getstarted'},
+    {title:'Self-service password reset overview',url:'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks'},
+  ],
+  'p2-ca':[
+    {title:'Conditional Access policies overview',url:'https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview'},
+    {title:'Identity Protection risk policies',url:'https://learn.microsoft.com/en-us/entra/id-protection/concept-identity-protection-policies'},
+  ],
+  'p2-hybrid':[
+    {title:'Entra Connect Sync overview',url:'https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/whatis-azure-ad-connect'},
+    {title:'Seamless single sign-on',url:'https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sso'},
+  ],
+  'p3-apps':[
+    {title:'Application types in the Microsoft identity platform',url:'https://learn.microsoft.com/en-us/entra/identity-platform/app-types'},
+    {title:'Enable Application Proxy for remote access',url:'https://learn.microsoft.com/en-us/entra/identity/app-proxy/application-proxy-add-on-premises-application'},
+  ],
+  'p3-perm':[
+    {title:'Permissions and consent in the Microsoft identity platform',url:'https://learn.microsoft.com/en-us/entra/identity-platform/permissions-consent-overview'},
+    {title:'Configure admin consent workflow',url:'https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-admin-consent-workflow'},
+  ],
+  'p4-pim':[
+    {title:'What is Privileged Identity Management?',url:'https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure'},
+    {title:'Create an access review of Azure resource roles',url:'https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-create-resource-roles-access-review'},
+  ],
+  'p4-entitle':[
+    {title:'Entitlement management overview',url:'https://learn.microsoft.com/en-us/entra/id-governance/entitlement-management-overview'},
+    {title:'Lifecycle Workflows overview',url:'https://learn.microsoft.com/en-us/entra/id-governance/what-are-lifecycle-workflows'},
+  ],
+};
+
+let state={steps:{},notes:{},labNotes:{},valChecks:{}};
+let expandedPhases={};
+let expandedLabs={};
+let expandedDetails={};
+let expandedNotes={};
+let expandedRefs={};
+let currentFilter='all';
+let db=null;
+let userId=null;
+
+function initFirebase(){
+  const raw=localStorage.getItem('mk_site_fb_config');
+  if(!raw)return;
+  try{
+    const cfg=JSON.parse(raw);
+    if(!firebase.apps.find(a=>a.name==='sc300'))firebase.initializeApp(cfg,'sc300');
+    db=firebase.app('sc300').database();
+    userId=localStorage.getItem('mk_site_fb_uid')||'user_'+Math.random().toString(36).slice(2,8);
+    localStorage.setItem('mk_site_fb_uid',userId);
+    document.getElementById('fbDot').classList.remove('off');
+    document.getElementById('fbStatus').textContent='Firebase synced';
+    loadFromFB();
+  }catch(e){console.warn('Firebase init failed',e);}
+}
+
+function loadFromFB(){
+  if(!db)return;
+  db.ref(FB_PATH+'/'+userId).once('value').then(snap=>{
+    if(snap.val())state=Object.assign({steps:{},notes:{},labNotes:{},valChecks:{}},snap.val());
+    build();updateStats();
+  });
+}
+
+function saveToFB(){if(!db)return;db.ref(FB_PATH+'/'+userId).set(state);}
+function loadLocal(){const s=localStorage.getItem(APP_KEY);if(s)state=JSON.parse(s);}
+function saveLocal(){localStorage.setItem(APP_KEY,JSON.stringify(state));}
+function save(){saveLocal();saveToFB();}
+function toggleStep(id){state.steps[id]=!state.steps[id];save();build();updateStats();}
+function toggleVal(id){state.valChecks[id]=!state.valChecks[id];save();build();updateStats();}
+function toggleNote(id){expandedNotes[id]=!expandedNotes[id];build();updateStats();}
+function toggleDetail(id){expandedDetails[id]=!expandedDetails[id];build();}
+function saveNote(id,val){state.notes[id]=val;save();build();updateStats();}
+function saveLabNote(labId,val){state.labNotes[labId]=val;save();}
+function togglePhase(id){expandedPhases[id]=!expandedPhases[id];build();}
+function toggleLab(id){expandedLabs[id]=!expandedLabs[id];build();}
+function filterPhase(id,el){currentFilter=id;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');build();updateStats();}
+
+function phaseStepCount(phase){
+  let total=0,done=0;
+  phase.labs.forEach(lab=>{
+    lab.steps.forEach(s=>{if(state.steps[s.id])done++;total++;});
+    (lab.validation||[]).forEach(v=>{if(state.valChecks[v.id])done++;total++;});
+  });
+  return{total,done};
+}
+
+function labStepCount(lab){
+  let total=0,done=0;
+  lab.steps.forEach(s=>{if(state.steps[s.id])done++;total++;});
+  (lab.validation||[]).forEach(v=>{if(state.valChecks[v.id])done++;total++;});
+  return{total,done};
+}
+
+function buildRefs(labId){
+  const refs=LAB_RESOURCES[labId]||[];
+  if(!refs.length)return'';
+  const open=!!expandedRefs[labId];
+  const listHTML=refs.map(r=>`<div class="ref-item"><span class="ref-icon">📖</span><a href="${r.url}" target="_blank" rel="noopener">${r.title}</a></div>`).join('');
+  return`<div class="refs-section"><div class="refs-header" onclick="expandedRefs['${labId}']=!expandedRefs['${labId}'];build();updateStats()"><span class="refs-title">🔗 Official References (${refs.length})</span><span class="refs-toggle">${open?'▼ Hide':'▶ Show'}</span></div>${open?`<div class="refs-list">${listHTML}</div>`:''}</div>`;
+}
+
+function build(){
+  const phases=currentFilter==='all'?PHASES:PHASES.filter(p=>p.id===currentFilter);
+  let html='';
+  phases.forEach(phase=>{
+    const{total,done}=phaseStepCount(phase);
+    const pct=total?Math.round(done/total*100):0;
+    const open=!!expandedPhases[phase.id];
+    html+=`<div class="phase-card${open?' open':''}" id="pc-${phase.id}">
+      <div class="phase-header" onclick="togglePhase('${phase.id}')">
+        <div class="phase-header-left"><span class="phase-badge">${phase.badge}</span><div><div class="phase-title">${phase.title}</div><div class="phase-week">${phase.week}</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px;"><div class="phase-progress-bar"><div class="phase-progress-fill" style="width:${pct}%"></div></div><span style="font-size:11px;color:#DDD6FE;">${done}/${total}</span><span class="chevron">▼</span></div>
+      </div>
+      <div class="phase-body">`;
+    phase.labs.forEach(lab=>{
+      const{total:lt,done:ld}=labStepCount(lab);
+      const lpct=lt?Math.round(ld/lt*100):0;
+      const lopen=!!expandedLabs[lab.id];
+      html+=`<div class="lab-section${lopen?' open':''}" id="ls-${lab.id}">
+        <div class="lab-header">
+          <div class="lab-title-area"><div class="lab-title">${lab.title}</div><div class="lab-meta">${lab.meta}</div></div>
+          <div class="lab-stats"><div class="mini-bar-wrap"><div class="mini-bar"><div class="mini-bar-fill" style="width:${lpct}%"></div></div><div class="mini-pct">${ld}/${lt}</div></div><button class="lab-toggle" onclick="toggleLab('${lab.id}')">${lopen?'▲ Collapse':'▼ Expand'}</button></div>
+        </div>
+        <div class="steps-list"><div class="section-lbl">Lab Steps</div>`;
+      lab.steps.forEach((s,i)=>{
+        const done=!!state.steps[s.id];
+        const dopen=!!expandedDetails[s.id];
+        const nopen=!!expandedNotes[s.id];
+        const hasNote=!!(state.notes[s.id]&&state.notes[s.id].trim());
+        html+=`<div class="step-row${done?' done':''}"><div class="step-check" onclick="toggleStep('${s.id}')">${done?'✓':''}</div><div class="step-main"><div class="step-top"><span class="step-num">${i+1}.</span><span class="step-text">${s.text}</span>${s.details?`<button class="detail-btn${dopen?' open':''}" onclick="toggleDetail('${s.id}')">${dopen?'▲ Less':'▼ Details'}</button>`:''}<button class="note-btn${hasNote?' has-note':''}${nopen?' open':''}" onclick="toggleNote('${s.id}')">${hasNote?'📝':'+ Note'}</button></div>${dopen&&s.details?`<div class="step-details open">${s.details.map((d,j)=>`<div class="detail-item"><span class="di-num">${j+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}${nopen?`<div class="step-note-panel open"><textarea class="note-ta" placeholder="Add your notes here..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea></div>`:''}</div></div>`;
+      });
+      if(lab.validation&&lab.validation.length){
+        html+=`<div class="section-lbl">Validation Checks</div>`;
+        lab.validation.forEach(v=>{
+          const vdone=!!state.valChecks[v.id];
+          html+=`<div class="val-row${vdone?' done':''}"><div class="val-check" onclick="toggleVal('${v.id}')">${vdone?'✓':''}</div><span class="val-text">${v.text}</span></div>`;
+        });
+      }
+      html+=`<div class="lab-notes-area"><div class="lab-notes-lbl">Lab Notes</div><textarea class="lab-notes-ta" placeholder="Overall notes for this lab..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea></div>${buildRefs(lab.id)}</div></div>`;
+    });
+    html+=`</div></div>`;
+  });
+  document.getElementById('content').innerHTML=html;
+}
+
+function updateStats(){
+  let totalS=0,doneS=0,totalL=0,doneL=0;
+  PHASES.forEach(phase=>{
+    phase.labs.forEach(lab=>{
+      totalL++;
+      const{total,done}=labStepCount(lab);
+      totalS+=total;doneS+=done;
+      if(done===total&&total>0)doneL++;
+    });
+  });
+  document.getElementById('totalSteps').textContent=totalS;
+  document.getElementById('doneSteps').textContent=doneS;
+  document.getElementById('totalLabs').textContent=totalL;
+  document.getElementById('doneLabs').textContent=doneL;
+  const pct=totalS?Math.round(doneS/totalS*100):0;
+  document.getElementById('pctLabel').textContent=pct+'%';
+  document.getElementById('bigBarFill').style.width=pct+'%';
+}
+
+loadLocal();
+if(PHASES.length)expandedPhases[PHASES[0].id]=true;
+build();updateStats();initFirebase();
+</script>
+</body>
+</html>

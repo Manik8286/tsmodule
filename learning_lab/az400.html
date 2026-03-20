@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AZ-400 Lab Tracker — Azure DevOps Engineer Expert</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{--azure:#0078D4;--azure-light:#EFF6FF;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#0F3460;--accent:#1e6abf;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#BAE6FD;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#BAE6FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.stat-block.p1 .num{color:var(--accent);}
+.stat-block.p2 .num{color:var(--header-bg);}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--header-bg),var(--accent));transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#BAE6FD;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#4ADE80;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.azure-lab{border-left:4px solid var(--azure);background:var(--azure-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.azure-badge{background:var(--azure);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.azure-btn{color:var(--azure);}
+.lab-toggle.azure-btn:hover{background:var(--azure);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--azure);color:var(--azure);}
+.detail-btn.open{background:var(--azure-light);border-color:var(--azure);color:var(--azure);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#F8FAFF;border-left:3px solid var(--azure);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--azure);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#E8F0FE;padding:1px 4px;border-radius:3px;color:#1a56db;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;background:#FFFDF5;}
+.note-textarea::placeholder{color:#9CA3AF;font-size:11px;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#F0FDF4;}
+.val-row:hover{background:#DCFCE7;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #86EFAC;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--azure);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#BAE6FD;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#F0F4FA;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:var(--azure);background:#F8FBFF;}
+.fb-input::placeholder{color:#9CA3AF;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--azure);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;align-items:center;justify-content:center;}
+.user-overlay.open{display:flex;}
+.user-card{background:white;border-radius:16px;padding:36px 40px;max-width:420px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.3);text-align:center;}
+.user-card .u-icon{font-size:48px;margin-bottom:12px;}
+.user-card h3{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.user-card p{font-size:12px;color:var(--gray);margin-bottom:20px;line-height:1.6;}
+.user-card input{width:100%;border:2px solid #E5E7EB;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;color:var(--dark);text-align:center;margin-bottom:14px;}
+.user-card input:focus{outline:none;border-color:var(--azure);}
+.user-card button{width:100%;padding:11px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.user-card button:hover{filter:brightness(1.1);}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+.refs-section{margin-top:14px;padding:12px 14px;background:#EFF6FF;border-left:3px solid var(--azure);border-radius:0 8px 8px 0;}
+.refs-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.refs-title{font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.6px;}
+.refs-toggle{font-size:10px;color:var(--azure);font-weight:700;}
+.refs-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
+.ref-item{display:flex;align-items:flex-start;gap:6px;font-size:12px;}
+.ref-icon{flex-shrink:0;font-size:12px;margin-top:1px;}
+.ref-item a{color:#1d4ed8;text-decoration:none;line-height:1.4;}
+.ref-item a:hover{text-decoration:underline;color:#1e3a8a;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F504; AZ-400 Lab Tracker</h1>
+      <p>Azure DevOps Engineer Expert &middot; 6-Phase Deep Dive &middot; Source Control, CI/CD, IaC, Security &amp; Observability</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="index.html" class="nav-link">&#x2601;&#xFE0F; IaaS Labs</a>
+      <a href="az700.html" class="nav-link">&#x1F310; AZ-700</a>
+      <a href="az500.html" class="nav-link">&#x1F6E1;&#xFE0F; AZ-500</a>
+      <a href="sc300.html" class="nav-link">&#x1F510; SC-300</a>
+      <a href="soa-c02.html" class="nav-link">&#x1F527; SOA-C02</a>
+      <a href="ps-terminal.html" class="nav-link">&#x1F4BB; PS Lab</a>
+      <span id="user-chip" class="user-chip" onclick="changeUser()" title="Click to change user">&#x1F464; <span id="user-name-display">...</span></span>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="user-overlay" id="user-overlay">
+  <div class="user-card">
+    <div class="u-icon">&#x1F504;</div>
+    <h3>Welcome to AZ-400 Lab Tracker</h3>
+    <p>Enter your name to save your progress. Track your journey through Azure DevOps Engineer Expert labs for the AZ-400 exam.</p>
+    <input type="text" id="user-name-input" placeholder="Your name (e.g. Manikandan)" maxlength="30" onkeydown="if(event.key==='Enter')confirmUser()" />
+    <button onclick="confirmUser()">&#x1F680; Start AZ-400 Labs</button>
+  </div>
+</div>
+
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Connect your Firebase Realtime Database to sync AZ-400 lab progress across all your devices.</p>
+    <div class="fb-steps">
+      <b>Quick setup:</b><br>
+      1. Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> &rarr; Create project<br>
+      2. Build &rarr; Realtime Database &rarr; Create database (test mode)<br>
+      3. Project Settings (gear icon) &rarr; Web app &rarr; copy config<br>
+      4. Paste the 3 values below and click Connect
+    </div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey  (e.g. AIzaSy...)" />
+    <input class="fb-input" id="fb-databaseURL" placeholder="databaseURL  (e.g. https://my-project-default-rtdb.firebaseio.com)" />
+    <input class="fb-input" id="fb-projectId" placeholder="projectId  (e.g. my-project-12345)" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions">
+      <button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button>
+      <button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button>
+      <button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button>
+    </div>
+  </div>
+</div>
+
+<div id="congrats">
+  <div class="card">
+    <span class="emoji">&#x1F3C6;</span>
+    <h2>AZ-400 Ready!</h2>
+    <p>You've mastered Azure DevOps Engineering!</p>
+    <button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button>
+  </div>
+</div>
+
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
+  <div class="big-bar-wrap">
+    <div class="big-bar-label"><span>Overall AZ-400 Progress</span><span id="stat-pct">0%</span></div>
+    <div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab" onclick="filterTab('azure',this)">&#x1F535; Azure DevOps</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+// ─── AZ-400 Lab Data ──────────────────────────────────────────────────────────
+const PHASES = [
+  {
+    id:'p1', badge:'PHASE 1', title:'Source Control & Agile Process Management', week:'Week 1',
+    labs:[
+      {
+        id:'p1-git', cloud:'azure', title:'Git Source Control, Branching Strategies & Branch Policies',
+        meta:'Configure repos, Git workflows, branch protection, PR templates and code review processes',
+        steps:[
+          {id:'p1-git-s1', text:'Create Azure DevOps organisation, project (Scrum template) and import/initialise a Git repository', details:['Go to dev.azure.com → New organization → New project (Scrum)', 'Repos → Files → Initialise with README + .gitignore (e.g. VisualStudio)', 'Clone repo locally: <code>git clone https://dev.azure.com/org/project/_git/repo</code>', 'Add a sample application (ASP.NET, Node.js or Python) and push to main']},
+          {id:'p1-git-s2', text:'Configure GitFlow branching strategy: main, develop, feature/*, release/* and hotfix/* branches', details:['Create develop branch from main: <code>git checkout -b develop && git push -u origin develop</code>', 'Create feature branch: <code>git checkout -b feature/add-api develop</code>', 'Document branch naming convention in CONTRIBUTING.md', 'Push feature branch and open a Pull Request to develop', 'Merge feature → develop → release → main via PRs']},
+          {id:'p1-git-s3', text:'Configure Branch Policies on main and develop branches', details:['Repos → Branches → … → Branch policies on main', 'Require a minimum of 2 reviewers; reset votes on new pushes', 'Check for linked work items', 'Build validation: require CI pipeline to pass before merge', 'Require comment resolution before merge', 'Limit merge types: only Squash merge or Rebase merge allowed']},
+          {id:'p1-git-s4', text:'Create Pull Request template and configure auto-complete and auto-approve settings', details:['Create file .azuredevops/pull_request_template.md in the repo root', 'Template sections: ## Summary, ## Testing Done, ## Checklist (breaking change?, tests added?)', 'Commit and push — all new PRs now pre-fill this template', 'Review PR policies: auto-complete after all checks pass', 'Add a bypass list for emergency hotfixes (break-glass accounts only)']},
+          {id:'p1-git-s5', text:'Configure Git hooks, .gitattributes and large file storage (Git LFS)', details:['Create pre-commit hook: <code>#!/bin/sh\\nnpm run lint</code> in .git/hooks/', 'Configure .gitattributes for line endings: <code>* text=auto</code>, <code>*.sh text eol=lf</code>', 'Install Git LFS: <code>git lfs install</code>', 'Track large files: <code>git lfs track "*.png" "*.zip"</code>', 'Commit .gitattributes: <code>git add .gitattributes && git commit -m "Configure LFS"</code>']},
+        ],
+        validation:[
+          {id:'p1-git-v1', text:'Repository created with main + develop branches and GitFlow naming in use'},
+          {id:'p1-git-v2', text:'Branch policies on main require 2 reviewers + passing CI build before merge'},
+          {id:'p1-git-v3', text:'PR template appears automatically when opening a new Pull Request'},
+          {id:'p1-git-v4', text:'Git LFS tracking configured and large binary files not stored in regular Git history'},
+        ]
+      },
+      {
+        id:'p1-agile', cloud:'azure', title:'Azure Boards: Agile Planning, Sprints & Work Item Management',
+        meta:'Configure teams, backlogs, sprint planning, Kanban boards and work item queries',
+        steps:[
+          {id:'p1-agile-s1', text:'Configure team structure: create sub-teams for Frontend, Backend and DevOps with their own area paths', details:['Project Settings → Teams → Create: Frontend Team, Backend Team, DevOps Team', 'Each team gets its own area path: ProjectName\\Frontend, ProjectName\\Backend', 'Assign team members to each team', 'Configure team backlog: set which work item types are visible', 'Set team working days and sprint cadence (2-week sprints)']},
+          {id:'p1-agile-s2', text:'Create a Sprint backlog and move items from Product Backlog using capacity planning', details:['Boards → Backlogs → Sprint → New Sprint (Sprint 1: dates)', 'Create Epics, Features, User Stories and Tasks in hierarchy', 'Set Story Points and Priority on each User Story', 'Drag items from backlog to Sprint 1 respecting team capacity', 'Capacity planning: set hours per day per team member for the sprint']},
+          {id:'p1-agile-s3', text:'Configure Kanban board with swim lanes, WIP limits and custom columns', details:['Boards → Boards → Column settings', 'Add custom columns: Ready for Dev, In Review, Ready for QA, QA in Progress', 'Set WIP limits: In Progress ≤ 3, In Review ≤ 2', 'Add swim lanes: Expedite, Blocked, Standard work', 'Enable badges for PR linked to work items on the card']},
+          {id:'p1-agile-s4', text:'Create saved Work Item Queries and dashboard widgets for sprint tracking', details:['Boards → Queries → New Query: "Active Bugs by Severity"', 'Create team query: all open items in current sprint assigned to team', 'Save as shared query for the whole project', 'Overview → Add widget: Work item chart (bug trends, velocity)', 'Add Burndown chart widget for Sprint 1']},
+          {id:'p1-agile-s5', text:'Configure process automation: automatically transition work items on PR merge', details:['Project Settings → GitHub connections or Service hooks', 'Service hook: when PR merged → resolve linked work item', 'Configure AB#WorkItemID syntax in commit messages for auto-linking', 'Test: commit with "Fixes AB#123" → work item moves to Done on merge']},
+        ],
+        validation:[
+          {id:'p1-agile-v1', text:'3 sub-teams created with distinct area paths and team members assigned'},
+          {id:'p1-agile-v2', text:'Sprint 1 backlog populated with capacity planning applied'},
+          {id:'p1-agile-v3', text:'Kanban board shows WIP limits and custom swim lanes'},
+          {id:'p1-agile-v4', text:'PR merge auto-transitions linked work items to Done state'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p2', badge:'PHASE 2', title:'Continuous Integration — Build Pipelines', week:'Week 2',
+    labs:[
+      {
+        id:'p2-yaml', cloud:'azure', title:'YAML Multi-Stage CI Pipeline with Templates & Variable Groups',
+        meta:'Write YAML pipelines with triggers, conditions, jobs, test publishing and reusable templates',
+        steps:[
+          {id:'p2-yaml-s1', text:'Write a basic azure-pipelines.yml with trigger, pool and build/test stages', details:['<code>trigger:\\n  branches:\\n    include:\\n    - main\\n    - develop\\n  paths:\\n    exclude:\\n    - docs/**</code>', 'Define two stages: Build and Test', 'Build stage: DotNetCoreCLI@2 restore → build → publish', 'Test stage: DotNetCoreCLI@2 test with <code>publishTestResults: true</code>', 'Publish artifact: PublishBuildArtifacts@1 named "drop"']},
+          {id:'p2-yaml-s2', text:'Extract reusable pipeline steps into YAML templates stored in a separate templates/ folder', details:['Create pipelines/templates/build-steps.yml with parameterized build steps', 'Parameters: buildConfiguration (Release/Debug), projectPath', 'Reference template: <code>- template: templates/build-steps.yml\\n  parameters:\\n    buildConfiguration: Release</code>', 'Create a separate template for test steps and security scanning', 'Templates can live in a separate repository — reference via resources.repositories']},
+          {id:'p2-yaml-s3', text:'Configure Library Variable Groups (including Key Vault-linked secrets) and pipeline environments', details:['Pipelines → Library → Variable Groups → New: "app-settings"', 'Add variables: APP_ENV, LOG_LEVEL, DATABASE_NAME (mark sensitive ones as secret)', 'Link to Azure Key Vault: link existing key vault secrets into the variable group', 'Reference in pipeline: <code>- group: app-settings</code> under variables:', 'Environments: create "dev", "staging", "production" environments with required approvals on production']},
+          {id:'p2-yaml-s4', text:'Configure pipeline caching for node_modules / NuGet packages to speed up builds', details:['Cache task: <code>- task: Cache@2\\n  inputs:\\n    key: npm | $(Agent.OS) | package-lock.json\\n    path: node_modules\\n    restoreKeys: npm | $(Agent.OS)</code>', 'Observe cache hit vs miss in pipeline logs', 'NuGet cache: cache $(NUGET_PACKAGES) directory with packages.lock.json as key', 'Test: run pipeline twice and confirm second run shows "Cache restored"']},
+          {id:'p2-yaml-s5', text:'Add conditional steps, approval gates and dependency between stages', details:['Stage dependency: <code>dependsOn: Build\\ncondition: succeeded()</code>', 'Conditional step: <code>condition: and(succeeded(), eq(variables[\'Build.SourceBranch\'], \'refs/heads/main\'))</code>', 'Manual approval gate on Production environment (Environments → Approvals & Checks → Approvals)', 'Business hours check: add "Business Hours" check on production deployment', 'Exclusive lock: prevent concurrent deployments to same environment']},
+        ],
+        validation:[
+          {id:'p2-yaml-v1', text:'Pipeline triggers automatically on PR to main and develop, skips docs/ changes'},
+          {id:'p2-yaml-v2', text:'Reusable YAML templates used for build and test steps'},
+          {id:'p2-yaml-v3', text:'Key Vault-linked variable group injects secrets without exposing values in logs'},
+          {id:'p2-yaml-v4', text:'Pipeline cache reduces build time by restoring dependencies from cache on second run'},
+          {id:'p2-yaml-v5', text:'Production environment requires manual approval before deployment proceeds'},
+        ]
+      },
+      {
+        id:'p2-agents', cloud:'azure', title:'Agent Pools: Microsoft-Hosted & Self-Hosted Agents',
+        meta:'Configure hosted agents, register a self-hosted agent, use agent capabilities and parallel jobs',
+        steps:[
+          {id:'p2-agents-s1', text:'Compare Microsoft-hosted agent images and select the right image for your pipeline', details:['Microsoft-hosted agents: ubuntu-latest, windows-latest, macOS-latest', 'ubuntu-latest includes: Docker, kubectl, Helm, Node.js, Python, .NET', 'windows-latest includes: MSBuild, NuGet, Visual Studio tooling', 'Specify agent explicitly: <code>pool:\\n  vmImage: ubuntu-22.04</code>', 'Review pre-installed software: learn.microsoft.com/azure/devops/pipelines/agents/hosted']},
+          {id:'p2-agents-s2', text:'Register a self-hosted agent on a Linux VM (on-premise or Azure VM)', details:['Project Settings → Agent pools → Add pool → Self-hosted; Name: "OnPremPool"', 'Download agent: wget https://vstsagentpackage.azureedge.net/agent/.../vsts-agent-linux-x64-3.x.x.tar.gz', '<code>mkdir myagent && cd myagent && tar zxvf ../agent.tar.gz</code>', '<code>./config.sh --url https://dev.azure.com/org --auth pat --token &lt;PAT&gt;</code>', 'Run as service: <code>sudo ./svc.sh install && sudo ./svc.sh start</code>', 'Verify: agent shows Online in Azure DevOps agent pool']},
+          {id:'p2-agents-s3', text:'Add agent capabilities and configure pipeline demands to target specific agents', details:['Self-hosted agent → Capabilities → Add: <code>JAVA_HOME=/usr/lib/jvm/java-17-openjdk</code>', 'Add custom capability: <code>docker=true</code>, <code>terraform=true</code>', 'Pipeline demand: <code>demands:\\n  - docker\\n  - terraform</code>', 'Pipeline will only run on agents with matching capabilities', 'Use demands to route SQL migration jobs to DB-capable agent, Docker builds to Docker-capable agent']},
+          {id:'p2-agents-s4', text:'Configure parallel jobs and understand concurrency limits', details:['Organisation Settings → Parallel jobs', 'Microsoft-hosted: 1 free parallel job for private projects (1800 min/month)', 'Self-hosted: unlimited parallel jobs with self-hosted agents', 'Configure fanout: matrix strategy for multi-platform builds', '<code>strategy:\\n  matrix:\\n    linux:\\n      vmImage: ubuntu-latest\\n    windows:\\n      vmImage: windows-latest</code>']},
+          {id:'p2-agents-s5', text:'Use Docker containers as build environment in pipeline (container jobs)', details:['Container job: <code>container: node:18-alpine</code> at job level', 'All steps run inside the container — no need to install dependencies on agent', 'Service containers: run a SQL Server container alongside tests', '<code>services:\\n  sql:\\n    image: mcr.microsoft.com/mssql/server:2022-latest\\n    env:\\n      ACCEPT_EULA: Y\\n      SA_PASSWORD: YourPass123!</code>', 'Connect test code to service container via localhost:1433']},
+        ],
+        validation:[
+          {id:'p2-agents-v1', text:'Self-hosted agent registered and showing Online in Azure DevOps'},
+          {id:'p2-agents-v2', text:'Pipeline demands correctly route jobs to agents with matching capabilities'},
+          {id:'p2-agents-v3', text:'Matrix build produces artefacts for both linux and windows in parallel'},
+          {id:'p2-agents-v4', text:'Container job runs build steps inside Docker container without agent-level dependencies'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p3', badge:'PHASE 3', title:'Continuous Delivery — Release Pipelines & Deployment Strategies', week:'Week 3',
+    labs:[
+      {
+        id:'p3-release', cloud:'azure', title:'Multi-Environment YAML Release with Deployment Strategies',
+        meta:'Deploy to dev/staging/prod with rolling, blue-green and canary strategies using environments',
+        steps:[
+          {id:'p3-release-s1', text:'Create a service connection to Azure (workload identity federation) and deploy to Azure App Service', details:['Project Settings → Service connections → New → Azure Resource Manager → Workload Identity (recommended)', 'Grant service connection Contributor on the subscription or resource group', 'Pipeline task: <code>- task: AzureWebApp@1\\n  inputs:\\n    azureSubscription: my-svc-conn\\n    appName: my-webapp-dev\\n    package: $(Pipeline.Workspace)/drop/**/*.zip</code>', 'Deployment pipeline: Build → Deploy Dev → (approval) → Deploy Staging → (approval) → Deploy Production']},
+          {id:'p3-release-s2', text:'Configure rolling deployment to Azure App Service with pre/post deployment health checks', details:['Rolling strategy: replace old instances gradually rather than all at once', '<code>strategy:\\n  rolling:\\n    maxParallel: 2\\n    preDeploy:\\n      steps: []\\n    deploy:\\n      steps:\\n        - task: AzureWebApp@1\\n    postDeploy:\\n      steps:\\n        - script: curl -f https://my-app/health || exit 1</code>', 'Health check script validates HTTP 200 from /health endpoint before proceeding']},
+          {id:'p3-release-s3', text:'Implement blue-green deployment using Azure App Service deployment slots', details:['App Service → Deployment slots → Add slot: staging (clones from production)', 'Deploy new version to staging slot first', 'Run smoke tests against staging slot URL (app-staging.azurewebsites.net)', 'Swap slots: <code>- task: AzureAppServiceManage@0\\n  inputs:\\n    action: Swap Slots\\n    sourceSlot: staging</code>', 'Rollback: swap back if issues found within observation window']},
+          {id:'p3-release-s4', text:'Configure canary release using Azure Traffic Manager or App Service traffic routing', details:['App Service → Deployment slots → Production: 90% traffic, staging: 10% traffic', 'Gradually shift traffic: 10% → 25% → 50% → 100% via slot traffic percentage', 'Monitor Application Insights during each canary phase for error rate increase', 'Feature flags (Azure App Configuration) to enable features for canary cohort only', 'Auto-promote or rollback based on Application Insights metric alerts']},
+          {id:'p3-release-s5', text:'Deploy to AKS using Helm chart via Azure DevOps pipeline', details:['Add Kubernetes service connection: Project Settings → Service connections → Kubernetes', 'Install Helm on agent: <code>- task: HelmInstaller@1</code>', 'Helm deploy: <code>- task: HelmDeploy@0\\n  inputs:\\n    command: upgrade\\n    install: true\\n    chartName: ./helm/myapp\\n    releaseName: myapp-prod\\n    namespace: production</code>', 'Configure environment resource as Kubernetes namespace for approvals and deployment tracking', 'Verify deployment: <code>kubectl rollout status deployment/myapp -n production</code>']},
+        ],
+        validation:[
+          {id:'p3-release-v1', text:'Workload identity federation service connection deployed to App Service successfully'},
+          {id:'p3-release-v2', text:'Blue-green slot swap executed — new version on production, old version in staging for rollback'},
+          {id:'p3-release-v3', text:'Canary release routes 10% traffic to new version with Application Insights monitoring'},
+          {id:'p3-release-v4', text:'Helm chart deployed to AKS with Kubernetes environment resource showing deployment history'},
+        ]
+      },
+      {
+        id:'p3-dep-groups', cloud:'azure', title:'Classic Release Pipelines, Deployment Groups & Gates',
+        meta:'Configure classic release pipelines, deployment groups for VMs, gates, approvals and conditions',
+        steps:[
+          {id:'p3-dep-s1', text:'Create a Classic release pipeline with multiple stages (Dev, QA, Production) and artifact source', details:['Pipelines → Releases → New pipeline', 'Add artifact: Build pipeline "my-app-ci"', 'Enable continuous deployment trigger on artifact', 'Add stages: Dev, QA, Production', 'Pre-deployment conditions: automatic for Dev, approval for QA and Production']},
+          {id:'p3-dep-s2', text:'Register deployment group agents and deploy to on-premise VMs using Deployment Groups', details:['Pipelines → Deployment groups → New: OnPrem-Servers', 'Copy registration script and run on each target VM (Windows: PowerShell, Linux: bash)', 'Target group tasks: IISWebAppDeploymentOnMachineGroup@0 or custom PowerShell', 'Tags: web-server, db-server — used to target specific machines in group', 'Health check: confirm all VMs show Online in deployment group']},
+          {id:'p3-dep-s3', text:'Configure release gates using Azure Monitor alerts and REST API health endpoints', details:['Stage pre-deployment gate: Invoke Azure Monitor alert → gate passes if no critical alerts', 'Stage post-deployment gate: Invoke REST API (health check endpoint) every 5 min for 20 min', 'Gate: Query Azure Monitor workbook metrics (error rate < 1%)', 'Sampling interval: 5 minutes; Timeout: 1 day for production', 'Gate failure behaviour: reject deployment and notify team']},
+          {id:'p3-dep-s4', text:'Manage release variables, override at stage level and use tokens in config transforms', details:['Release variable: CONNECTION_STRING (mark as secret, scoped to Production)', 'Stage-level override: each stage has different ConnectionString value', 'Config transformation: XmlTransformation or JsonTransformation on appsettings.json', '<code>appsettings.json</code> → <code>appsettings.Production.json</code> values merged during deployment', 'Verify: production app uses production connection string (check app logs)']},
+        ],
+        validation:[
+          {id:'p3-dep-v1', text:'Classic release pipeline deployed to Dev automatically on build artifact trigger'},
+          {id:'p3-dep-v2', text:'Deployment group agents registered on on-premise VMs and deployment executed'},
+          {id:'p3-dep-v3', text:'Release gates query Azure Monitor — deployment blocked when alert is active'},
+          {id:'p3-dep-v4', text:'Stage-level variables override connection strings correctly for each environment'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p4', badge:'PHASE 4', title:'Infrastructure as Code & Configuration Management', week:'Week 4',
+    labs:[
+      {
+        id:'p4-bicep', cloud:'azure', title:'ARM Templates, Bicep & Template Specs in Pipelines',
+        meta:'Deploy Azure infrastructure using Bicep modules, what-if previews and Template Specs from pipeline',
+        steps:[
+          {id:'p4-bicep-s1', text:'Write a Bicep file that deploys a 3-tier app: App Service, SQL Database and Key Vault', details:['main.bicep: parameters for environment, location, appName', 'Module reference: <code>module appService \'./modules/app-service.bicep\' = { name: \'appService\', params: { ... } }</code>', 'modules/app-service.bicep: App Service Plan + App Service with managed identity', 'modules/sql.bicep: SQL Server + Database with firewall rules', 'modules/keyvault.bicep: Key Vault with access policy for App Service managed identity', 'Output: appServiceUrl, keyVaultName for downstream pipeline tasks']},
+          {id:'p4-bicep-s2', text:'Run Bicep what-if deployment in pipeline to preview changes before applying', details:['Pipeline task: <code>- task: AzureCLI@2\\n  inputs:\\n    scriptType: bash\\n    scriptLocation: inlineScript\\n    inlineScript: |\\n      az deployment group what-if --resource-group rg-dev --template-file main.bicep --parameters @params.dev.json</code>', 'What-if shows: + resources to be created, ~ modified, - deleted, = no change', 'Add a pipeline check: if what-if shows any "-" (deletion), pause for approval', 'Run what-if as a separate "Plan" stage before "Apply" stage']},
+          {id:'p4-bicep-s3', text:'Publish Bicep file as a Template Spec in Azure and deploy from Template Spec in pipeline', details:['Create template spec: <code>az ts create --name myapp-infra --version 1.0 --resource-group rg-specs --template-file main.bicep</code>', 'Deploy from spec: <code>az deployment group create --template-spec /subscriptions/.../resourceGroups/rg-specs/providers/Microsoft.Resources/templateSpecs/myapp-infra/versions/1.0</code>', 'Version management: create v2.0 for changes, keep v1.0 available for rollback', 'Grant team members "Template Spec Reader" role so they can deploy without seeing source']},
+          {id:'p4-bicep-s4', text:'Implement Bicep linting and validation as pipeline quality gate', details:['<code>bicep lint main.bicep</code> — catches misconfigurations and anti-patterns', 'Add to pipeline: <code>- script: az bicep build --file main.bicep</code> to validate ARM conversion', 'PSRule for Azure: install and run Azure Bicep/ARM rules in pipeline', 'PSRule task: validates best practices (diagnostics enabled, HTTPS only, etc.)', 'Fail pipeline if PSRule finds critical severity violations']},
+        ],
+        validation:[
+          {id:'p4-bicep-v1', text:'Bicep modules deployed 3-tier app (App Service + SQL + Key Vault) from single pipeline run'},
+          {id:'p4-bicep-v2', text:'What-if stage correctly previews infrastructure changes before apply'},
+          {id:'p4-bicep-v3', text:'Template Spec v1.0 and v2.0 published; pipeline deploys from Template Spec reference'},
+          {id:'p4-bicep-v4', text:'Bicep lint + PSRule gates block pipeline on critical infrastructure misconfigurations'},
+        ]
+      },
+      {
+        id:'p4-terraform', cloud:'azure', title:'Terraform with Azure DevOps: Remote State, Workspaces & Pipelines',
+        meta:'Configure Terraform remote state in Azure Storage, multi-workspace pipelines and Terraform plan/apply gates',
+        steps:[
+          {id:'p4-terraform-s1', text:'Configure Terraform remote state backend in Azure Blob Storage', details:['Create storage account: <code>az storage account create --name tfstate$RANDOM --resource-group rg-tfstate --sku Standard_LRS</code>', 'Create container: <code>az storage container create --name tfstate --account-name &lt;sa-name&gt;</code>', 'backend.tf: <code>terraform {\\n  backend "azurerm" {\\n    resource_group_name = "rg-tfstate"\\n    storage_account_name = "tfstateXXXX"\\n    container_name = "tfstate"\\n    key = "prod.terraform.tfstate"\\n  }\\n}</code>', 'Enable blob soft delete and versioning on the container for state file protection']},
+          {id:'p4-terraform-s2', text:'Write Terraform configuration for Azure infrastructure (VNet, AKS, ACR, Key Vault)', details:['main.tf: provider "azurerm", data sources for existing resources', 'variables.tf: environment, location, aks_node_count, vm_size (with type constraints and defaults)', 'outputs.tf: AKS cluster id, ACR login server, Key Vault URI', 'terraform.tfvars.dev.json and terraform.tfvars.prod.json for environment-specific values', 'Run locally: <code>terraform init → plan → apply</code> to validate config']},
+          {id:'p4-terraform-s3', text:'Create a 3-stage Azure DevOps pipeline: Init → Plan → Apply with approval gate on Apply', details:['Stage 1 (Init): <code>- task: TerraformTaskV4@4\\n  inputs:\\n    command: init\\n    backendServiceArm: my-svc-conn</code>', 'Stage 2 (Plan): terraform plan with <code>-out=tfplan</code>; publish plan file as artefact', 'Stage 3 (Apply): download plan artefact; manual approval; <code>terraform apply tfplan</code>', 'Environment resource with approval on Apply stage', 'Publish Terraform plan summary as pipeline comment or build summary']},
+          {id:'p4-terraform-s4', text:'Use Terraform workspaces to manage dev, staging and production infrastructure separately', details:['Create workspaces: <code>terraform workspace new dev; terraform workspace new staging; terraform workspace new prod</code>', 'Use workspace in config: <code>name = "${terraform.workspace}-aks-cluster"</code>', 'Pipeline variable selects workspace: TF_WORKSPACE = dev/staging/prod', 'Each workspace has its own state file: <code>env:/dev/prod.terraform.tfstate</code>', 'Enforce: never apply to prod workspace without plan approval from staging first']},
+          {id:'p4-terraform-s5', text:'Configure Terraform drift detection as a scheduled pipeline job', details:['Create a nightly scheduled pipeline (cron: 0 2 * * *)', 'Run terraform plan -detailed-exitcode: exit 2 means drift detected', 'Publish drift report as pipeline artefact', 'On drift detected: send Teams/email notification via service hook', 'Decision: alert only (no auto-remediation) or auto-apply to fix drift']},
+        ],
+        validation:[
+          {id:'p4-terraform-v1', text:'Terraform remote state stored in Azure Blob Storage with blob versioning enabled'},
+          {id:'p4-terraform-v2', text:'3-stage pipeline (Init → Plan → Apply) with manual approval gate working correctly'},
+          {id:'p4-terraform-v3', text:'Workspaces separate dev/staging/prod state files — no state file conflicts'},
+          {id:'p4-terraform-v4', text:'Nightly drift detection pipeline alerts on unexpected infrastructure changes'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p5', badge:'PHASE 5', title:'Security, Compliance & Package Management', week:'Week 5',
+    labs:[
+      {
+        id:'p5-security', cloud:'azure', title:'Shift-Left Security: SAST, DAST, Dependency Scanning & Defender for DevOps',
+        meta:'Integrate SonarCloud SAST, OWASP ZAP DAST, dependency scanning and Defender for DevOps into pipelines',
+        steps:[
+          {id:'p5-security-s1', text:'Integrate SonarCloud (SAST) into the CI pipeline with quality gate', details:['Create SonarCloud account at sonarcloud.io; link to GitHub/Azure DevOps org', 'Add SonarCloud service connection in Azure DevOps', 'Pipeline tasks in order: SonarCloudPrepare → Build → SonarCloudAnalyze → SonarCloudPublish', '<code>- task: SonarCloudPrepare@1\\n  inputs:\\n    SonarCloud: my-sonarcloud\\n    organization: myorg\\n    scannerMode: MSBuild\\n    projectKey: myapp</code>', 'Configure quality gate: fail pipeline if bugs > 0, code coverage < 80%, security hotspots > 0']},
+          {id:'p5-security-s2', text:'Run OWASP Dependency Check for open-source vulnerability scanning', details:['Install OWASP Dependency Check extension from Azure DevOps marketplace', '<code>- task: dependency-check-build-task@6\\n  inputs:\\n    projectName: MyApp\\n    scanPath: .\\n    format: HTML,JUNIT\\n    failOnCVSS: 7</code>', 'Fails build if any dependency has CVSS score ≥ 7 (High vulnerability)', 'Publish HTML report as pipeline artefact for review', 'Schedule full scan weekly (slower) and targeted scan on PR (faster, only changed packages)']},
+          {id:'p5-security-s3', text:'Configure OWASP ZAP for DAST (Dynamic Application Security Testing) against deployed app', details:['Deploy app to a test environment first (required for DAST)', 'OWASP ZAP Docker: <code>- script: docker run -v $(pwd):/zap/wrk/:rw -t owasp/zap2docker-stable zap-baseline.py -t https://my-app-staging.azurewebsites.net -r zap-report.html</code>', 'Parse ZAP results: fail pipeline if High alerts > 0', 'Active scan vs Passive scan: use baseline (passive) for CI, active scan only on scheduled pipeline', 'Publish ZAP HTML report as pipeline artefact']},
+          {id:'p5-security-s4', text:'Enable Microsoft Defender for DevOps and review security recommendations', details:['Azure Portal → Microsoft Defender for Cloud → Environment settings → Add environment → Azure DevOps', 'Connect Azure DevOps organisation to Defender for Cloud', 'Defender for DevOps installs Microsoft Security DevOps extension automatically', 'Review: Code scanning findings, Secret scanning results, IaC misconfigurations', 'Remediate: no secrets in code (use Key Vault), no public storage accounts in IaC', 'Export findings to Azure Monitor / Microsoft Sentinel']},
+          {id:'p5-security-s5', text:'Configure CredScan (credential scanner) and secret rotation policy', details:['Install CredScan via Microsoft Security DevOps task in pipeline', '<code>- task: MicrosoftSecurityDevOps@1\\n  inputs:\\n    categories: secrets</code>', 'CredScan detects API keys, passwords, connection strings in source code', 'Suppression: CredScanSuppressions.json for known false positives', 'Policy: block PR merge if CredScan finds unsuppressed secrets', 'Secret rotation: configure Key Vault to auto-rotate secrets and update app config references']},
+        ],
+        validation:[
+          {id:'p5-security-v1', text:'SonarCloud quality gate blocks pipeline on code coverage < 80% or security hotspots'},
+          {id:'p5-security-v2', text:'OWASP Dependency Check fails build on High (CVSS ≥ 7) vulnerability in dependencies'},
+          {id:'p5-security-v3', text:'OWASP ZAP DAST scan runs against staging environment and report published as artefact'},
+          {id:'p5-security-v4', text:'Defender for DevOps findings visible in Defender for Cloud with IaC recommendations'},
+          {id:'p5-security-v5', text:'CredScan blocks PR merge when secrets detected in source code'},
+        ]
+      },
+      {
+        id:'p5-artifacts', cloud:'azure', title:'Azure Artifacts: Package Feeds, Versioning & Supply Chain Security',
+        meta:'Create NuGet/npm feeds, configure upstream sources, semantic versioning and package vulnerability scanning',
+        steps:[
+          {id:'p5-artifacts-s1', text:'Create an Azure Artifacts feed and publish NuGet packages from CI pipeline', details:['Artifacts → Create Feed: Name: "mycompany-packages"; Visibility: Project', 'Upstream sources: enable nuget.org as upstream', 'Add service connection: NuGet feed URL with PAT authentication', 'Pipeline task: <code>- task: DotNetCoreCLI@2\\n  inputs:\\n    command: push\\n    publishVstsFeed: mycompany-packages</code>', 'Add feed URL to NuGet.config in repo: <code>&lt;add key="mycompany" value="https://pkgs.dev.azure.com/org/_packaging/mycompany-packages/nuget/v3/index.json" /&gt;</code>']},
+          {id:'p5-artifacts-s2', text:'Create an npm scoped feed and configure it in .npmrc for the project', details:['Artifacts → Create Feed: "mycompany-npm"; Upstream: npmjs.org', 'Generate .npmrc: Artifacts → Connect to feed → npm → copy .npmrc snippet', 'Add to project root: <code>@mycompany:registry=https://pkgs.dev.azure.com/org/_packaging/mycompany-npm/npm/registry/</code>', 'Authenticate: use npm task with <code>customEndpoint</code> or <code>vststokenauth</code>', 'Publish: <code>- task: Npm@1\\n  inputs:\\n    command: publish\\n    publishRegistry: useFeed\\n    publishFeed: mycompany-npm</code>']},
+          {id:'p5-artifacts-s3', text:'Configure semantic versioning in pipelines using GitVersion', details:['Install GitVersion extension from Azure DevOps marketplace', '<code>- task: GitVersion@5\\n  inputs:\\n    versionSpec: 5.x</code>', 'GitVersion calculates version from Git tags and branch names (feature/ → patch, release/ → minor)', 'Use output: <code>$(GitVersion.SemVer)</code> in subsequent tasks', 'Tag release: <code>git tag v$(GitVersion.SemVer) && git push --tags</code>', 'Package version: NuGet and npm packages published with GitVersion-calculated version number']},
+          {id:'p5-artifacts-s4', text:'Enable package retention policies and vulnerability scanning on the feed', details:['Artifacts → Feed → Settings → Retention policies', 'Retention: keep latest 10 versions of each package; delete older pre-release versions after 30 days', 'Scope: apply retention to prevent feed storage bloat', 'Vulnerability scan: Artifacts automatically scans packages against GitHub Advisory Database', 'Review flagged packages in Artifacts → feed → Vulnerabilities tab', 'Policy: block pipeline if restored packages have known CVEs']},
+        ],
+        validation:[
+          {id:'p5-artifacts-v1', text:'NuGet packages published to Azure Artifacts feed from CI pipeline with semantic versioning'},
+          {id:'p5-artifacts-v2', text:'npm scoped package published to Artifacts feed and consumed by downstream project'},
+          {id:'p5-artifacts-v3', text:'GitVersion calculates correct SemVer from git history; version applied to published packages'},
+          {id:'p5-artifacts-v4', text:'Feed retention policy active; vulnerability scanning flags packages with known CVEs'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p6', badge:'PHASE 6', title:'Monitoring, Observability & Continuous Feedback', week:'Week 6',
+    labs:[
+      {
+        id:'p6-appinsights', cloud:'azure', title:'Application Insights Instrumentation & Telemetry',
+        meta:'Instrument applications, configure custom events, availability tests, Smart Detection and Application Map',
+        steps:[
+          {id:'p6-appinsights-s1', text:'Instrument a .NET/Node.js application with Application Insights SDK', details:['Install SDK: <code>dotnet add package Microsoft.ApplicationInsights.AspNetCore</code>', 'Configure in Program.cs: <code>builder.Services.AddApplicationInsightsTelemetry(config["APPINSIGHTS_INSTRUMENTATIONKEY"]);</code>', 'Connection string (preferred over iKey): APPLICATIONINSIGHTS_CONNECTION_STRING environment variable', 'Deploy via pipeline; confirm telemetry appears in Application Insights Overview within minutes', 'Review auto-collected: HTTP requests, dependencies (SQL, HTTP), exceptions, performance counters']},
+          {id:'p6-appinsights-s2', text:'Add custom events, metrics and dependencies to track business-specific KPIs', details:['Inject TelemetryClient: <code>private readonly TelemetryClient _telemetry;</code>', 'Track event: <code>_telemetry.TrackEvent("OrderPlaced", new Dictionary&lt;string,string&gt;{{ "OrderId", id }});</code>', 'Track metric: <code>_telemetry.TrackMetric("CartItemCount", items.Count);</code>', 'Track dependency: <code>_telemetry.TrackDependency("PaymentGateway", "Charge", startTime, duration, success);</code>', 'Query in Logs: <code>customEvents | where name == "OrderPlaced" | summarize count() by bin(timestamp, 1h)</code>']},
+          {id:'p6-appinsights-s3', text:'Configure availability tests (URL ping and multi-step) and Smart Detection alerts', details:['Application Insights → Availability → Add test → URL ping test', 'URL: https://my-app.azurewebsites.net/health; Frequency: 5 min; Locations: 5 global regions', 'Multi-step test: upload .webtest file for complex login flow testing', 'Alert: notify email+Teams if availability < 90% from ≥ 3 locations', 'Smart Detection: enable for: slow page load time, degradation in server response time, memory leak']},
+          {id:'p6-appinsights-s4', text:'Use Application Map, Live Metrics and Performance Investigation to diagnose issues', details:['Application Map: visualises all components and their dependency health in real-time', 'Identify: which downstream dependency (SQL/Redis/3rd-party API) is causing latency', 'Live Metrics: real-time ingestion of requests, failures and performance in production', 'Performance: find slow operations; drill-down to end-to-end transaction traces', 'Failures: review exception details; correlate across services using operation ID', 'Export: send Application Insights data to Log Analytics workspace for unified querying']},
+        ],
+        validation:[
+          {id:'p6-appinsights-v1', text:'Application Insights telemetry flowing — requests, dependencies, exceptions visible in portal'},
+          {id:'p6-appinsights-v2', text:'Custom OrderPlaced event tracked and queryable with KQL in Logs'},
+          {id:'p6-appinsights-v3', text:'Availability test running from 5 regions; alert configured for < 90% availability'},
+          {id:'p6-appinsights-v4', text:'Application Map shows all service dependencies with health indicators'},
+        ]
+      },
+      {
+        id:'p6-monitor', cloud:'azure', title:'Azure Monitor, Log Analytics KQL Alerts & DevOps Dashboards',
+        meta:'Write KQL queries, configure metric and log alerts, action groups, DevOps dashboards and feature flags',
+        steps:[
+          {id:'p6-monitor-s1', text:'Write KQL queries in Log Analytics for common DevOps scenarios', details:['Error rate: <code>requests | summarize failedCount=countif(success==false), totalCount=count() by bin(timestamp,5m) | extend errorRate=round(100.0*failedCount/totalCount,2)</code>', 'Slow requests: <code>requests | where duration > 2000 | project timestamp, name, duration, resultCode | order by duration desc</code>', 'Deployment impact: <code>union requests, exceptions | where timestamp between (deployStart .. now()) | summarize count() by type, bin(timestamp,1m)</code>', 'Save queries to Log Analytics workspace as reusable functions', 'Pin query results as tiles on Azure Dashboard']},
+          {id:'p6-monitor-s2', text:'Create metric alerts and log-based alerts with dynamic thresholds', details:['Metric alert: CPU > 80% for 5 minutes on App Service Plan', 'Log alert: <code>requests | where success==false | summarize count() > 10</code> in last 5 min', 'Dynamic threshold alert: uses ML to set baseline and alert on anomaly (no fixed threshold needed)', 'Alert: severity 2 (Warning); evaluation frequency: 1 min; window size: 5 min', 'Multi-resource alert: same alert rule applied to all App Services in a resource group']},
+          {id:'p6-monitor-s3', text:'Configure Action Groups with email, Teams webhook and ITSM integration', details:['Monitor → Action groups → New: "DevOps-Alerts"', 'Email/SMS: send to team DL; SMS to on-call engineer', 'Teams webhook: configure incoming webhook in Teams channel, add Webhook action with URL', 'Azure DevOps: create work item automatically when alert fires (ITSM connector)', 'Logic App: advanced routing — critical alerts page on-call via PagerDuty API call', 'Test action group: use Test button and verify notifications received']},
+          {id:'p6-monitor-s4', text:'Build an Azure DevOps Dashboard with pipeline and deployment metrics widgets', details:['Azure DevOps → Overview → Dashboards → New Dashboard: "DevOps Health"', 'Add widgets: Build History (last 20 builds pass/fail), Release Pipeline Overview', 'Test Results Trend: show test pass rate over last 30 days', 'Code Coverage: link to SonarCloud project for coverage trend', 'Deployment Frequency (DORA metric): count deployments to production per week', 'Lead Time widget: average time from commit to production deployment']},
+          {id:'p6-monitor-s5', text:'Implement feature flags using Azure App Configuration feature management', details:['Azure App Configuration → Feature manager → New feature: BetaCheckout', 'Client-side: <code>builder.AddAzureAppConfiguration(options => options.UseFeatureFlags());</code>', 'Controller: <code>if (await _featureManager.IsEnabledAsync("BetaCheckout")) { ... }</code>', 'Target users: enable feature for 10% of users, then specific user IDs, then everyone', 'Pipeline: deploy new feature behind flag → enable flag for canary → full rollout → remove flag from code', 'Monitor: custom AI event fired when feature flag used — track adoption rate']},
+        ],
+        validation:[
+          {id:'p6-monitor-v1', text:'KQL queries saved as functions; error rate dashboard tile pinned to Azure Dashboard'},
+          {id:'p6-monitor-v2', text:'Log-based alert fires on > 10 failures in 5 minutes; Teams notification received'},
+          {id:'p6-monitor-v3', text:'Action group sends Teams message and creates Azure DevOps work item on alert'},
+          {id:'p6-monitor-v4', text:'DevOps dashboard shows DORA metrics: deployment frequency and lead time'},
+          {id:'p6-monitor-v5', text:'Feature flag enables BetaCheckout for 10% canary; AI events confirm adoption tracking'},
+        ]
+      }
+    ]
+  },
+];
+
+// ─── Official References ──────────────────────────────────────────────────────
+const LAB_RESOURCES = {
+  'p1-git':[
+    {title:'Use Git branching strategies', url:'https://learn.microsoft.com/en-us/azure/devops/repos/git/git-branching-guidance'},
+    {title:'Improve code quality with branch policies', url:'https://learn.microsoft.com/en-us/azure/devops/repos/git/branch-policies'},
+    {title:'Git LFS (Large File Storage) in Azure Repos', url:'https://learn.microsoft.com/en-us/azure/devops/repos/git/manage-large-files'},
+    {title:'Pull request templates', url:'https://learn.microsoft.com/en-us/azure/devops/repos/git/pull-request-templates'},
+  ],
+  'p1-agile':[
+    {title:'About teams and Agile tools', url:'https://learn.microsoft.com/en-us/azure/devops/organizations/settings/about-teams-and-settings'},
+    {title:'Sprint planning and capacity management', url:'https://learn.microsoft.com/en-us/azure/devops/boards/sprints/assign-work-sprint'},
+    {title:'Set up your Kanban board', url:'https://learn.microsoft.com/en-us/azure/devops/boards/boards/kanban-overview'},
+    {title:'Service hooks — Azure DevOps', url:'https://learn.microsoft.com/en-us/azure/devops/service-hooks/overview'},
+  ],
+  'p2-yaml':[
+    {title:'YAML schema reference for Azure Pipelines', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/'},
+    {title:'Template types and usage', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/process/templates'},
+    {title:'Link secrets from Azure Key Vault in a pipeline', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/library/link-variable-groups-to-key-vault'},
+    {title:'Cache task to reduce pipeline duration', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/release/caching'},
+  ],
+  'p2-agents':[
+    {title:'Microsoft-hosted agents', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/agents/hosted'},
+    {title:'Self-hosted Linux agents', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/agents/linux-agent'},
+    {title:'Container jobs in pipelines', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/process/container-phases'},
+    {title:'Parallel jobs — Azure Pipelines', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/licensing/concurrent-jobs'},
+  ],
+  'p3-release':[
+    {title:'Deploy to Azure App Service with YAML pipelines', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/targets/webapp'},
+    {title:'Deployment strategies — canary, blue-green, rolling', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs'},
+    {title:'Use deployment slots (App Service)', url:'https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots'},
+    {title:'Deploy to Azure Kubernetes Service', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/targets/aks'},
+  ],
+  'p3-dep-groups':[
+    {title:'Classic release pipelines overview', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/release/'},
+    {title:'Provision deployment groups', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/release/deployment-groups/'},
+    {title:'Release gates and approvals', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/release/approvals/gates'},
+  ],
+  'p4-bicep':[
+    {title:'Bicep documentation', url:'https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/'},
+    {title:'What-if operation for ARM/Bicep deployments', url:'https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-what-if'},
+    {title:'Azure Template Specs', url:'https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs'},
+    {title:'PSRule for Azure — infrastructure validation', url:'https://azure.github.io/PSRule.Rules.Azure/'},
+  ],
+  'p4-terraform':[
+    {title:'Terraform on Azure documentation', url:'https://learn.microsoft.com/en-us/azure/developer/terraform/'},
+    {title:'Store Terraform state in Azure Storage', url:'https://learn.microsoft.com/en-us/azure/developer/terraform/store-state-in-azure-storage'},
+    {title:'Terraform extension for Azure DevOps', url:'https://marketplace.visualstudio.com/items?itemName=ms-devlabs.custom-terraform-tasks'},
+  ],
+  'p5-security':[
+    {title:'Integrate SonarCloud with Azure DevOps', url:'https://docs.sonarcloud.io/getting-started/azure-devops/'},
+    {title:'Microsoft Defender for DevOps overview', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-devops-introduction'},
+    {title:'OWASP Dependency-Check', url:'https://owasp.org/www-project-dependency-check/'},
+    {title:'Security in Azure Pipelines — overview', url:'https://learn.microsoft.com/en-us/azure/devops/pipelines/security/overview'},
+  ],
+  'p5-artifacts':[
+    {title:'Azure Artifacts overview', url:'https://learn.microsoft.com/en-us/azure/devops/artifacts/start-using-azure-artifacts'},
+    {title:'Publish and consume NuGet packages', url:'https://learn.microsoft.com/en-us/azure/devops/artifacts/nuget/publish'},
+    {title:'Package versioning — Azure Artifacts', url:'https://learn.microsoft.com/en-us/azure/devops/artifacts/artifacts-key-concepts'},
+    {title:'Feed retention policies', url:'https://learn.microsoft.com/en-us/azure/devops/artifacts/concepts/best-practices'},
+  ],
+  'p6-appinsights':[
+    {title:'What is Application Insights?', url:'https://learn.microsoft.com/en-us/azure/azure-monitor/app/app-insights-overview'},
+    {title:'Custom events and metrics — Application Insights', url:'https://learn.microsoft.com/en-us/azure/azure-monitor/app/api-custom-events-metrics'},
+    {title:'Availability tests overview', url:'https://learn.microsoft.com/en-us/azure/azure-monitor/app/availability-overview'},
+    {title:'Application Map — distributed applications', url:'https://learn.microsoft.com/en-us/azure/azure-monitor/app/app-map'},
+  ],
+  'p6-monitor':[
+    {title:'Log Analytics KQL reference', url:'https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/'},
+    {title:'Create log search alerts', url:'https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-log'},
+    {title:'Action groups in Azure Monitor', url:'https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups'},
+    {title:'Feature flags — Azure App Configuration', url:'https://learn.microsoft.com/en-us/azure/azure-app-configuration/concept-feature-management'},
+    {title:'DORA metrics with Azure DevOps', url:'https://learn.microsoft.com/en-us/azure/devops/report/dashboards/'},
+  ],
+};
+
+// ─── State & Persistence ──────────────────────────────────────────────────────
+const APP_KEY = 'az400_lab_tracker';
+const FB_PATH = 'az400_progress';
+let state = {steps:{},notes:{},labNotes:{},valChecks:{}};
+let db=null, syncRef=null, currentUser=null;
+
+function loadState(){
+  const raw=localStorage.getItem(APP_KEY+'_'+currentUser);
+  if(raw){ try{state=JSON.parse(raw);}catch(e){state={steps:{},notes:{},labNotes:{},valChecks:{}};} }
+  else state={steps:{},notes:{},labNotes:{},valChecks:{}};
+}
+function saveState(){
+  localStorage.setItem(APP_KEY+'_'+currentUser,JSON.stringify(state));
+  if(syncRef && currentUser) syncToFirebase();
+}
+function initFirebase(){
+  const cfg=JSON.parse(localStorage.getItem(APP_KEY+'_fb_config')||'null');
+  if(!cfg) return;
+  try{
+    const existing=firebase.apps.find(a=>a.name==='az400');
+    const app=existing||firebase.initializeApp(cfg,'az400');
+    db=firebase.database(app);
+    syncRef=db.ref(FB_PATH);
+    setSyncStatus('ing','&#x1F504; Connecting...');
+    if(currentUser){
+      syncRef.child(currentUser).on('value',snap=>{
+        if(snap.val()){state=snap.val();build();updateStats();renderAll();}
+        setSyncStatus('ok','&#x2714; Synced');
+      });
+    }
+  }catch(e){setSyncStatus('err','&#x26A0; Firebase Error');}
+}
+function syncToFirebase(){
+  if(!syncRef||!currentUser) return;
+  syncRef.child(currentUser).set(state).then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Error'));
+}
+function setSyncStatus(type,html){const el=document.getElementById('sync-status');el.className='sync-status sync-'+type;el.innerHTML=html;}
+function openFbPanel(){
+  const cfg=JSON.parse(localStorage.getItem(APP_KEY+'_fb_config')||'null');
+  if(cfg){document.getElementById('fb-apiKey').value=cfg.apiKey||'';document.getElementById('fb-databaseURL').value=cfg.databaseURL||'';document.getElementById('fb-projectId').value=cfg.projectId||'';}
+  document.getElementById('fb-overlay').classList.add('open');
+}
+function closeFbPanel(){document.getElementById('fb-overlay').classList.remove('open');}
+function saveFbConfig(){
+  const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};
+  if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){showFbMsg('err','Please fill in all 3 fields.');return;}
+  localStorage.setItem(APP_KEY+'_fb_config',JSON.stringify(cfg));
+  showFbMsg('ok','Connecting...');
+  initFirebase();
+  setTimeout(closeFbPanel,1000);
+}
+function clearFbConfig(){localStorage.removeItem(APP_KEY+'_fb_config');db=null;syncRef=null;setSyncStatus('none','&#x1F4BE; Local Only');closeFbPanel();}
+function showFbMsg(type,msg){const el=document.getElementById('fb-msg');el.className='fb-status-msg '+type;el.innerHTML=msg;}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+function initUser(){
+  currentUser=localStorage.getItem(APP_KEY+'_current_user');
+  if(!currentUser){document.getElementById('user-overlay').classList.add('open');return;}
+  document.getElementById('user-name-display').textContent=currentUser;
+  loadState();build();updateStats();initFirebase();
+}
+function confirmUser(){
+  const v=document.getElementById('user-name-input').value.trim();
+  if(!v) return;
+  currentUser=v;localStorage.setItem(APP_KEY+'_current_user',v);
+  document.getElementById('user-name-display').textContent=v;
+  document.getElementById('user-overlay').classList.remove('open');
+  loadState();build();updateStats();initFirebase();
+}
+function changeUser(){document.getElementById('user-overlay').classList.add('open');}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function countAll(){
+  let total=0,done=0,p1to3=0,p1to3Done=0,p4to6=0,p4to6Done=0;
+  PHASES.forEach((ph,idx)=>{
+    ph.labs.forEach(lab=>{
+      total++;
+      const labDone=lab.steps.every(s=>state.steps[s.id])&&lab.validation.every(v=>state.valChecks[v.id]);
+      if(idx<3){p1to3++;if(labDone)p1to3Done++;}
+      else{p4to6++;if(labDone)p4to6Done++;}
+      if(labDone)done++;
+    });
+  });
+  return{total,done,p1to3,p1to3Done,p4to6,p4to6Done};
+}
+function countPhase(ph){
+  let s=0,d=0;
+  ph.labs.forEach(lab=>{s+=lab.steps.length+lab.validation.length;d+=lab.steps.filter(x=>state.steps[x.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length;});
+  return{s,d};
+}
+function updateStats(){
+  const c=countAll();
+  document.getElementById('stat-total').textContent=c.total;
+  document.getElementById('stat-done').textContent=c.done;
+  document.getElementById('stat-p1').textContent=c.p1to3Done+'/'+c.p1to3;
+  document.getElementById('stat-p2').textContent=c.p4to6Done+'/'+c.p4to6;
+  const pct=c.total?Math.round(c.done/c.total*100):0;
+  document.getElementById('stat-pct').textContent=pct+'%';
+  document.getElementById('big-bar-fill').style.width=pct+'%';
+  PHASES.forEach(ph=>{const{s,d}=countPhase(ph);const fill=document.getElementById('ph-fill-'+ph.id);if(fill)fill.style.width=(s?Math.round(d/s*100):0)+'%';});
+  if(c.done===c.total&&c.total>0)document.getElementById('congrats').style.display='flex';
+}
+
+// ─── Toggle ───────────────────────────────────────────────────────────────────
+function toggleStep(id){state.steps[id]=!state.steps[id];if(!state.steps[id])delete state.steps[id];saveState();renderAll();updateStats();}
+function toggleVal(id){state.valChecks[id]=!state.valChecks[id];if(!state.valChecks[id])delete state.valChecks[id];saveState();renderAll();updateStats();}
+
+// ─── Details & Notes ─────────────────────────────────────────────────────────
+function toggleDetail(btn){const panel=btn.closest('.step-row').querySelector('.step-details');if(!panel)return;const open=panel.classList.toggle('open');btn.classList.toggle('open',open);btn.textContent=open?'Hide ▲':'Details ▼';}
+function toggleNote(btn){const panel=btn.closest('.step-row').querySelector('.step-note-panel');if(!panel)return;const open=panel.classList.toggle('open');btn.classList.toggle('open',open);btn.textContent=open?'Note ▲':'Note ▼';}
+function saveNote(id,val){if(val.trim())state.notes[id]=val;else delete state.notes[id];const btn=document.querySelector('[data-note-btn="'+id+'"]');if(btn)btn.classList.toggle('has-note',!!state.notes[id]);saveState();}
+function saveLabNote(id,val){if(val.trim())state.labNotes[id]=val;else delete state.labNotes[id];saveState();}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+let activeFilter='all';
+function filterTab(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.lab-section').forEach(sec=>{sec.style.display=(f==='all'||sec.dataset.cloud===f)?'block':'none';});
+}
+
+// ─── Build UI ─────────────────────────────────────────────────────────────────
+function renderAll(){
+  document.querySelectorAll('.step-row').forEach(row=>{const id=row.dataset.stepId;if(id)row.classList.toggle('done',!!state.steps[id]);const chk=row.querySelector('.step-check');if(chk&&id)chk.innerHTML=state.steps[id]?'&#x2714;':'';});
+  document.querySelectorAll('.val-row').forEach(row=>{const id=row.dataset.valId;if(id)row.classList.toggle('done',!!state.valChecks[id]);const chk=row.querySelector('.val-check');if(chk&&id)chk.innerHTML=state.valChecks[id]?'&#x2714;':'';});
+  document.querySelectorAll('textarea[data-note-id]').forEach(ta=>{ta.value=state.notes[ta.dataset.noteId]||'';});
+  document.querySelectorAll('[data-note-btn]').forEach(btn=>{btn.classList.toggle('has-note',!!state.notes[btn.dataset.noteBtnId]);});
+  document.querySelectorAll('textarea[data-lab-note]').forEach(ta=>{ta.value=state.labNotes[ta.dataset.labNote]||'';});
+}
+
+function build(){
+  const content=document.getElementById('content');
+  content.innerHTML='';
+  PHASES.forEach(ph=>{
+    const card=document.createElement('div');
+    card.className='phase-card';
+    card.id='phase-'+ph.id;
+    const{s,d}=countPhase(ph);
+    const pct=s?Math.round(d/s*100):0;
+    card.innerHTML=`
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-header-left">
+          <span class="phase-badge">${ph.badge}</span>
+          <div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:#BAE6FD;min-width:32px;text-align:right">${pct}%</span>
+          <span class="chevron">&#x25BC;</span>
+        </div>
+      </div>
+      <div class="phase-body">${ph.labs.map(lab=>buildLab(lab)).join('')}</div>`;
+    content.appendChild(card);
+  });
+}
+
+function buildLab(lab){
+  const doneSteps=lab.steps.filter(s=>state.steps[s.id]).length;
+  const doneVals=lab.validation.filter(v=>state.valChecks[v.id]).length;
+  const total=lab.steps.length+lab.validation.length;
+  const done=doneSteps+doneVals;
+  const pct=total?Math.round(done/total*100):0;
+  return `<div class="lab-section" id="lab-${lab.id}" data-cloud="${lab.cloud}">
+    <div class="lab-header azure-lab">
+      <span class="lab-cloud-badge azure-badge">Azure</span>
+      <div class="lab-title-area">
+        <div class="lab-title">${lab.title}</div>
+        <div class="lab-meta">${lab.meta} &middot; ${done}/${total} steps</div>
+      </div>
+      <div class="lab-stats">
+        <div style="font-size:11px;font-weight:700;color:var(--gray)">${pct}%</div>
+        <button class="lab-toggle azure-btn" onclick="toggleLab('lab-${lab.id}')">&#x25BC; Expand</button>
+      </div>
+    </div>
+    <div class="steps-list">
+      <div class="section-lbl">&#x1F527; Lab Steps</div>
+      ${lab.steps.map((s,i)=>buildStep(s,i+1)).join('')}
+      <div class="section-lbl" style="margin-top:14px">&#x2705; Validation Checks</div>
+      ${lab.validation.map(v=>buildVal(v)).join('')}
+      ${buildRefs(lab.id)}
+      <div class="section-lbl" style="margin-top:14px">&#x1F4DD; Lab Notes</div>
+      <textarea class="notes-area" data-lab-note="${lab.id}" placeholder="Add any overall notes about this lab..." onchange="saveLabNote('${lab.id}',this.value)"></textarea>
+    </div>
+  </div>`;
+}
+
+function buildStep(s,num){
+  const done=!!state.steps[s.id];
+  const hasDetails=s.details&&s.details.length>0;
+  return `<div class="step-row${done?' done':''}" data-step-id="${s.id}">
+    <div class="step-check" onclick="toggleStep('${s.id}')">${done?'&#x2714;':''}</div>
+    <div class="step-main">
+      <div class="step-top">
+        <span class="step-num">${num}.</span>
+        <span class="step-text">${s.text}</span>
+        ${hasDetails?`<button class="detail-btn" onclick="toggleDetail(this)">Details &#x25BC;</button>`:''}
+        <button class="note-btn" data-note-btn="${s.id}" onclick="toggleNote(this)">Note &#x25BC;</button>
+      </div>
+      ${hasDetails?`<div class="step-details">${s.details.map((d,i)=>`<div class="detail-item"><span class="di-num">${i+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}
+      <div class="step-note-panel">
+        <textarea class="note-textarea" data-note-id="${s.id}" placeholder="Your notes for this step..." onchange="saveNote('${s.id}',this.value)"></textarea>
+        <div class="note-hint">&#x1F4A1; Notes are saved locally and synced if Firebase is connected.</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildVal(v){
+  const done=!!state.valChecks[v.id];
+  return `<div class="val-row${done?' done':''}" data-val-id="${v.id}" onclick="toggleVal('${v.id}')">
+    <div class="val-check">${done?'&#x2714;':''}</div>
+    <span class="step-text">&#x1F4CB; ${v.text}</span>
+  </div>`;
+}
+
+let expandedRefs={};
+function buildRefs(labId){
+  const refs=LAB_RESOURCES[labId];
+  if(!refs||!refs.length) return '';
+  const isOpen=!!expandedRefs[labId];
+  return `<div class="refs-section">
+    <div class="refs-header" onclick="toggleRefs('${labId}')">
+      <span class="refs-title">&#x1F4DA; Official Microsoft Learn References (${refs.length})</span>
+      <span class="refs-toggle" id="refs-toggle-${labId}">${isOpen?'Hide &#x25B2;':'Show &#x25BC;'}</span>
+    </div>
+    <div class="refs-list" id="refs-list-${labId}" style="display:${isOpen?'flex':'none'}">
+      ${refs.map(r=>`<div class="ref-item"><span class="ref-icon">&#x1F517;</span><a href="${r.url}" target="_blank">${r.title}</a></div>`).join('')}
+    </div>
+  </div>`;
+}
+function toggleRefs(labId){
+  expandedRefs[labId]=!expandedRefs[labId];
+  const list=document.getElementById('refs-list-'+labId);
+  const toggle=document.getElementById('refs-toggle-'+labId);
+  if(list)list.style.display=expandedRefs[labId]?'flex':'none';
+  if(toggle)toggle.innerHTML=expandedRefs[labId]?'Hide &#x25B2;':'Show &#x25BC;';
+}
+
+function togglePhase(header){header.closest('.phase-card').classList.toggle('open');}
+function toggleLab(id){
+  const sec=document.getElementById(id);
+  if(!sec) return;
+  sec.classList.toggle('open');
+  const btn=sec.querySelector('.lab-toggle');
+  if(btn)btn.innerHTML=sec.classList.contains('open')?'&#x25B2; Collapse':'&#x25BC; Expand';
+}
+
+function resetProgress(){
+  if(!confirm('Reset all AZ-400 lab progress for '+currentUser+'? This cannot be undone.')) return;
+  state={steps:{},notes:{},labNotes:{},valChecks:{}};
+  saveState();build();updateStats();
+}
+
+window.onload=initUser;
+</script>
+</body>
+</html>

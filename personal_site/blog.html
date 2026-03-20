@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog — Manikandan K</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --navy:#0F172A; --navy2:#1E3A5F; --purple:#7C3AED; --purple-light:#F5F3FF;
+  --azure:#0078D4; --azure-light:#EFF6FF; --green:#16A34A; --green-light:#F0FDF4;
+  --gray:#6B7280; --light:#F3F4F6; --dark:#1F2937;
+  --radius:12px; --shadow:0 4px 20px rgba(0,0,0,.09);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#F8FAFC;color:var(--dark);line-height:1.6;}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:200;background:rgba(15,23,42,.96);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.08);}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-size:16px;font-weight:800;color:white;text-decoration:none;letter-spacing:-.3px;}
+.nav-logo span{color:#818CF8;}
+.nav-links{display:flex;gap:4px;}
+.nav-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:500;padding:6px 12px;border-radius:8px;transition:all .2s;}
+.nav-links a:hover{color:white;background:rgba(255,255,255,.1);}
+.nav-links a.active{color:white;background:rgba(124,58,237,.35);}
+.nav-cta{padding:7px 16px;background:var(--purple);color:white;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s;}
+.nav-cta:hover{filter:brightness(1.15);}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#1a1040 50%,var(--navy2) 100%);color:white;padding:64px 24px 56px;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 60% 50%,rgba(124,58,237,.2) 0%,transparent 70%);}
+.hero-content{position:relative;max-width:720px;margin:0 auto;}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.25);border:1px solid rgba(124,58,237,.4);color:#C4B5FD;font-size:12px;font-weight:600;padding:5px 14px;border-radius:99px;margin-bottom:18px;letter-spacing:.3px;}
+.hero h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.15;margin-bottom:10px;letter-spacing:-.5px;}
+.hero h1 span{background:linear-gradient(135deg,#818CF8,#C084FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-subtitle{font-size:15px;color:rgba(255,255,255,.65);max-width:520px;margin:0 auto;}
+
+/* CONTENT */
+.content{max-width:1100px;margin:0 auto;padding:36px 24px 72px;}
+
+/* FILTER BAR */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:28px;}
+.filter-btn{padding:7px 16px;border-radius:8px;border:1.5px solid var(--light);font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.filter-btn:hover{border-color:#C4B5FD;color:var(--purple);}
+.filter-btn.active{background:var(--purple);color:white;border-color:var(--purple);}
+.search-wrap{margin-left:auto;}
+.search-input{border:1.5px solid var(--light);border-radius:8px;padding:7px 14px;font-size:12px;font-family:inherit;color:var(--dark);width:220px;transition:border-color .2s;}
+.search-input:focus{outline:none;border-color:var(--purple);}
+
+/* STATS ROW */
+.stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px;}
+.stat-pill{background:white;border-radius:10px;box-shadow:var(--shadow);padding:10px 18px;display:flex;align-items:center;gap:10px;border:1.5px solid var(--light);}
+.stat-pill .sp-num{font-size:20px;font-weight:800;color:var(--navy2);}
+.stat-pill .sp-lbl{font-size:11px;color:var(--gray);font-weight:600;}
+
+/* FEATURED POST */
+.featured{display:grid;grid-template-columns:1fr 1fr;gap:0;background:white;border-radius:var(--radius);box-shadow:var(--shadow);border:1.5px solid #DDD6FE;overflow:hidden;margin-bottom:32px;cursor:pointer;transition:all .25s;text-decoration:none;color:inherit;}
+.featured:hover{transform:translateY(-3px);box-shadow:0 8px 32px rgba(124,58,237,.15);}
+.featured-img{background:linear-gradient(135deg,var(--navy) 0%,#1a1040 60%,#312e81 100%);padding:40px;display:flex;flex-direction:column;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+.featured-img::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 70% 30%,rgba(124,58,237,.3),transparent 65%);}
+.featured-emoji{font-size:56px;position:relative;}
+.featured-cat{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#C4B5FD;position:relative;}
+.featured-title-img{font-size:22px;font-weight:800;color:white;line-height:1.3;position:relative;}
+.featured-body{padding:36px;}
+.featured-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--purple-light);color:var(--purple);margin-bottom:14px;letter-spacing:.3px;}
+.featured-title{font-size:20px;font-weight:800;color:var(--dark);margin-bottom:10px;line-height:1.35;}
+.featured-excerpt{font-size:14px;color:var(--gray);line-height:1.7;margin-bottom:18px;}
+.featured-meta{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--gray);}
+.featured-meta .read-more{color:var(--purple);font-weight:700;display:flex;align-items:center;gap:4px;margin-left:auto;}
+
+/* CARDS GRID */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;}
+
+/* BLOG CARD */
+.bcard{background:white;border-radius:var(--radius);box-shadow:var(--shadow);border:1.5px solid var(--light);padding:24px;cursor:pointer;transition:all .25s;display:flex;flex-direction:column;gap:14px;}
+.bcard:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.12);border-color:#DDD6FE;}
+.bcard.draft{opacity:.65;cursor:default;}
+.bcard.draft:hover{transform:none;box-shadow:var(--shadow);}
+.bcard-cat{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 10px;border-radius:99px;}
+.bcard-title{font-size:15px;font-weight:800;color:var(--dark);line-height:1.4;}
+.bcard-excerpt{font-size:13px;color:var(--gray);line-height:1.65;flex:1;}
+.bcard-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;}
+.bcard-meta{font-size:11px;color:var(--gray);}
+.bcard-read{font-size:11px;font-weight:700;color:var(--purple);}
+.bcard-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.bcard-tag{font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--light);color:var(--gray);}
+.draft-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#FFF7ED;color:#B45309;}
+.empty-state{text-align:center;padding:48px 24px;color:var(--gray);font-size:14px;grid-column:1/-1;}
+
+/* POST READER (full-screen overlay) */
+.reader-overlay{position:fixed;inset:0;z-index:500;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .25s;}
+.reader-overlay.open{opacity:1;pointer-events:all;}
+.reader-panel{position:fixed;top:0;right:0;bottom:0;width:min(780px,100vw);background:white;z-index:501;overflow-y:auto;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(0,0,0,.18);}
+.reader-panel.open{transform:translateX(0);}
+.reader-header{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--light);padding:14px 24px;display:flex;align-items:center;gap:12px;z-index:10;}
+.reader-close{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--light);background:white;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.reader-close:hover{background:var(--light);}
+.reader-header-info{flex:1;min-width:0;}
+.reader-header-cat{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--purple);margin-bottom:2px;}
+.reader-header-title{font-size:13px;font-weight:700;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.reader-body{padding:40px 40px 64px;}
+.reader-post-cat{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:4px 12px;border-radius:99px;margin-bottom:20px;display:inline-block;}
+.reader-post-title{font-size:clamp(22px,3.5vw,32px);font-weight:800;color:var(--dark);line-height:1.25;margin-bottom:12px;letter-spacing:-.3px;}
+.reader-post-meta{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--gray);margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--light);flex-wrap:wrap;}
+.reader-post-meta .dot{color:#CBD5E1;}
+.reader-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:32px;}
+.reader-tag{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--light);color:var(--gray);}
+.reader-content{font-size:15px;line-height:1.85;color:var(--dark);}
+.reader-content h2{font-size:20px;font-weight:800;color:var(--dark);margin:32px 0 12px;letter-spacing:-.2px;}
+.reader-content h3{font-size:16px;font-weight:700;color:var(--dark);margin:24px 0 8px;}
+.reader-content p{margin-bottom:18px;}
+.reader-content ul,.reader-content ol{margin:0 0 18px 24px;}
+.reader-content li{margin-bottom:8px;}
+.reader-content strong{font-weight:700;color:var(--dark);}
+.reader-content em{font-style:italic;}
+.reader-content blockquote{border-left:4px solid var(--purple);padding:12px 18px;background:var(--purple-light);border-radius:0 8px 8px 0;margin:20px 0;color:#4C1D95;font-style:italic;}
+.reader-content code{background:var(--light);padding:2px 7px;border-radius:5px;font-family:'Cascadia Code','Fira Code',monospace;font-size:13px;color:#BE185D;}
+.reader-content pre{background:var(--navy);color:#E2E8F0;padding:20px 22px;border-radius:10px;overflow-x:auto;margin:20px 0;font-family:'Cascadia Code','Fira Code',monospace;font-size:13px;line-height:1.6;}
+.reader-content pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+.reader-content hr{border:none;border-top:1px solid var(--light);margin:32px 0;}
+.reader-content a{color:var(--purple);text-decoration:underline;}
+.reader-content .callout{padding:14px 18px;border-radius:10px;margin:20px 0;font-size:14px;}
+.reader-content .callout.info{background:#EFF6FF;border:1px solid #BFDBFE;color:#1e40af;}
+.reader-content .callout.warn{background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;}
+.reader-content .callout.tip{background:var(--green-light);border:1px solid #BBF7D0;color:#166534;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .featured{grid-template-columns:1fr;}
+  .featured-img{padding:28px;}
+  .nav-links{display:none;}
+  .reader-body{padding:24px 20px 48px;}
+  .search-wrap{margin-left:0;width:100%;}
+  .search-input{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">MK<span>.</span></a>
+    <div class="nav-links">
+      <a href="index.html#about">About</a>
+      <a href="index.html#skills">Skills</a>
+      <a href="index.html#learning">Learning</a>
+      <a href="certifications.html">&#x1F393; Roadmap</a>
+      <a href="blog.html" class="active">&#x270D;&#xFE0F; Blog</a>
+      <a href="resume.html">&#x1F4C4; Resume</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+    <a href="learning.html" class="nav-cta">&#x1F4DA; Learning Hub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">&#x270D;&#xFE0F; &nbsp; Writing &amp; Notes</div>
+    <h1>Blog &amp; <span>Technical Notes</span></h1>
+    <p class="hero-subtitle">Cloud, DevOps, security deep-dives, lab walkthroughs and things I learn along the way.</p>
+  </div>
+</section>
+
+<!-- MAIN -->
+<div class="content">
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row"></div>
+
+  <!-- Filters -->
+  <div class="filter-row" id="filter-row">
+    <button class="filter-btn active" data-cat="All" onclick="setFilter('All')">All</button>
+    <div class="search-wrap">
+      <input class="search-input" type="text" placeholder="Search posts..." id="search-input" oninput="renderPosts()">
+    </div>
+  </div>
+
+  <!-- Featured -->
+  <div id="featured-slot"></div>
+
+  <!-- Grid -->
+  <div class="cards-grid" id="cards-grid"></div>
+
+</div>
+
+<!-- READER OVERLAY -->
+<div class="reader-overlay" id="reader-overlay" onclick="closeReader()"></div>
+<div class="reader-panel" id="reader-panel">
+  <div class="reader-header">
+    <button class="reader-close" onclick="closeReader()">&#x2715;</button>
+    <div class="reader-header-info">
+      <div class="reader-header-cat" id="rh-cat"></div>
+      <div class="reader-header-title" id="rh-title"></div>
+    </div>
+  </div>
+  <div class="reader-body" id="reader-body"></div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────
+   POSTS DATA
+   To add a new post, copy a post object below and fill in:
+     id        – unique slug string
+     title     – post title
+     date      – display date string
+     category  – one of: Azure, DevOps, Security, AWS, Linux, General
+     tags      – array of tag strings
+     excerpt   – 1-2 sentence summary shown on the card
+     featured  – set true for the ONE post shown large at the top
+     draft     – set true to show card grayed-out (no reader)
+     content   – full HTML body of the post (use the helpers below)
+   ───────────────────────────────────────────────────────────────── */
+const POSTS = [
+
+  {
+    id: 'az400-journey',
+    title: 'My AZ-400 Study Journey: DevOps Engineer Expert',
+    date: 'March 2026',
+    category: 'Azure',
+    tags: ['AZ-400','Azure DevOps','CI/CD','IaC','Study'],
+    excerpt: 'Six weeks, twelve labs, and everything I learned about YAML pipelines, Terraform on Azure, shift-left security and release strategies.',
+    featured: true,
+    draft: false,
+    content: `
+      <p>Write your full post content here. You can use any HTML.</p>
+
+      <h2>Why AZ-400?</h2>
+      <p>Replace this paragraph with your own content. This is just a placeholder to show you the layout.</p>
+
+      <blockquote>Add an inspiring or key quote from your experience here.</blockquote>
+
+      <h2>The Study Plan</h2>
+      <p>Describe your study plan, resources, and schedule here.</p>
+
+      <h3>Week 1 – Source Control & Boards</h3>
+      <ul>
+        <li>Replace these with your actual study notes</li>
+        <li>Add key takeaways, gotchas, tips</li>
+        <li>Link to labs or resources you found useful</li>
+      </ul>
+
+      <h3>Week 2 – YAML Pipelines</h3>
+      <p>Continue writing here...</p>
+
+      <pre><code># Example YAML snippet you want to share
+trigger:
+  branches:
+    include: [main]
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildApp</code></pre>
+
+      <div class="callout tip">&#x1F4A1; <strong>Tip:</strong> Add callout boxes like this for important notes, warnings, or tips.</div>
+
+      <h2>Key Takeaways</h2>
+      <p>Summarize what you learned and what you'd do differently.</p>
+    `
+  },
+
+  {
+    id: 'kubernetes-basics',
+    title: 'Kubernetes from Zero: Pods, Deployments and Services',
+    date: 'February 2026',
+    category: 'DevOps',
+    tags: ['Kubernetes','CKA','Containers','kubectl'],
+    excerpt: 'A practitioner\'s walkthrough of the core Kubernetes primitives — what they are, how they relate, and the kubectl commands you\'ll use every day.',
+    featured: false,
+    draft: false,
+    content: `
+      <p>Replace this with your actual Kubernetes notes and walkthrough.</p>
+
+      <h2>The Building Blocks</h2>
+      <p>Explain Pods, Deployments, Services and how they connect.</p>
+
+      <h2>Essential kubectl Commands</h2>
+      <pre><code># Commands you use most
+kubectl get pods -A
+kubectl describe pod &lt;name&gt;
+kubectl logs &lt;pod&gt; -f
+kubectl exec -it &lt;pod&gt; -- bash</code></pre>
+
+      <div class="callout info">&#x2139;&#xFE0F; <strong>Note:</strong> Add any important notes or caveats here.</div>
+
+      <h2>What's Next</h2>
+      <p>Link to your next post or lab here.</p>
+    `
+  },
+
+  {
+    id: 'powershell-pipeline',
+    title: 'PowerShell Pipeline: Thinking in Objects',
+    date: 'February 2026',
+    category: 'DevOps',
+    tags: ['PowerShell','Automation','Windows','Scripting'],
+    excerpt: 'Unlike bash which pipes text, PowerShell pipes .NET objects. Once that clicks, the whole language makes sense.',
+    featured: false,
+    draft: false,
+    content: `
+      <p>Replace this with your PowerShell notes.</p>
+
+      <h2>It's Objects, Not Text</h2>
+      <p>Explain the key mental model shift from bash to PowerShell pipelines.</p>
+
+      <pre><code>Get-Process | Where-Object { $_.CPU -gt 10 } | Select-Object Name, CPU | Sort-Object CPU -Descending</code></pre>
+
+      <h2>The Big Three Pipeline Cmdlets</h2>
+      <ul>
+        <li><code>Where-Object</code> – filter objects</li>
+        <li><code>Select-Object</code> – choose properties</li>
+        <li><code>Sort-Object</code> – sort by property</li>
+      </ul>
+    `
+  },
+
+  {
+    id: 'azure-landing-zones',
+    title: 'Azure Landing Zones: Enterprise-Scale Foundations',
+    date: 'Coming Soon',
+    category: 'Azure',
+    tags: ['Azure','Architecture','CAF','Landing Zones'],
+    excerpt: 'How to structure subscriptions, management groups and policies before your first workload lands.',
+    featured: false,
+    draft: true,
+    content: ''
+  },
+
+  {
+    id: 'terraform-remote-state',
+    title: 'Terraform Remote State & Workspaces on Azure',
+    date: 'Coming Soon',
+    category: 'DevOps',
+    tags: ['Terraform','IaC','Azure','AZ-400'],
+    excerpt: 'Store your Terraform state in Azure Blob Storage, use workspaces for environments, and run it all from Azure DevOps pipelines.',
+    featured: false,
+    draft: true,
+    content: ''
+  },
+
+  {
+    id: 'soar-defender',
+    title: 'Microsoft Defender XDR: From Alert to Incident Response',
+    date: 'Coming Soon',
+    category: 'Security',
+    tags: ['Defender XDR','SC-200','SIEM','SOAR'],
+    excerpt: 'Walkthrough of the Defender portal — incidents, hunting, automation playbooks and the integration story with Sentinel.',
+    featured: false,
+    draft: true,
+    content: ''
+  },
+
+];
+
+/* ─────────────────────────────────────────────────────────────────
+   CATEGORY COLOURS  –  add a new entry if you add a new category
+   ───────────────────────────────────────────────────────────────── */
+const CAT_COLORS = {
+  'Azure':   {bg:'#EFF6FF', color:'#0078D4'},
+  'DevOps':  {bg:'#EEF2FF', color:'#4338CA'},
+  'Security':{bg:'#FFF1F2', color:'#BE123C'},
+  'AWS':     {bg:'#FFF7ED', color:'#B45309'},
+  'GCP':     {bg:'#F0FDF4', color:'#166534'},
+  'Linux':   {bg:'#F0FDF4', color:'#166534'},
+  'General': {bg:'#F5F3FF', color:'#7C3AED'},
+};
+function catStyle(cat){
+  const c = CAT_COLORS[cat] || CAT_COLORS['General'];
+  return `background:${c.bg};color:${c.color};`;
+}
+
+/* ─── Firebase loader ───────────────────────────────────────────────────────
+   Reads blog_posts from Firebase (if configured) and merges with POSTS above.
+   Firebase posts take priority; hardcoded POSTS are used as fallback.
+   ────────────────────────────────────────────────────────────────────────── */
+const FB_CONFIG_KEY = 'mk_site_fb_config';
+
+function initBlogFirebase(){
+  const cfg = JSON.parse(localStorage.getItem(FB_CONFIG_KEY) || 'null');
+  if(!cfg){ return; } // No Firebase configured — use hardcoded POSTS only
+  try{
+    const existing = firebase.apps.find(a => a.name === 'mk-blog');
+    const app = existing || firebase.initializeApp(cfg, 'mk-blog');
+    const db  = firebase.database(app);
+    db.ref('blog_posts').on('value', snap => {
+      const data = snap.val() || {};
+      const fbPosts = Object.values(data).map(p => ({...p}));
+      if(fbPosts.length > 0){
+        // Use Firebase posts; append any hardcoded POSTS not in Firebase (by id)
+        const fbIds = new Set(fbPosts.map(p => p.id));
+        const extra = POSTS.filter(p => !fbIds.has(p.id));
+        POSTS.length = 0;
+        [...fbPosts, ...extra].forEach(p => POSTS.push(p));
+      }
+      buildFilters();
+      renderStats();
+      renderPosts();
+    });
+  } catch(e){
+    console.warn('Blog Firebase init failed, using hardcoded posts.', e);
+  }
+}
+
+/* ─── State ─── */
+let activeFilter = 'All';
+
+function setFilter(cat){
+  activeFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  renderPosts();
+}
+
+/* ─── Build category buttons ─── */
+function buildFilters(){
+  const cats = ['All', ...new Set(POSTS.map(p => p.category))];
+  const row = document.getElementById('filter-row');
+  // clear existing buttons (keep search)
+  row.querySelectorAll('.filter-btn').forEach(b => b.remove());
+  const search = row.querySelector('.search-wrap');
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (cat === 'All' ? ' active' : '');
+    btn.dataset.cat = cat;
+    btn.textContent = cat;
+    btn.onclick = () => setFilter(cat);
+    row.insertBefore(btn, search);
+  });
+}
+
+/* ─── Stats ─── */
+function renderStats(){
+  const published = POSTS.filter(p => !p.draft);
+  const drafts    = POSTS.filter(p => p.draft);
+  const cats      = new Set(published.map(p => p.category)).size;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-pill"><div class="sp-num">${published.length}</div><div class="sp-lbl">Published</div></div>
+    <div class="stat-pill"><div class="sp-num">${drafts.length}</div><div class="sp-lbl">Coming Soon</div></div>
+    <div class="stat-pill"><div class="sp-num">${cats}</div><div class="sp-lbl">Topics</div></div>
+  `;
+}
+
+/* ─── Render ─── */
+function renderPosts(){
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = POSTS.filter(p => {
+    if(activeFilter !== 'All' && p.category !== activeFilter) return false;
+    if(q && !p.title.toLowerCase().includes(q) && !p.excerpt.toLowerCase().includes(q) && !p.tags.some(t => t.toLowerCase().includes(q))) return false;
+    return true;
+  });
+
+  // Featured (first non-draft featured post, only when no filter/search active)
+  const featuredEl = document.getElementById('featured-slot');
+  const feat = filtered.find(p => p.featured && !p.draft);
+  if(feat && activeFilter === 'All' && !q){
+    featuredEl.innerHTML = buildFeatured(feat);
+    featuredEl.style.display = '';
+  } else {
+    featuredEl.style.display = 'none';
+  }
+
+  // Grid (exclude featured when shown)
+  const gridPosts = filtered.filter(p => !(feat && p.id === feat.id && activeFilter === 'All' && !q));
+  const grid = document.getElementById('cards-grid');
+  if(gridPosts.length === 0){
+    grid.innerHTML = `<div class="empty-state">&#x1F50D; No posts match your search.</div>`;
+  } else {
+    grid.innerHTML = gridPosts.map(buildCard).join('');
+  }
+}
+
+function buildFeatured(p){
+  return `
+    <div class="featured" onclick="openReader('${p.id}')">
+      <div class="featured-img">
+        <div class="featured-emoji">&#x2601;&#xFE0F;</div>
+        <div class="featured-cat">${p.category}</div>
+        <div class="featured-title-img">${p.title}</div>
+      </div>
+      <div class="featured-body">
+        <span class="featured-badge">&#x2B50; Featured Post</span>
+        <div class="featured-title">${p.title}</div>
+        <div class="featured-excerpt">${p.excerpt}</div>
+        <div class="featured-meta">
+          <span>&#x1F4C5; ${p.date}</span>
+          <span class="dot">&#x2022;</span>
+          <span style="${catStyle(p.category)}padding:2px 8px;border-radius:99px;font-weight:700;font-size:11px;">${p.category}</span>
+          <span class="read-more">Read Post &#x2192;</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildCard(p){
+  const cs = catStyle(p.category);
+  const tagsHtml = p.tags.map(t => `<span class="bcard-tag">${t}</span>`).join('');
+  if(p.draft){
+    return `
+      <div class="bcard draft">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="bcard-cat" style="${cs}">${p.category}</span>
+          <span class="draft-badge">Coming Soon</span>
+        </div>
+        <div class="bcard-title">${p.title}</div>
+        <div class="bcard-excerpt">${p.excerpt}</div>
+        <div class="bcard-tags">${tagsHtml}</div>
+      </div>`;
+  }
+  return `
+    <div class="bcard" onclick="openReader('${p.id}')">
+      <div><span class="bcard-cat" style="${cs}">${p.category}</span></div>
+      <div class="bcard-title">${p.title}</div>
+      <div class="bcard-excerpt">${p.excerpt}</div>
+      <div class="bcard-tags">${tagsHtml}</div>
+      <div class="bcard-footer">
+        <span class="bcard-meta">&#x1F4C5; ${p.date}</span>
+        <span class="bcard-read">Read &#x2192;</span>
+      </div>
+    </div>`;
+}
+
+/* ─── Reader ─── */
+function openReader(id){
+  const p = POSTS.find(x => x.id === id);
+  if(!p || p.draft) return;
+  const cs = catStyle(p.category);
+  const tagsHtml = p.tags.map(t => `<span class="reader-tag">${t}</span>`).join('');
+  document.getElementById('rh-cat').textContent = p.category;
+  document.getElementById('rh-title').textContent = p.title;
+  document.getElementById('reader-body').innerHTML = `
+    <span class="reader-post-cat" style="${cs}">${p.category}</span>
+    <div class="reader-post-title">${p.title}</div>
+    <div class="reader-post-meta">
+      <span>&#x1F4C5; ${p.date}</span>
+    </div>
+    <div class="reader-tags">${tagsHtml}</div>
+    <div class="reader-content">${p.content}</div>
+  `;
+  document.getElementById('reader-overlay').classList.add('open');
+  document.getElementById('reader-panel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReader(){
+  document.getElementById('reader-overlay').classList.remove('open');
+  document.getElementById('reader-panel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeReader(); });
+
+/* ─── Init ─── */
+buildFilters();
+renderStats();
+renderPosts();
+initBlogFirebase(); // Attempt Firebase load (overwrites if configured)
+</script>
+</body>
+</html>

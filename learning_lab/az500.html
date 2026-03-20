@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AZ-500 Lab Tracker — Azure Security Technologies</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{--azure:#0078D4;--azure-light:#EFF6FF;--aws:#FF9900;--aws-light:#FFF7ED;--aws-dark:#B45309;--gcp:#4285F4;--gcp-light:#EEF4FF;--gcp-dark:#1A73E8;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#7F1D1D;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#FECACA;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#FECACA;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.stat-block.p1 .num{color:#B91C1C;}
+.stat-block.p2 .num{color:#991B1B;}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#991B1B,#B91C1C);transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#FECACA;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#4ADE80;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.azure-lab{border-left:4px solid var(--azure);background:var(--azure-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.azure-badge{background:var(--azure);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.azure-btn{color:var(--azure);}
+.lab-toggle.azure-btn:hover{background:var(--azure);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--azure);color:var(--azure);}
+.detail-btn.open{background:var(--azure-light);border-color:var(--azure);color:var(--azure);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#F8FAFF;border-left:3px solid var(--azure);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--azure);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#E8F0FE;padding:1px 4px;border-radius:3px;color:#1a56db;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;background:#FFFDF5;}
+.note-textarea::placeholder{color:#9CA3AF;font-size:11px;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#F0FDF4;}
+.val-row:hover{background:#DCFCE7;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #86EFAC;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--azure);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#FECACA;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#F0F4FA;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:var(--azure);background:#F8FBFF;}
+.fb-input::placeholder{color:#9CA3AF;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--azure);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;align-items:center;justify-content:center;}
+.user-overlay.open{display:flex;}
+.user-card{background:white;border-radius:16px;padding:36px 40px;max-width:420px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.3);text-align:center;}
+.user-card .u-icon{font-size:48px;margin-bottom:12px;}
+.user-card h3{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.user-card p{font-size:12px;color:var(--gray);margin-bottom:20px;line-height:1.6;}
+.user-card input{width:100%;border:2px solid #E5E7EB;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;color:var(--dark);text-align:center;margin-bottom:14px;}
+.user-card input:focus{outline:none;border-color:var(--azure);}
+.user-card button{width:100%;padding:11px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.user-card button:hover{filter:brightness(1.1);}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+/* Official References */
+.refs-section{margin-top:14px;padding:12px 14px;background:#F5F3FF;border-left:3px solid #7C3AED;border-radius:0 8px 8px 0;}
+.refs-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.refs-title{font-size:10px;font-weight:700;color:#5B21B6;text-transform:uppercase;letter-spacing:.6px;}
+.refs-toggle{font-size:10px;color:#7C3AED;font-weight:700;}
+.refs-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
+.ref-item{display:flex;align-items:flex-start;gap:6px;font-size:12px;}
+.ref-icon{flex-shrink:0;font-size:12px;margin-top:1px;}
+.ref-item a{color:#4F46E5;text-decoration:none;line-height:1.4;}
+.ref-item a:hover{text-decoration:underline;color:#3730A3;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F6E1;&#xFE0F; AZ-500 Lab Tracker</h1>
+      <p>Azure Security Technologies &middot; 4-Phase Deep Dive &middot; Identity, Networking, Compute, Storage &amp; Security Operations</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="index.html" class="nav-link">&#x2601;&#xFE0F; IaaS Labs</a>
+      <a href="iam.html" class="nav-link">&#x1F512; IAM Labs</a>
+      <a href="az700.html" class="nav-link">&#x1F310; AZ-700</a>
+      <a href="sc300.html" class="nav-link">&#x1F510; SC-300</a>
+      <a href="soa-c02.html" class="nav-link">&#x1F527; SOA-C02</a>
+      <a href="az400.html" class="nav-link">&#x1F504; AZ-400</a>
+      <span id="user-chip" class="user-chip" onclick="changeUser()" title="Click to change user">&#x1F464; <span id="user-name-display">...</span></span>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+
+<!-- Username modal -->
+<div class="user-overlay" id="user-overlay">
+  <div class="user-card">
+    <div class="u-icon">&#x1F6E1;&#xFE0F;</div>
+    <h3>Welcome to AZ-500 Lab Tracker</h3>
+    <p>Enter your name to save your progress. Track your journey through Azure Security Technologies labs for the AZ-500 exam.</p>
+    <input type="text" id="user-name-input" placeholder="Your name (e.g. Manikandan)" maxlength="30" onkeydown="if(event.key==='Enter')confirmUser()" />
+    <button onclick="confirmUser()">&#x1F680; Start AZ-500 Labs</button>
+  </div>
+</div>
+
+<!-- Firebase Config Panel -->
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Connect your Firebase Realtime Database to sync AZ-500 lab progress across all your devices.</p>
+    <div class="fb-steps">
+      <b>Quick setup:</b><br>
+      1. Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> &rarr; Create project<br>
+      2. Build &rarr; Realtime Database &rarr; Create database (test mode)<br>
+      3. Project Settings (gear icon) &rarr; Web app &rarr; copy config<br>
+      4. Paste the 3 values below and click Connect
+    </div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey  (e.g. AIzaSy...)" />
+    <input class="fb-input" id="fb-databaseURL" placeholder="databaseURL  (e.g. https://my-project-default-rtdb.firebaseio.com)" />
+    <input class="fb-input" id="fb-projectId" placeholder="projectId  (e.g. my-project-12345)" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions">
+      <button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button>
+      <button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button>
+      <button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- Congrats modal -->
+<div id="congrats">
+  <div class="card">
+    <span class="emoji">&#x1F3C6;</span>
+    <h2>AZ-500 Ready!</h2>
+    <p>You've mastered Azure Security Technologies!</p>
+    <button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button>
+  </div>
+</div>
+
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-2 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 3-4 Done</div></div>
+  <div class="big-bar-wrap">
+    <div class="big-bar-label"><span>Overall AZ-500 Progress</span><span id="stat-pct">0%</span></div>
+    <div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab azure-tab" onclick="filterTab('azure',this)">&#x1F535; Azure Security</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+// ─── AZ-500 Lab Data ──────────────────────────────────────────────────────────
+const PHASES = [
+  {
+    id:'p1', badge:'PHASE 1', title:'Manage Identity & Access Security', week:'Week 1',
+    labs:[
+      {
+        id:'p1-entra', cloud:'azure', title:'Entra ID Security & Privileged Identity Management',
+        meta:'Configure security defaults, Conditional Access, PIM, and Identity Protection',
+        steps:[
+          {id:'p1-entra-s1', text:'Configure Microsoft Entra ID security defaults and review sign-in risk policies', details:['Entra ID > Properties > Manage security defaults', 'Review what security defaults enforce (MFA, legacy auth block)', 'Disable security defaults to use Conditional Access instead', 'Identity Protection > Sign-in risk policy: enable for High risk', 'User risk policy: enable for High risk → require password change']},
+          {id:'p1-entra-s2', text:'Create and test a Conditional Access policy requiring MFA for all admins', details:['Entra ID > Security > Conditional Access > New policy', 'Name: Require MFA - Admins', 'Users: select Directory Roles: Global Admin, Security Admin', 'Cloud apps: All cloud apps', 'Grant: Require MFA; Enable: On', 'Test by signing in as admin — should prompt for MFA']},
+          {id:'p1-entra-s3', text:'Configure PIM for the Global Administrator role (eligible assignment)', details:['PIM > Azure AD roles > Global Administrator > Assignments', 'Add eligible: select a test user', 'Activation maximum: 1 hour; Require justification: Yes; Require MFA on activation: Yes', 'Test activation as the user', 'Review activation request in PIM audit log']},
+          {id:'p1-entra-s4', text:'Enable and review Microsoft Entra ID Identity Protection reports', details:['Identity Protection > Risky users', 'Identity Protection > Risky sign-ins', 'Identity Protection > Risk detections', 'Review: Anonymous IP usage, Impossible travel, Leaked credentials', 'Set up weekly digest email for identity protection']},
+          {id:'p1-entra-s5', text:'Configure Self-Service Password Reset (SSPR) and test it', details:['Entra ID > Password reset; Enable for: All', 'Authentication methods: 2 required (email + phone)', 'Registration: require at registration', 'Notifications: notify users on reset', 'Test: go to aka.ms/sspr as a test user', 'Complete registration with email/phone']},
+        ],
+        validation:[
+          {id:'p1-entra-v1', text:'Conditional Access policy requiring MFA for admins is active'},
+          {id:'p1-entra-v2', text:'PIM makes Global Admin eligible (not permanent)'},
+          {id:'p1-entra-v3', text:'SSPR enabled and test user can reset password without admin'},
+          {id:'p1-entra-v4', text:'Identity Protection risk policies enabled for High risk users/sign-ins'},
+        ]
+      },
+      {
+        id:'p1-rbac', cloud:'azure', title:'Azure RBAC & Custom Role Security',
+        meta:'Audit privileged assignments, create custom roles, configure access reviews and break-glass accounts',
+        steps:[
+          {id:'p1-rbac-s1', text:'Audit all permanent Global Administrator assignments and remediate', details:['PIM > Azure AD roles > Global Administrator > Assignments > Permanent', 'Best practice: NO permanent Global Admins except break-glass accounts', 'Convert all to eligible except 2 break-glass accounts', 'Document break-glass account names and store credentials securely (physical vault)']},
+          {id:'p1-rbac-s2', text:'Create a custom Azure RBAC role with minimum permissions for a security analyst', details:['az role definition create --role-definition \'{"Name":"Security Analyst Custom","Description":"Read security resources only","Actions":["Microsoft.Security/*/read","Microsoft.Insights/*/read","Microsoft.OperationalInsights/*/read"],"NotActions":[],"AssignableScopes":["/subscriptions/<id>"]}\'', 'Assign to a test security user at subscription scope']},
+          {id:'p1-rbac-s3', text:'Review and clean up over-privileged role assignments using Access Reviews', details:['Identity Governance > Access reviews > New', 'Scope: Azure resource roles; Resource: Subscription', 'Review: Owner, Contributor assignments; Reviewers: each user reviews their own access', 'Duration: 7 days; Upon completion: remove access for denied', 'Start and simulate a review']},
+          {id:'p1-rbac-s4', text:'Configure break-glass emergency access accounts', details:['Create 2 accounts: breakglass1@domain.onmicrosoft.com, breakglass2@domain.onmicrosoft.com', 'Assign permanent Global Admin role', 'Exclude from ALL Conditional Access policies', 'Use very long complex passwords stored offline', 'Enable alerting when these accounts sign in; Test login annually']},
+          {id:'p1-rbac-s5', text:'Use Microsoft Secure Score to identify and remediate identity weaknesses', details:['Defender for Cloud > Secure Score; Filter by: Identity', 'Review recommendations: Accounts with owner permissions on Azure resources should be MFA capable', 'Enable MFA for accounts with write permissions', 'Implement recommended actions and observe score change']},
+        ],
+        validation:[
+          {id:'p1-rbac-v1', text:'No permanent Global Admin except break-glass accounts'},
+          {id:'p1-rbac-v2', text:'Custom security analyst role created with read-only permissions'},
+          {id:'p1-rbac-v3', text:'Access review created for privileged Azure resource roles'},
+          {id:'p1-rbac-v4', text:'Break-glass accounts excluded from Conditional Access'},
+          {id:'p1-rbac-v5', text:'Secure Score identity recommendations reviewed'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p2', badge:'PHASE 2', title:'Secure Networking', week:'Week 2',
+    labs:[
+      {
+        id:'p2-netsec', cloud:'azure', title:'Azure Firewall Premium, DDoS & Bastion',
+        meta:'Deploy Firewall Premium with IDPS, configure DDoS Protection, Bastion, and JIT VM access',
+        steps:[
+          {id:'p2-netsec-s1', text:'Upgrade Azure Firewall to Premium SKU and enable TLS inspection', details:['Azure Firewall Premium adds: IDPS (Intrusion Detection & Prevention), TLS inspection, URL filtering, Web categories', 'Create Firewall Policy (Premium)', 'Enable TLS inspection: requires intermediate CA cert in Key Vault', 'IDPS mode: Alert and Deny', 'Test by attempting to browse to a known malicious FQDN']},
+          {id:'p2-netsec-s2', text:'Configure Azure DDoS Protection Standard on vnet-hub', details:['Portal > DDoS protection plans > Create; Name: ddos-plan-hub', 'Associate with vnet-hub (DDoS > Enable)', 'DDoS Standard costs ~$2944/month — use for lab understanding', 'Review mitigation policies: TCP SYN, TCP, UDP, ESP, Other floods', 'Configure alerts: Attack under DDoS mitigation, DDoS attack stopped']},
+          {id:'p2-netsec-s3', text:'Deploy Azure Bastion in vnet-hub for secure VM access without public IPs', details:['Create subnet AzureBastionSubnet (/27 minimum) in vnet-hub', 'Deploy Bastion: Name: bastion-hub; SKU: Standard; VNet: vnet-hub; Public IP: pip-bastion', 'Connect to a VM using Bastion: VM > Connect > Bastion', 'No public IP needed on target VM', 'Review connection logs in Log Analytics']},
+          {id:'p2-netsec-s4', text:'Configure Just-In-Time (JIT) VM access in Defender for Cloud', details:['Defender for Cloud > Workload protections > Just-in-time VM access', 'Enable JIT on vm-web1 and vm-web2', 'Configure ports: 22 (SSH), 3389 (RDP), source IP: my IP only', 'Request JIT access: portal, PowerShell, or REST', 'Review NSG shows temporary allow rule added during JIT session']},
+          {id:'p2-netsec-s5', text:'Implement network micro-segmentation using NSG and ASG best practices', details:['Review all NSGs and ensure default deny on inbound from internet except required ports', 'Enable service tags instead of IP ranges where possible (e.g. AzureMonitor, Storage)', 'Enable Defender for Cloud recommendation: All network ports should be restricted', 'Review Adaptive Network Hardening recommendations in Defender for Cloud']},
+        ],
+        validation:[
+          {id:'p2-netsec-v1', text:'Azure Firewall Premium with IDPS in Alert mode'},
+          {id:'p2-netsec-v2', text:'Bastion deployed — VMs accessible without public IPs'},
+          {id:'p2-netsec-v3', text:'JIT VM access configured and working on test VMs'},
+          {id:'p2-netsec-v4', text:'DDoS Protection plan associated with hub VNet'},
+          {id:'p2-netsec-v5', text:'NSG micro-segmentation implemented per Defender recommendations'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p3', badge:'PHASE 3', title:'Secure Compute, Storage & Data', week:'Week 3',
+    labs:[
+      {
+        id:'p3-kv', cloud:'azure', title:'Azure Key Vault — Secrets, Keys & Certificates',
+        meta:'Create Key Vault with RBAC, manage secrets/keys/certs, configure managed identity access',
+        steps:[
+          {id:'p3-kv-s1', text:'Create an Azure Key Vault with RBAC authorization (not access policies)', details:['Portal > Key Vaults > Create; Name: kv-az500-lab; Pricing: Standard', 'Access configuration: Azure role-based access control (RBAC)', 'Soft delete: 7 days; Purge protection: Enabled (irreversible for lab, use carefully)', 'Assign yourself: Key Vault Administrator role on the KV']},
+          {id:'p3-kv-s2', text:'Create secrets, keys, and a certificate in Key Vault', details:['Secrets: Add > Name: db-connection-string; Value: Server=sqlserver;Database=mydb;...', 'Keys: Generate RSA 2048-bit key: app-encryption-key', 'Certificates: Generate self-signed cert: app-cert', 'Download .cer for testing', 'View all three asset types in the portal']},
+          {id:'p3-kv-s3', text:'Enable Key Vault diagnostic logging and set up expiry alerts', details:['KV > Diagnostic settings > Add; Log: AuditEvent; Metric: AllMetrics; Send to Log Analytics', 'Alert: go to Key Vault > Alerts > Create', 'Condition: Secret Near Expiry (Days to expiry < 30); Action: email notification', 'Review audit logs: who accessed what secret and when']},
+          {id:'p3-kv-s4', text:'Configure a Managed Identity to access Key Vault secrets (no credentials in code)', details:['Create a Web App or VM with System-assigned managed identity', 'In KV: Assign role: Key Vault Secrets User to the managed identity', 'From the web app/VM: GET https://kv-az500-lab.vault.azure.net/secrets/db-connection-string?api-version=7.0 (with managed identity token)', 'This proves app gets secrets without any stored credentials']},
+          {id:'p3-kv-s5', text:'Enable Key Vault firewall and restrict access to specific VNets', details:['KV > Networking > Firewalls and virtual networks', 'Allow: Selected networks', 'Add VNet: vnet-spoke1, app-subnet (enable Microsoft.KeyVault service endpoint first)', 'Allow trusted Microsoft services', 'Verify: access from approved VNet works; Access from public internet returns 403 Forbidden']},
+        ],
+        validation:[
+          {id:'p3-kv-v1', text:'Key Vault uses RBAC (not legacy access policies)'},
+          {id:'p3-kv-v2', text:'Soft delete and purge protection enabled'},
+          {id:'p3-kv-v3', text:'Managed identity retrieves secrets without stored credentials'},
+          {id:'p3-kv-v4', text:'Diagnostic logs capture all secret access in Log Analytics'},
+          {id:'p3-kv-v5', text:'KV network firewall restricts access to specific VNet subnets'},
+        ]
+      },
+      {
+        id:'p3-storage', cloud:'azure', title:'Storage Security — Encryption, SAS & Access Policies',
+        meta:'Configure CMK encryption, generate scoped SAS tokens, enable Defender for Storage and immutable blobs',
+        steps:[
+          {id:'p3-storage-s1', text:'Configure Storage Account with infrastructure encryption (double encryption)', details:['Create Storage Account: staz500secure', 'Encryption: Customer-managed keys (CMK); Key source: Azure Key Vault', 'Select key: app-encryption-key from kv-az500-lab', 'Enable infrastructure encryption (double encryption) — enable at creation time only', 'Review: data encrypted at rest with both Microsoft-managed and customer-managed keys']},
+          {id:'p3-storage-s2', text:'Generate Shared Access Signatures (SAS) with minimum required permissions', details:['Go to storage container > Generate SAS', 'Set: expiry 1 hour from now; Permissions: Read only (not write, delete)', 'Allowed IP: your current IP only; Protocol: HTTPS only', 'Signed key: your storage account key', 'Test the SAS URL — should work for read', 'Test delete via SAS — should fail (403)']},
+          {id:'p3-storage-s3', text:'Create and enforce a Storage Access Policy on a container', details:['Container > Access policy > Add policy; Policy name: lab-read-policy', 'Permissions: Read, List; Expiry: 30 days', 'Generate SAS referencing this stored policy: use PowerShell: New-AzStorageContainerSASToken -Policy lab-read-policy', 'Revoke: change the stored policy expiry to past — SAS is instantly revoked']},
+          {id:'p3-storage-s4', text:'Enable Defender for Storage and review threat detections', details:['Defender for Cloud > Environment settings > Subscription > Storage > Enable', 'Defender for Storage now monitors: Unusual access patterns, Access from Tor exit nodes, Access from suspicious IPs, Hash reputation analysis (malware upload detection)', 'Upload an EICAR test file to a blob — Defender should alert', 'Review alert in Defender for Cloud > Security alerts']},
+          {id:'p3-storage-s5', text:'Configure immutable blob storage for compliance (WORM)', details:['Storage account > Data management > Versioning: Enable', 'Containers > Create container: compliance-archive', 'Container > Access policy > Immutability policy; Type: Time-based retention; Retention: 365 days', 'Lock the policy (makes it irreversible!)', 'Test: try to delete a blob — should fail with ImmutablePolicy error']},
+        ],
+        validation:[
+          {id:'p3-storage-v1', text:'CMK encryption configured with Key Vault key'},
+          {id:'p3-storage-v2', text:'SAS token limited to HTTPS + IP + expiry + min permissions'},
+          {id:'p3-storage-v3', text:'Stored Access Policy created and SAS references it'},
+          {id:'p3-storage-v4', text:'Defender for Storage enabled and detects EICAR test file'},
+          {id:'p3-storage-v5', text:'Immutable blob storage configured for compliance container'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p4', badge:'PHASE 4', title:'Manage Security Operations', week:'Week 4',
+    labs:[
+      {
+        id:'p4-mdc', cloud:'azure', title:'Microsoft Defender for Cloud',
+        meta:'Enable Defender plans, review Secure Score, remediate recommendations, configure workflow automation',
+        steps:[
+          {id:'p4-mdc-s1', text:'Enable Defender for Cloud on your subscription and review Secure Score', details:['Portal > Defender for Cloud > Getting started > Enable all plans (trial available)', 'Review Secure Score: baseline score without any remediation', 'Explore recommendations grouped by: Compute, Data, Identity, Network', 'Note the potential score increase for each recommendation group', 'Download secure score report as CSV']},
+          {id:'p4-mdc-s2', text:'Enable Defender plans for key services and review alerts', details:['Defender for Cloud > Environment settings > Subscription', 'Enable: Defender for Servers (Plan 2), Defender for Storage, Defender for Key Vault, Defender for SQL, Defender for Containers', 'Each plan adds specific threat detections', 'Total cost shown per resource — review before enabling in production']},
+          {id:'p4-mdc-s3', text:'Remediate a high-priority recommendation', details:['Recommendations > Filter by severity: High', 'Select: Machines should have secrets findings resolved (or similar high-priority)', 'Review affected resources; Click Fix or follow remediation steps', 'Observe Secure Score increase after remediation', 'Check that resource no longer appears in the recommendation']},
+          {id:'p4-mdc-s4', text:'Set up email notifications and configure workflow automation', details:['Defender for Cloud > Environment settings > Email notifications', 'Add security contacts: your email; Alert severity: High and Medium', 'Workflow automation > Add: Trigger: Security alert (High); Action: Logic App → send Teams notification or email', 'Test by creating a test alert', 'Review the automated response firing']},
+          {id:'p4-mdc-s5', text:'Review Defender for Cloud attack path analysis', details:['Defender for Cloud > Attack path analysis (if available in region)', 'Review discovered attack paths in your environment', 'Example path: Internet → VM with JIT disabled → credential access → lateral movement', 'Click on attack path > Remediation steps', 'Understand how Defender maps the kill chain']},
+        ],
+        validation:[
+          {id:'p4-mdc-v1', text:'All key Defender plans enabled (Servers, Storage, KV, SQL)'},
+          {id:'p4-mdc-v2', text:'Secure Score reviewed with high-priority remediation completed'},
+          {id:'p4-mdc-v3', text:'Email notifications configured for High and Medium alerts'},
+          {id:'p4-mdc-v4', text:'Workflow automation created and tested'},
+          {id:'p4-mdc-v5', text:'Attack path analysis reviewed'},
+        ]
+      },
+      {
+        id:'p4-sentinel', cloud:'azure', title:'Microsoft Sentinel — SIEM & SOAR',
+        meta:'Deploy Sentinel, connect data sources, enable analytics rules, investigate incidents, build playbooks',
+        steps:[
+          {id:'p4-sentinel-s1', text:'Create a Log Analytics Workspace and enable Microsoft Sentinel', details:['Create Log Analytics workspace: law-sentinel-lab', 'Portal > Microsoft Sentinel > Create > select workspace', 'Sentinel is free for the first 31 days', 'Review the Sentinel overview: Incidents, Alerts, Bookmarks, Hunting', 'Connect first data connector: Azure Activity (logs all ARM operations)']},
+          {id:'p4-sentinel-s2', text:'Connect key data connectors to ingest security logs', details:['Sentinel > Data connectors', 'Connect: Azure Active Directory (sign-in logs, audit logs), Microsoft Entra ID Protection, Azure Security Center (Defender for Cloud), Microsoft 365 Defender (if available)', 'Review connector status: verify logs flowing via query: SigninLogs | take 10']},
+          {id:'p4-sentinel-s3', text:'Enable built-in analytics rules to detect threats', details:['Sentinel > Analytics > Rule templates', 'Enable: Multiple failed authentication attempts (Brute force), Sign-in from unknown location, Privileged account signin outside expected range', 'Set alert threshold and frequency', 'Run: Generate failed logins to see if incidents are created']},
+          {id:'p4-sentinel-s4', text:'Investigate a Sentinel incident from start to close', details:['Incidents > select an active or test incident', 'Review: Alert details, MITRE ATT&CK tactic, Affected entities (users, IPs, hosts)', 'Add investigation notes; Go to Investigation graph > view entity relationships', 'Assign incident to yourself', 'Change status: Active → In Progress → Closed (False positive / True positive)']},
+          {id:'p4-sentinel-s5', text:'Create a basic Playbook (SOAR) to auto-respond to incidents', details:['Sentinel > Automation > Create playbook (Logic App)', 'Trigger: When Sentinel incident is created', 'Actions: Send email with incident details (use Office 365 or SendGrid connector)', 'Add condition: if Severity == High → add Azure AD user to watch list', 'Attach playbook to an analytics rule', 'Test end-to-end']},
+        ],
+        validation:[
+          {id:'p4-sentinel-v1', text:'Sentinel enabled with Log Analytics workspace'},
+          {id:'p4-sentinel-v2', text:'At least 3 data connectors active and flowing data'},
+          {id:'p4-sentinel-v3', text:'3+ analytics rules enabled with incidents generated'},
+          {id:'p4-sentinel-v4', text:'Incident investigated with evidence collected and closed'},
+          {id:'p4-sentinel-v5', text:'Automation playbook triggers on new incidents'},
+        ]
+      }
+    ]
+  }
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const APP_KEY = 'az500_lab_tracker';
+let state = {};
+let currentUser = null;
+let db = null;
+let syncRef = null;
+
+// ─── Persist ──────────────────────────────────────────────────────────────────
+function loadState(){
+  const u = currentUser || 'default';
+  const raw = localStorage.getItem(APP_KEY+'_'+u);
+  state = raw ? JSON.parse(raw) : {steps:{},notes:{},labNotes:{},valChecks:{}};
+  if(!state.steps) state.steps={};
+  if(!state.notes) state.notes={};
+  if(!state.labNotes) state.labNotes={};
+  if(!state.valChecks) state.valChecks={};
+}
+function saveState(){
+  const u = currentUser || 'default';
+  localStorage.setItem(APP_KEY+'_'+u, JSON.stringify(state));
+  pushToFirebase();
+}
+
+// ─── Firebase ─────────────────────────────────────────────────────────────────
+function initFirebase(){
+  const cfg = JSON.parse(localStorage.getItem('az500_fb_config')||'null');
+  if(!cfg) return;
+  try{
+    const existing = firebase.apps.find(a=>a.name==='az500-tracker');
+    const app = existing || firebase.initializeApp(cfg,'az500-tracker');
+    db = firebase.database(app);
+    syncRef = db.ref('az500_progress');
+    listenFirebase();
+    setSyncStatus('ok','&#x2714; Synced');
+  } catch(e){ setSyncStatus('err','&#x26A0; Sync Error'); }
+}
+function listenFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).on('value', snap=>{
+    const data = snap.val();
+    if(data){
+      state = data;
+      if(!state.steps) state.steps={};
+      if(!state.notes) state.notes={};
+      if(!state.labNotes) state.labNotes={};
+      if(!state.valChecks) state.valChecks={};
+      saveState();
+      renderAll();
+      updateStats();
+    }
+  });
+}
+function pushToFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).set(state).then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Error'));
+}
+function setSyncStatus(type, html){
+  const el = document.getElementById('sync-status');
+  el.className='sync-status sync-'+type;
+  el.innerHTML=html;
+}
+function openFbPanel(){
+  const cfg = JSON.parse(localStorage.getItem('az500_fb_config')||'null');
+  if(cfg){ document.getElementById('fb-apiKey').value=cfg.apiKey||''; document.getElementById('fb-databaseURL').value=cfg.databaseURL||''; document.getElementById('fb-projectId').value=cfg.projectId||''; }
+  document.getElementById('fb-overlay').classList.add('open');
+}
+function closeFbPanel(){ document.getElementById('fb-overlay').classList.remove('open'); }
+function saveFbConfig(){
+  const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};
+  if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){ showFbMsg('err','Please fill in all 3 fields.'); return; }
+  localStorage.setItem('az500_fb_config',JSON.stringify(cfg));
+  showFbMsg('ok','Connecting...');
+  initFirebase();
+  setTimeout(closeFbPanel,1000);
+}
+function clearFbConfig(){ localStorage.removeItem('az500_fb_config'); db=null; syncRef=null; setSyncStatus('none','&#x1F4BE; Local Only'); closeFbPanel(); }
+function showFbMsg(type,msg){ const el=document.getElementById('fb-msg'); el.className='fb-status-msg '+type; el.innerHTML=msg; }
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+function initUser(){
+  currentUser = localStorage.getItem('az500_current_user');
+  if(!currentUser){ document.getElementById('user-overlay').classList.add('open'); return; }
+  document.getElementById('user-name-display').textContent=currentUser;
+  loadState(); build(); updateStats(); initFirebase();
+}
+function confirmUser(){
+  const v=document.getElementById('user-name-input').value.trim();
+  if(!v) return;
+  currentUser=v; localStorage.setItem('az500_current_user',v);
+  document.getElementById('user-name-display').textContent=v;
+  document.getElementById('user-overlay').classList.remove('open');
+  loadState(); build(); updateStats(); initFirebase();
+}
+function changeUser(){ document.getElementById('user-overlay').classList.add('open'); }
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function countAll(){
+  let total=0, done=0, p1to2=0, p1to2Done=0, p3to4=0, p3to4Done=0;
+  PHASES.forEach((ph,idx)=>{
+    ph.labs.forEach(lab=>{
+      total++;
+      const labDone = lab.steps.every(s=>state.steps[s.id]) && lab.validation.every(v=>state.valChecks[v.id]);
+      if(idx < 2){ p1to2++; if(labDone) p1to2Done++; }
+      else { p3to4++; if(labDone) p3to4Done++; }
+      if(labDone) done++;
+    });
+  });
+  return {total,done,p1to2,p1to2Done,p3to4,p3to4Done};
+}
+function countPhase(ph){
+  let s=0,d=0;
+  ph.labs.forEach(lab=>{ s+=lab.steps.length+lab.validation.length; d+=lab.steps.filter(x=>state.steps[x.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length; });
+  return {s,d};
+}
+function updateStats(){
+  const c=countAll();
+  document.getElementById('stat-total').textContent=c.total;
+  document.getElementById('stat-done').textContent=c.done;
+  document.getElementById('stat-p1').textContent=c.p1to2Done+'/'+c.p1to2;
+  document.getElementById('stat-p2').textContent=c.p3to4Done+'/'+c.p3to4;
+  const pct=c.total?Math.round(c.done/c.total*100):0;
+  document.getElementById('stat-pct').textContent=pct+'%';
+  document.getElementById('big-bar-fill').style.width=pct+'%';
+  PHASES.forEach(ph=>{
+    const {s,d}=countPhase(ph);
+    const fill=document.getElementById('ph-fill-'+ph.id);
+    if(fill) fill.style.width=(s?Math.round(d/s*100):0)+'%';
+  });
+  if(c.done===c.total && c.total>0){ document.getElementById('congrats').style.display='flex'; }
+}
+
+// ─── Toggle step ─────────────────────────────────────────────────────────────
+function toggleStep(id){
+  state.steps[id]=!state.steps[id];
+  if(!state.steps[id]) delete state.steps[id];
+  saveState(); renderAll(); updateStats();
+}
+function toggleVal(id){
+  state.valChecks[id]=!state.valChecks[id];
+  if(!state.valChecks[id]) delete state.valChecks[id];
+  saveState(); renderAll(); updateStats();
+}
+
+// ─── Details & Notes ─────────────────────────────────────────────────────────
+function toggleDetail(btn){
+  const panel=btn.closest('.step-row').querySelector('.step-details');
+  if(!panel) return;
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Hide ▲':'Details ▼';
+}
+function toggleNote(btn){
+  const panel=btn.closest('.step-row').querySelector('.step-note-panel');
+  if(!panel) return;
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Note ▲':'Note ▼';
+}
+function saveNote(id,val){
+  if(val.trim()) state.notes[id]=val; else delete state.notes[id];
+  const btn=document.querySelector('[data-note-btn="'+id+'"]');
+  if(btn) btn.classList.toggle('has-note',!!state.notes[id]);
+  saveState();
+}
+function saveLabNote(id,val){
+  if(val.trim()) state.labNotes[id]=val; else delete state.labNotes[id];
+  saveState();
+}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+let activeFilter='all';
+function filterTab(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.lab-section').forEach(sec=>{
+    sec.style.display=(f==='all'||sec.dataset.cloud===f)?'block':'none';
+  });
+}
+
+// ─── Build UI ─────────────────────────────────────────────────────────────────
+function renderAll(){
+  document.querySelectorAll('.step-row').forEach(row=>{
+    const id=row.dataset.stepId;
+    if(id) row.classList.toggle('done',!!state.steps[id]);
+    const chk=row.querySelector('.step-check');
+    if(chk && id) chk.innerHTML=state.steps[id]?'&#x2714;':'';
+  });
+  document.querySelectorAll('.val-row').forEach(row=>{
+    const id=row.dataset.valId;
+    if(id) row.classList.toggle('done',!!state.valChecks[id]);
+    const chk=row.querySelector('.val-check');
+    if(chk && id) chk.innerHTML=state.valChecks[id]?'&#x2714;':'';
+  });
+  document.querySelectorAll('textarea[data-note-id]').forEach(ta=>{
+    ta.value=state.notes[ta.dataset.noteId]||'';
+  });
+  document.querySelectorAll('[data-note-btn]').forEach(btn=>{
+    btn.classList.toggle('has-note',!!state.notes[btn.dataset.noteBtnId]);
+  });
+  document.querySelectorAll('textarea[data-lab-note]').forEach(ta=>{
+    ta.value=state.labNotes[ta.dataset.labNote]||'';
+  });
+}
+
+function build(){
+  const content=document.getElementById('content');
+  content.innerHTML='';
+  PHASES.forEach(ph=>{
+    const card=document.createElement('div');
+    card.className='phase-card';
+    card.id='phase-'+ph.id;
+    const {s,d}=countPhase(ph);
+    const pct=s?Math.round(d/s*100):0;
+    card.innerHTML=`
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-header-left">
+          <span class="phase-badge">${ph.badge}</span>
+          <div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:#FECACA;min-width:32px;text-align:right">${pct}%</span>
+          <span class="chevron">&#x25BC;</span>
+        </div>
+      </div>
+      <div class="phase-body">${ph.labs.map(lab=>buildLab(lab)).join('')}</div>`;
+    content.appendChild(card);
+  });
+}
+
+function buildLab(lab){
+  const cloudClass=lab.cloud+'-lab';
+  const badgeClass=lab.cloud+'-badge';
+  const btnClass=lab.cloud+'-btn';
+  const cloudLabel={azure:'Azure',aws:'AWS',gcp:'GCP'}[lab.cloud];
+  const doneSteps=lab.steps.filter(s=>state.steps[s.id]).length;
+  const doneVals=lab.validation.filter(v=>state.valChecks[v.id]).length;
+  const total=lab.steps.length+lab.validation.length;
+  const done=doneSteps+doneVals;
+  const pct=total?Math.round(done/total*100):0;
+  return `<div class="lab-section" id="lab-${lab.id}" data-cloud="${lab.cloud}">
+    <div class="lab-header ${cloudClass}">
+      <span class="lab-cloud-badge ${badgeClass}">${cloudLabel}</span>
+      <div class="lab-title-area">
+        <div class="lab-title">${lab.title}</div>
+        <div class="lab-meta">${lab.meta} &middot; ${done}/${total} steps</div>
+      </div>
+      <div class="lab-stats">
+        <div style="font-size:11px;font-weight:700;color:var(--gray)">${pct}%</div>
+        <button class="lab-toggle ${btnClass}" onclick="toggleLab('lab-${lab.id}')">&#x25BC; Expand</button>
+      </div>
+    </div>
+    <div class="steps-list">
+      <div class="section-lbl">&#x1F527; Lab Steps</div>
+      ${lab.steps.map((s,i)=>buildStep(s,i+1)).join('')}
+      <div class="section-lbl" style="margin-top:14px">&#x2705; Validation Checks</div>
+      ${lab.validation.map(v=>buildVal(v)).join('')}
+      ${buildRefs(lab.id)}
+      <div class="section-lbl" style="margin-top:14px">&#x1F4DD; Lab Notes</div>
+      <textarea class="notes-area" data-lab-note="${lab.id}" placeholder="Add any overall notes about this lab..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea>
+    </div>
+  </div>`;
+}
+
+function buildStep(s,num){
+  const done=!!state.steps[s.id];
+  const hasDetails=s.details&&s.details.length>0;
+  const hasNote=!!state.notes[s.id];
+  return `<div class="step-row${done?' done':''}" data-step-id="${s.id}">
+    <div class="step-check" onclick="toggleStep('${s.id}')">${done?'&#x2714;':''}</div>
+    <div class="step-main">
+      <div class="step-top">
+        <span class="step-num">${num}.</span>
+        <span class="step-text">${s.text}</span>
+        ${hasDetails?`<button class="detail-btn" onclick="toggleDetail(this)">Details &#x25BC;</button>`:''}
+        <button class="note-btn${hasNote?' has-note':''}" data-note-btn="${s.id}" onclick="toggleNote(this)">Note &#x25BC;</button>
+      </div>
+      ${hasDetails?`<div class="step-details">${s.details.map((d,i)=>`<div class="detail-item"><span class="di-num">${i+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}
+      <div class="step-note-panel">
+        <textarea class="note-textarea" data-note-id="${s.id}" placeholder="Your notes for this step..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea>
+        <div class="note-hint">&#x1F4A1; Notes are saved locally and synced if Firebase is connected.</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildVal(v){
+  const done=!!state.valChecks[v.id];
+  return `<div class="val-row${done?' done':''}" data-val-id="${v.id}" onclick="toggleVal('${v.id}')">
+    <div class="val-check">${done?'&#x2714;':''}</div>
+    <span class="step-text">&#x1F4CB; ${v.text}</span>
+  </div>`;
+}
+
+function togglePhase(header){
+  header.closest('.phase-card').classList.toggle('open');
+}
+function toggleLab(id){
+  const sec=document.getElementById(id);
+  if(!sec) return;
+  sec.classList.toggle('open');
+  const btn=sec.querySelector('.lab-toggle');
+  if(btn) btn.innerHTML=sec.classList.contains('open')?'&#x25B2; Collapse':'&#x25BC; Expand';
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function resetProgress(){
+  if(!confirm('Reset all AZ-500 lab progress for '+currentUser+'? This cannot be undone.')) return;
+  state={steps:{},notes:{},labNotes:{},valChecks:{}};
+  saveState(); build(); updateStats();
+}
+
+// ─── Official References ──────────────────────────────────────────────────────
+const LAB_RESOURCES = {
+  'p1-entra':[
+    {title:'Microsoft Entra ID Identity Protection overview', url:'https://learn.microsoft.com/en-us/entra/id-protection/overview-identity-protection'},
+    {title:'What is Conditional Access?', url:'https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview'},
+    {title:'What is Microsoft Entra Privileged Identity Management?', url:'https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure'},
+    {title:'Self-service password reset overview', url:'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks'},
+  ],
+  'p1-rbac':[
+    {title:'Azure RBAC best practices', url:'https://learn.microsoft.com/en-us/azure/role-based-access-control/best-practices'},
+    {title:'What are access reviews?', url:'https://learn.microsoft.com/en-us/entra/id-governance/access-reviews-overview'},
+    {title:'Manage emergency access accounts in Microsoft Entra ID', url:'https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/security-emergency-access'},
+    {title:'Microsoft Secure Score', url:'https://learn.microsoft.com/en-us/defender-xdr/microsoft-secure-score'},
+  ],
+  'p2-netsec':[
+    {title:'Azure Firewall Premium features', url:'https://learn.microsoft.com/en-us/azure/firewall/premium-features'},
+    {title:'Azure DDoS Protection overview', url:'https://learn.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview'},
+    {title:'What is Azure Bastion?', url:'https://learn.microsoft.com/en-us/azure/bastion/bastion-overview'},
+    {title:'Just-in-time VM access overview', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/just-in-time-access-overview'},
+    {title:'Adaptive network hardening', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/adaptive-network-hardening'},
+  ],
+  'p3-kv':[
+    {title:'Azure Key Vault overview', url:'https://learn.microsoft.com/en-us/azure/key-vault/general/overview'},
+    {title:'Azure RBAC vs access policies for Key Vault', url:'https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide'},
+    {title:'Managed identities for Azure resources', url:'https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview'},
+    {title:'Configure Azure Key Vault firewalls and virtual networks', url:'https://learn.microsoft.com/en-us/azure/key-vault/general/network-security'},
+  ],
+  'p3-storage':[
+    {title:'Azure Storage security guide', url:'https://learn.microsoft.com/en-us/azure/storage/blobs/security-recommendations'},
+    {title:'Grant limited access to data with shared access signatures (SAS)', url:'https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview'},
+    {title:'Store business-critical blob data with immutable storage', url:'https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-storage-overview'},
+    {title:'Microsoft Defender for Storage overview', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-storage-introduction'},
+  ],
+  'p4-mdc':[
+    {title:'What is Microsoft Defender for Cloud?', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-cloud-introduction'},
+    {title:'Security posture in Defender for Cloud', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/secure-score-security-controls'},
+    {title:'Workflow automation in Defender for Cloud', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/workflow-automation'},
+    {title:'Attack path analysis', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/how-to-manage-attack-path'},
+  ],
+  'p4-sentinel':[
+    {title:'What is Microsoft Sentinel?', url:'https://learn.microsoft.com/en-us/azure/sentinel/overview'},
+    {title:'Connect data sources to Microsoft Sentinel', url:'https://learn.microsoft.com/en-us/azure/sentinel/connect-data-sources'},
+    {title:'Detect threats with built-in analytics rules', url:'https://learn.microsoft.com/en-us/azure/sentinel/detect-threats-built-in'},
+    {title:'Automate threat response in Microsoft Sentinel', url:'https://learn.microsoft.com/en-us/azure/sentinel/automate-responses-with-playbooks'},
+    {title:'Investigate incidents with Microsoft Sentinel', url:'https://learn.microsoft.com/en-us/azure/sentinel/investigate-cases'},
+  ],
+};
+
+let expandedRefs = {};
+
+function buildRefs(labId){
+  const refs = LAB_RESOURCES[labId] || [];
+  if(!refs.length) return '';
+  const open = !!expandedRefs[labId];
+  const listHTML = refs.map(r=>`<div class="ref-item"><span class="ref-icon">&#x1F4D6;</span><a href="${r.url}" target="_blank" rel="noopener">${r.title}</a></div>`).join('');
+  return `<div class="refs-section">
+    <div class="refs-header" onclick="expandedRefs['${labId}']=!expandedRefs['${labId}'];build();updateStats()">
+      <span class="refs-title">&#x1F517; Official References (${refs.length})</span>
+      <span class="refs-toggle">${open?'&#x25BC; Hide':'&#x25BA; Show'}</span>
+    </div>
+    ${open?`<div class="refs-list">${listHTML}</div>`:''}
+  </div>`;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', initUser);
+</script>
+</body>
+</html>

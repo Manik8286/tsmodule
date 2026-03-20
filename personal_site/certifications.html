@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Certification Roadmap — Manikandan K</title>
+<style>
+:root{
+  --navy:#0F172A; --navy2:#1E3A5F; --purple:#7C3AED; --purple-light:#F5F3FF;
+  --azure:#0078D4; --azure-light:#EFF6FF; --azure-dark:#005A9E;
+  --aws:#FF9900; --aws-dark:#B45309; --aws-light:#FFF7ED;
+  --gcp:#4285F4; --gcp-dark:#1A73E8; --gcp-light:#EEF4FF;
+  --green:#16A34A; --green-light:#F0FDF4;
+  --gray:#6B7280; --light:#F3F4F6; --dark:#1F2937;
+  --pursuing-bg:#FFF7ED; --pursuing-c:#B45309; --pursuing-border:#FCD34D;
+  --planned-bg:#F5F3FF; --planned-c:#6D28D9; --planned-border:#C4B5FD;
+  --future-bg:#F8FAFC; --future-c:#6B7280; --future-border:#E2E8F0;
+  --earned-bg:#F0FDF4; --earned-c:#15803D; --earned-border:#86EFAC;
+  --shadow:0 2px 12px rgba(0,0,0,.08); --radius:10px;
+  --docker:#2496ED; --docker-dark:#1565C0; --docker-light:#E3F2FD;
+  --k8s:#326CE5; --k8s-dark:#1A3DBF; --k8s-light:#EEF2FF;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F1F5F9;color:var(--dark);}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.08);}
+.nav-inner{max-width:1300px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-size:15px;font-weight:800;color:white;text-decoration:none;}
+.nav-logo span{color:#818CF8;}
+.nav-links{display:flex;gap:4px;}
+.nav-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:12.5px;font-weight:500;padding:5px 11px;border-radius:7px;transition:all .2s;}
+.nav-links a:hover,.nav-links a.active{color:white;background:rgba(255,255,255,.1);}
+
+/* HERO */
+.page-hero{background:linear-gradient(135deg,var(--navy),#1a1040);padding:48px 24px 38px;text-align:center;color:white;}
+.page-hero .badge{display:inline-block;background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.4);color:#C4B5FD;font-size:11px;font-weight:700;padding:4px 14px;border-radius:99px;margin-bottom:12px;letter-spacing:.5px;}
+.page-hero h1{font-size:clamp(22px,4vw,36px);font-weight:800;margin-bottom:8px;letter-spacing:-.3px;}
+.page-hero p{font-size:14px;color:rgba(255,255,255,.6);max-width:600px;margin:0 auto;}
+
+/* LEGEND */
+.legend-wrap{max-width:1300px;margin:24px auto 0;padding:0 24px;}
+.legend{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.legend-title{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-right:4px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.leg-pursuing .leg-dot{background:var(--pursuing-c);}
+.leg-planned .leg-dot{background:var(--planned-c);}
+.leg-future .leg-dot{background:#CBD5E1;}
+.leg-earned .leg-dot{background:var(--green);}
+.leg-star{font-size:13px;}
+.legend-note{margin-left:auto;font-size:11px;color:var(--gray);font-style:italic;}
+
+/* MAIN ROADMAP */
+.roadmap-wrap{max-width:1300px;margin:24px auto 64px;padding:0 24px;}
+
+/* Cloud header row */
+.cloud-headers{display:grid;grid-template-columns:110px 1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.ch-spacer{}
+.cloud-hdr{border-radius:var(--radius) var(--radius) 0 0;padding:16px;text-align:center;color:white;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.ch-azure{background:linear-gradient(135deg,var(--azure),#005A9E);}
+.ch-aws{background:linear-gradient(135deg,#FF9900,#B45309);}
+.ch-gcp{background:linear-gradient(135deg,#4285F4,#1A73E8);}
+.ch-sub{font-size:11px;font-weight:500;opacity:.85;margin-top:2px;}
+
+/* Tier rows */
+.tier-row{display:grid;grid-template-columns:110px 1fr 1fr 1fr;gap:14px;margin-bottom:0;}
+.tier-label{display:flex;align-items:center;justify-content:flex-end;padding-right:14px;}
+.tier-label-inner{text-align:right;}
+.tier-level{font-size:10px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;}
+.tier-desc{font-size:10px;color:#94A3B8;margin-top:2px;}
+
+.tier-col{background:white;padding:16px;border-left:3px solid;position:relative;}
+.tier-col.azure-col{border-color:var(--azure);}
+.tier-col.aws-col{border-color:var(--aws);}
+.tier-col.gcp-col{border-color:var(--gcp);}
+.tier-row:first-of-type .tier-col{border-radius:0;}
+.tier-row.tier-last .tier-col{border-radius:0 0 var(--radius) var(--radius);}
+
+/* Arrow rows between tiers */
+.arrow-row{display:grid;grid-template-columns:110px 1fr 1fr 1fr;gap:14px;height:32px;}
+.arrow-spacer{}
+.arrow-col{display:flex;align-items:center;justify-content:center;position:relative;}
+.arrow-col::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#E2E8F0,#CBD5E1);transform:translateX(-50%);}
+.arrow-col .arr{position:relative;z-index:1;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:white;}
+.arrow-col.az-arr .arr{background:var(--azure);}
+.arrow-col.aws-arr .arr{background:var(--aws-dark);}
+.arrow-col.gcp-arr .arr{background:var(--gcp-dark);}
+
+/* Certs inside a tier */
+.certs-row{display:flex;flex-wrap:wrap;gap:8px;}
+.cert-card{border-radius:8px;padding:10px 12px;border:1.5px solid;cursor:pointer;transition:all .2s;text-decoration:none;display:flex;flex-direction:column;gap:3px;min-width:130px;flex:1;}
+.cert-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.12);}
+
+/* Status variants */
+.cc-pursuing{background:var(--pursuing-bg);border-color:var(--pursuing-border);}
+.cc-planned{background:var(--planned-bg);border-color:var(--planned-border);}
+.cc-future{background:var(--future-bg);border-color:var(--future-border);}
+.cc-earned{background:var(--earned-bg);border-color:var(--earned-border);}
+
+.cert-code{font-size:11px;font-weight:800;letter-spacing:.3px;}
+.cc-pursuing .cert-code{color:var(--pursuing-c);}
+.cc-planned .cert-code{color:var(--planned-c);}
+.cc-future .cert-code{color:#94A3B8;}
+.cc-earned .cert-code{color:var(--green);}
+
+.cert-name{font-size:11px;font-weight:600;color:var(--dark);line-height:1.35;}
+.cc-future .cert-name{color:#94A3B8;}
+
+.cert-badge{display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:99px;margin-top:3px;align-self:flex-start;}
+.cc-pursuing .cert-badge{background:var(--pursuing-c);color:white;}
+.cc-planned .cert-badge{background:var(--planned-c);color:white;}
+.cc-future .cert-badge{background:#CBD5E1;color:#475569;}
+.cc-earned .cert-badge{background:var(--green);color:white;}
+
+/* Recommended path highlight */
+.cert-card.rec-path{box-shadow:0 0 0 2px currentColor;}
+.cc-pursuing.rec-path{box-shadow:0 0 0 2px var(--pursuing-c);}
+.cc-planned.rec-path{box-shadow:0 0 0 2px var(--planned-c);}
+
+/* Path connector inside a tier col */
+.path-note{font-size:10px;color:var(--gray);margin-top:8px;padding-top:8px;border-top:1px dashed #E2E8F0;font-style:italic;}
+
+/* section divider label */
+.tier-section-label{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.tier-section-label::after{content:'';flex:1;height:1px;background:#E2E8F0;}
+
+/* Summary stats bar */
+.summary-bar{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;display:flex;gap:28px;flex-wrap:wrap;align-items:center;margin-bottom:20px;}
+.sb-item{text-align:center;min-width:64px;}
+.sb-num{font-size:24px;font-weight:800;line-height:1;}
+.sb-lbl{font-size:10px;color:var(--gray);margin-top:2px;text-transform:uppercase;letter-spacing:.4px;}
+.sb-pursuing .sb-num{color:var(--pursuing-c);}
+.sb-planned .sb-num{color:var(--planned-c);}
+.sb-total .sb-num{color:var(--navy2);}
+.sb-azure .sb-num{color:var(--azure);}
+.sb-aws .sb-num{color:var(--aws-dark);}
+.sb-gcp .sb-num{color:var(--gcp-dark);}
+.sb-sep{width:1px;height:40px;background:var(--light);}
+
+@media(max-width:900px){
+  .cloud-headers,.tier-row,.arrow-row{grid-template-columns:70px 1fr;grid-template-rows:auto auto auto;}
+  .ch-azure{grid-column:1/-1;border-radius:var(--radius);}
+  .azure-section,.aws-section,.gcp-section{margin-bottom:24px;}
+}
+@media(max-width:640px){
+  .roadmap-wrap,.legend-wrap{padding:0 12px;}
+  .cert-card{min-width:100%;flex:0 0 100%;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">MK<span>.</span></a>
+    <div class="nav-links">
+      <a href="index.html">&#x1F3E0; Home</a>
+      <a href="learning.html">&#x1F4DA; Learning Hub</a>
+      <a href="certifications.html" class="active">&#x1F393; Certifications</a>
+      <a href="blog.html">&#x270D;&#xFE0F; Blog</a>
+      <a href="resume.html">&#x1F4C4; Resume</a>
+      <a href="admin.html">&#x2699;&#xFE0F; Admin</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="badge">&#x1F393; CERTIFICATION ROADMAP</div>
+  <h1>Cloud Certification Journey</h1>
+  <p>A structured learning path across Microsoft Azure, Amazon Web Services &amp; Google Cloud Platform — from Fundamentals to Expert &amp; Specialty levels.</p>
+</div>
+
+<div class="legend-wrap">
+  <div class="legend">
+    <span class="legend-title">Legend:</span>
+    <span class="leg-item leg-pursuing"><span class="leg-dot"></span> Pursuing — actively studying</span>
+    <span class="leg-item leg-planned"><span class="leg-dot"></span> Planned — next in queue</span>
+    <span class="leg-item leg-future"><span class="leg-dot"></span> Future — on the roadmap</span>
+    <span class="leg-item leg-earned"><span class="leg-dot"></span> Earned — completed</span>
+    <span class="legend-note">Click any cert card to open the official exam page</span>
+  </div>
+</div>
+
+<div class="roadmap-wrap">
+
+  <!-- Summary stats -->
+  <div class="summary-bar">
+    <div class="sb-item sb-total"><div class="sb-num">23</div><div class="sb-lbl">Total Targets</div></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item sb-pursuing"><div class="sb-num">2</div><div class="sb-lbl">Pursuing</div></div>
+    <div class="sb-item sb-planned"><div class="sb-num">8</div><div class="sb-lbl">Planned</div></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item sb-azure"><div class="sb-num">7</div><div class="sb-lbl">Azure</div></div>
+    <div class="sb-item sb-aws"><div class="sb-num">5</div><div class="sb-lbl">AWS</div></div>
+    <div class="sb-item sb-gcp"><div class="sb-num">5</div><div class="sb-lbl">GCP</div></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item"><div class="sb-num" style="color:var(--docker);">1</div><div class="sb-lbl">Docker</div></div>
+    <div class="sb-item"><div class="sb-num" style="color:var(--k8s);">4</div><div class="sb-lbl">K8s / CNCF</div></div>
+  </div>
+
+  <!-- Cloud Header Row -->
+  <div class="cloud-headers">
+    <div class="ch-spacer"></div>
+    <div class="cloud-hdr ch-azure">
+      <div>
+        <div>&#x1F535; Microsoft Azure</div>
+        <div class="ch-sub">Entra ID &bull; IaaS &bull; Security &bull; DevOps</div>
+      </div>
+    </div>
+    <div class="cloud-hdr ch-aws">
+      <div>
+        <div>&#x1F7E0; Amazon Web Services</div>
+        <div class="ch-sub">EC2 &bull; IAM &bull; Security &bull; Architecture</div>
+      </div>
+    </div>
+    <div class="cloud-hdr ch-gcp">
+      <div>
+        <div>&#x1F7E2; Google Cloud Platform</div>
+        <div class="ch-sub">Compute &bull; IAM &bull; Architecture &bull; Security</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TIER 1: FOUNDATIONAL ── -->
+  <div class="tier-row">
+    <div class="tier-label">
+      <div class="tier-label-inner">
+        <div class="tier-level">Tier 1</div>
+        <div style="font-size:12px;font-weight:800;color:var(--dark);margin-top:2px;">Foundational</div>
+        <div class="tier-desc">No prerequisites</div>
+      </div>
+    </div>
+
+    <!-- Azure Foundational -->
+    <div class="tier-col azure-col">
+      <div class="certs-row">
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/" target="_blank" class="cert-card cc-planned rec-path">
+          <span class="cert-code">AZ-900</span>
+          <span class="cert-name">Azure Fundamentals</span>
+          <span class="cert-badge">Planned</span>
+        </a>
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/security-compliance-and-identity-fundamentals/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">SC-900</span>
+          <span class="cert-name">Security, Compliance &amp; Identity Fundamentals</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+      <div class="path-note">&#x2605; Recommended first: AZ-900 validates cloud concepts before Associate-level exams</div>
+    </div>
+
+    <!-- AWS Foundational -->
+    <div class="tier-col aws-col">
+      <div class="certs-row">
+        <a href="https://aws.amazon.com/certification/certified-cloud-practitioner/" target="_blank" class="cert-card cc-planned rec-path">
+          <span class="cert-code">CLF-C02</span>
+          <span class="cert-name">AWS Cloud Practitioner</span>
+          <span class="cert-badge">Planned</span>
+        </a>
+      </div>
+      <div class="path-note">&#x2605; Validates AWS core concepts — good stepping stone to SAA-C03</div>
+    </div>
+
+    <!-- GCP Foundational -->
+    <div class="tier-col gcp-col">
+      <div class="certs-row">
+        <a href="https://cloud.google.com/learn/certification/cloud-digital-leader" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">CDL</span>
+          <span class="cert-name">Cloud Digital Leader</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+      <div class="path-note">&#x2605; Business-focused, good foundation. Jump directly to ACE if technical background exists</div>
+    </div>
+  </div>
+
+  <!-- Arrow row -->
+  <div class="arrow-row">
+    <div class="arrow-spacer"></div>
+    <div class="arrow-col az-arr"><div class="arr">&#x25BC;</div></div>
+    <div class="arrow-col aws-arr"><div class="arr">&#x25BC;</div></div>
+    <div class="arrow-col gcp-arr"><div class="arr">&#x25BC;</div></div>
+  </div>
+
+  <!-- ── TIER 2: ASSOCIATE ── -->
+  <div class="tier-row">
+    <div class="tier-label">
+      <div class="tier-label-inner">
+        <div class="tier-level">Tier 2</div>
+        <div style="font-size:12px;font-weight:800;color:var(--dark);margin-top:2px;">Associate</div>
+        <div class="tier-desc">6–12 months exp.</div>
+      </div>
+    </div>
+
+    <!-- Azure Associate -->
+    <div class="tier-col azure-col">
+      <div class="tier-section-label">Infrastructure Track</div>
+      <div class="certs-row" style="margin-bottom:10px">
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-administrator/" target="_blank" class="cert-card cc-pursuing rec-path">
+          <span class="cert-code">AZ-104</span>
+          <span class="cert-name">Azure Administrator Associate</span>
+          <span class="cert-badge">&#x1F525; Pursuing</span>
+        </a>
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-network-engineer/" target="_blank" class="cert-card cc-planned">
+          <span class="cert-code">AZ-700</span>
+          <span class="cert-name">Azure Network Engineer Associate</span>
+          <span class="cert-badge">Planned</span>
+          <a href="../learning_lab/az700.html" onclick="event.stopPropagation()" style="display:block;margin-top:8px;font-size:10px;font-weight:700;color:#0369A1;text-decoration:none;background:#E0F2FE;padding:3px 8px;border-radius:5px;text-align:center;">&#x1F4CB; Lab Tracker</a>
+        </a>
+      </div>
+      <div class="tier-section-label">Security &amp; Identity Track</div>
+      <div class="certs-row">
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-security-engineer/" target="_blank" class="cert-card cc-planned">
+          <span class="cert-code">AZ-500</span>
+          <span class="cert-name">Azure Security Technologies</span>
+          <span class="cert-badge">Planned</span>
+          <a href="../learning_lab/az500.html" onclick="event.stopPropagation()" style="display:block;margin-top:8px;font-size:10px;font-weight:700;color:#B91C1C;text-decoration:none;background:#FEE2E2;padding:3px 8px;border-radius:5px;text-align:center;">&#x1F4CB; Lab Tracker</a>
+        </a>
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/identity-and-access-administrator/" target="_blank" class="cert-card cc-planned">
+          <span class="cert-code">SC-300</span>
+          <span class="cert-name">Identity &amp; Access Administrator</span>
+          <span class="cert-badge">Planned</span>
+          <a href="../learning_lab/sc300.html" onclick="event.stopPropagation()" style="display:block;margin-top:8px;font-size:10px;font-weight:700;color:#6D28D9;text-decoration:none;background:#EDE9FE;padding:3px 8px;border-radius:5px;text-align:center;">&#x1F4CB; Lab Tracker</a>
+        </a>
+      </div>
+      <div class="tier-section-label" style="margin-top:10px">Developer Track</div>
+      <div class="certs-row">
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-developer/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">AZ-204</span>
+          <span class="cert-name">Developing Solutions for Azure</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+      <div class="path-note">&#x2605; Priority path: AZ-104 &#x2192; AZ-500 &#x2192; AZ-700 &#x2192; SC-300 (aligns with infra background)</div>
+    </div>
+
+    <!-- AWS Associate -->
+    <div class="tier-col aws-col">
+      <div class="tier-section-label">Architecture Track</div>
+      <div class="certs-row" style="margin-bottom:10px">
+        <a href="https://aws.amazon.com/certification/certified-solutions-architect-associate/" target="_blank" class="cert-card cc-pursuing rec-path">
+          <span class="cert-code">SAA-C03</span>
+          <span class="cert-name">Solutions Architect Associate</span>
+          <span class="cert-badge">&#x1F525; Pursuing</span>
+        </a>
+      </div>
+      <div class="tier-section-label">Operations Track</div>
+      <div class="certs-row" style="margin-bottom:10px">
+        <a href="https://aws.amazon.com/certification/certified-sysops-admin-associate/" target="_blank" class="cert-card cc-planned">
+          <span class="cert-code">SOA-C02</span>
+          <span class="cert-name">SysOps Administrator Associate</span>
+          <span class="cert-badge">Planned</span>
+          <a href="../learning_lab/soa-c02.html" onclick="event.stopPropagation()" style="display:block;margin-top:8px;font-size:10px;font-weight:700;color:#C2410C;text-decoration:none;background:#FFEDD5;padding:3px 8px;border-radius:5px;text-align:center;">&#x1F4CB; Lab Tracker</a>
+        </a>
+      </div>
+      <div class="tier-section-label">Developer Track</div>
+      <div class="certs-row">
+        <a href="https://aws.amazon.com/certification/certified-developer-associate/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">DVA-C02</span>
+          <span class="cert-name">Developer Associate</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+      <div class="path-note">&#x2605; Priority path: SAA-C03 &#x2192; SOA-C02 (maps directly to your sysadmin background)</div>
+    </div>
+
+    <!-- GCP Associate -->
+    <div class="tier-col gcp-col">
+      <div class="tier-section-label">Engineering Track</div>
+      <div class="certs-row">
+        <a href="https://cloud.google.com/learn/certification/cloud-engineer" target="_blank" class="cert-card cc-planned rec-path">
+          <span class="cert-code">ACE</span>
+          <span class="cert-name">Associate Cloud Engineer</span>
+          <span class="cert-badge">Planned</span>
+        </a>
+      </div>
+      <div class="path-note">&#x2605; Only one Associate cert in GCP — this is the gateway to all Professional certs</div>
+    </div>
+  </div>
+
+  <!-- Arrow row -->
+  <div class="arrow-row">
+    <div class="arrow-spacer"></div>
+    <div class="arrow-col az-arr"><div class="arr">&#x25BC;</div></div>
+    <div class="arrow-col aws-arr"><div class="arr">&#x25BC;</div></div>
+    <div class="arrow-col gcp-arr"><div class="arr">&#x25BC;</div></div>
+  </div>
+
+  <!-- ── TIER 3: PROFESSIONAL / EXPERT ── -->
+  <div class="tier-row">
+    <div class="tier-label">
+      <div class="tier-label-inner">
+        <div class="tier-level">Tier 3</div>
+        <div style="font-size:12px;font-weight:800;color:var(--dark);margin-top:2px;">Professional</div>
+        <div class="tier-desc">Expert level</div>
+      </div>
+    </div>
+
+    <!-- Azure Expert -->
+    <div class="tier-col azure-col">
+      <div class="tier-section-label">Architecture &amp; DevOps</div>
+      <div class="certs-row">
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-solutions-architect/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">AZ-305</span>
+          <span class="cert-name">Azure Solutions Architect Expert</span>
+          <span class="cert-badge">Future</span>
+        </a>
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/devops-engineer/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">AZ-400</span>
+          <span class="cert-name">DevOps Engineer Expert</span>
+          <span class="cert-badge">Future</span>
+          <a href="../learning_lab/az400.html" onclick="event.stopPropagation()" style="display:block;margin-top:8px;font-size:10px;font-weight:700;color:#0F3460;text-decoration:none;background:#DBEAFE;padding:3px 8px;border-radius:5px;text-align:center;">&#x1F504; Lab Tracker</a>
+        </a>
+      </div>
+      <div class="path-note">&#x26A0; AZ-305 requires AZ-104 &bull; AZ-400 requires AZ-104 or AZ-204</div>
+    </div>
+
+    <!-- AWS Professional -->
+    <div class="tier-col aws-col">
+      <div class="tier-section-label">Professional Tier</div>
+      <div class="certs-row">
+        <a href="https://aws.amazon.com/certification/certified-solutions-architect-professional/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">SAP-C02</span>
+          <span class="cert-name">Solutions Architect Professional</span>
+          <span class="cert-badge">Future</span>
+        </a>
+        <a href="https://aws.amazon.com/certification/certified-devops-engineer-professional/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">DOP-C02</span>
+          <span class="cert-name">DevOps Engineer Professional</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+      <div class="path-note">&#x26A0; SAP-C02 requires SAA-C03 &bull; DOP-C02 requires SAA-C03 or DVA-C02</div>
+    </div>
+
+    <!-- GCP Professional -->
+    <div class="tier-col gcp-col">
+      <div class="tier-section-label">Architecture &amp; Security</div>
+      <div class="certs-row" style="margin-bottom:10px">
+        <a href="https://cloud.google.com/learn/certification/cloud-architect" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">PCA</span>
+          <span class="cert-name">Professional Cloud Architect</span>
+          <span class="cert-badge">Future</span>
+        </a>
+        <a href="https://cloud.google.com/learn/certification/cloud-security-engineer" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">PCSE</span>
+          <span class="cert-name">Professional Cloud Security Engineer</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+      <div class="tier-section-label">Networking &amp; DevOps</div>
+      <div class="certs-row">
+        <a href="https://cloud.google.com/learn/certification/cloud-network-engineer" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">PCNE</span>
+          <span class="cert-name">Professional Cloud Network Engineer</span>
+          <span class="cert-badge">Future</span>
+        </a>
+        <a href="https://cloud.google.com/learn/certification/cloud-devops-engineer" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">PCDOE</span>
+          <span class="cert-name">Professional Cloud DevOps Engineer</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+      <div class="path-note">&#x26A0; All Professional GCP certs recommend ACE as prerequisite</div>
+    </div>
+  </div>
+
+  <!-- Arrow row -->
+  <div class="arrow-row">
+    <div class="arrow-spacer"></div>
+    <div class="arrow-col az-arr"><div class="arr">&#x25BC;</div></div>
+    <div class="arrow-col aws-arr"><div class="arr">&#x25BC;</div></div>
+    <div class="arrow-col gcp-arr"><div class="arr">&#x25BC;</div></div>
+  </div>
+
+  <!-- ── TIER 4: SPECIALTY ── -->
+  <div class="tier-row tier-last">
+    <div class="tier-label">
+      <div class="tier-label-inner">
+        <div class="tier-level">Tier 4</div>
+        <div style="font-size:12px;font-weight:800;color:var(--dark);margin-top:2px;">Specialty</div>
+        <div class="tier-desc">Domain focus</div>
+      </div>
+    </div>
+
+    <!-- Azure Specialty -->
+    <div class="tier-col azure-col">
+      <div class="certs-row">
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-ai-engineer/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">AI-102</span>
+          <span class="cert-name">Azure AI Engineer Associate</span>
+          <span class="cert-badge">Future</span>
+        </a>
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-database-administrator-associate/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">DP-300</span>
+          <span class="cert-name">Azure Database Administrator</span>
+          <span class="cert-badge">Future</span>
+        </a>
+        <a href="https://learn.microsoft.com/en-us/credentials/certifications/azure-virtual-desktop-specialty/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">AZ-140</span>
+          <span class="cert-name">Azure Virtual Desktop Specialty</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- AWS Specialty -->
+    <div class="tier-col aws-col">
+      <div class="certs-row">
+        <a href="https://aws.amazon.com/certification/certified-security-specialty/" target="_blank" class="cert-card cc-planned">
+          <span class="cert-code">SCS-C02</span>
+          <span class="cert-name">Security Specialty</span>
+          <span class="cert-badge">Planned</span>
+        </a>
+        <a href="https://aws.amazon.com/certification/certified-advanced-networking-specialty/" target="_blank" class="cert-card cc-planned">
+          <span class="cert-code">ANS-C01</span>
+          <span class="cert-name">Advanced Networking Specialty</span>
+          <span class="cert-badge">Planned</span>
+        </a>
+        <a href="https://aws.amazon.com/certification/certified-database-specialty/" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">DBS-C01</span>
+          <span class="cert-name">Database Specialty</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- GCP Professional Specialisations -->
+    <div class="tier-col gcp-col">
+      <div class="certs-row">
+        <a href="https://cloud.google.com/learn/certification/cloud-developer" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">PCD</span>
+          <span class="cert-name">Professional Cloud Developer</span>
+          <span class="cert-badge">Future</span>
+        </a>
+        <a href="https://cloud.google.com/learn/certification/cloud-database-engineer" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">PCDBE</span>
+          <span class="cert-name">Professional Cloud Database Engineer</span>
+          <span class="cert-badge">Future</span>
+        </a>
+        <a href="https://cloud.google.com/learn/certification/machine-learning-engineer" target="_blank" class="cert-card cc-future">
+          <span class="cert-code">PCMLE</span>
+          <span class="cert-name">Professional ML Engineer</span>
+          <span class="cert-badge">Future</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BONUS: Docker & Kubernetes (CNCF) ── -->
+  <div style="margin-top:28px;background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 24px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <span style="font-size:22px;">&#x1F433;</span>
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--dark);">Docker &amp; Kubernetes / CNCF</div>
+        <div style="font-size:12px;color:var(--gray);">Container &amp; orchestration certifications — cloud-native infrastructure essentials</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;align-items:start;">
+
+      <!-- Docker column -->
+      <div>
+        <div class="tier-section-label" style="color:var(--docker);">&#x1F433; Docker</div>
+        <div class="certs-row">
+          <a href="https://training.mirantis.com/certification/dca-certification-exam/" target="_blank" class="cert-card cc-future" style="max-width:240px;">
+            <span class="cert-code" style="color:var(--docker);">DCA</span>
+            <span class="cert-name">Docker Certified Associate</span>
+            <span class="cert-badge">Future</span>
+            <a href="../learning_lab/docker-terminal.html" onclick="event.stopPropagation()" style="display:block;margin-top:8px;font-size:10px;font-weight:700;color:var(--docker-dark);text-decoration:none;background:var(--docker-light);padding:3px 8px;border-radius:5px;text-align:center;">&#x1F433; Docker Lab</a>
+          </a>
+        </div>
+        <div class="path-note" style="margin-top:8px;">&#x2139; Administered by Mirantis. Covers container lifecycle, networking, storage, security &amp; Swarm orchestration.</div>
+      </div>
+
+      <!-- Kubernetes CNCF column -->
+      <div>
+        <div class="tier-section-label" style="color:var(--k8s);">&#x2388; Kubernetes / CNCF</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+
+          <!-- Foundational -->
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Foundational</div>
+            <div class="certs-row">
+              <a href="https://training.linuxfoundation.org/certification/kubernetes-cloud-native-associate/" target="_blank" class="cert-card cc-planned" style="max-width:280px;">
+                <span class="cert-code" style="color:var(--planned-c);">KCNA</span>
+                <span class="cert-name">Kubernetes &amp; Cloud Native Associate</span>
+                <span class="cert-badge">Planned</span>
+                <a href="../learning_lab/k8s-terminal.html" onclick="event.stopPropagation()" style="display:block;margin-top:8px;font-size:10px;font-weight:700;color:var(--k8s-dark);text-decoration:none;background:var(--k8s-light);padding:3px 8px;border-radius:5px;text-align:center;">&#x2388; K8s Lab</a>
+              </a>
+            </div>
+          </div>
+
+          <!-- Associate / Hands-on -->
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Associate — performance-based</div>
+            <div class="certs-row">
+              <a href="https://training.linuxfoundation.org/certification/certified-kubernetes-administrator-cka/" target="_blank" class="cert-card cc-planned">
+                <span class="cert-code" style="color:var(--planned-c);">CKA</span>
+                <span class="cert-name">Certified Kubernetes Administrator</span>
+                <span class="cert-badge">Planned</span>
+              </a>
+              <a href="https://training.linuxfoundation.org/certification/certified-kubernetes-application-developer-ckad/" target="_blank" class="cert-card cc-future">
+                <span class="cert-code" style="color:#94A3B8;">CKAD</span>
+                <span class="cert-name">Certified Kubernetes Application Developer</span>
+                <span class="cert-badge">Future</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Expert / Security -->
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Expert — security specialist</div>
+            <div class="certs-row">
+              <a href="https://training.linuxfoundation.org/certification/certified-kubernetes-security-specialist/" target="_blank" class="cert-card cc-future" style="max-width:280px;">
+                <span class="cert-code" style="color:#94A3B8;">CKS</span>
+                <span class="cert-name">Certified Kubernetes Security Specialist</span>
+                <span class="cert-badge">Future</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+        <div class="path-note" style="margin-top:8px;">&#x2605; CNCF path: KCNA &#x2192; CKA &#x2192; CKAD &#x2192; CKS &nbsp;&bull;&nbsp; CKS requires an active CKA</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── BONUS: VMware ── -->
+  <div style="margin-top:28px;background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 24px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <span style="font-size:22px;">&#x1F5A5;&#xFE0F;</span>
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--dark);">VMware by Broadcom</div>
+        <div style="font-size:12px;color:var(--gray);">Virtualisation platform certifications — aligns with 12+ years of vSphere experience</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      <a href="https://www.broadcom.com/support/education/vmware/certification/vcp-dcv" target="_blank" class="cert-card cc-planned" style="max-width:220px;">
+        <span class="cert-code" style="color:var(--planned-c);">VCP-DCV 2024</span>
+        <span class="cert-name">VMware Certified Professional — Data Center Virtualisation</span>
+        <span class="cert-badge">Planned</span>
+      </a>
+      <a href="https://www.broadcom.com/support/education/vmware/certification/vcap-dcv-design" target="_blank" class="cert-card cc-future" style="max-width:220px;">
+        <span class="cert-code" style="color:#94A3B8;">VCAP-DCV Design</span>
+        <span class="cert-name">VMware Certified Advanced Professional — DCV Design</span>
+        <span class="cert-badge">Future</span>
+      </a>
+      <a href="https://www.broadcom.com/support/education/vmware/certification/vcdx" target="_blank" class="cert-card cc-future" style="max-width:220px;">
+        <span class="cert-code" style="color:#94A3B8;">VCDX-DCV</span>
+        <span class="cert-name">VMware Certified Design Expert — Highest VMware Cert</span>
+        <span class="cert-badge">Future</span>
+      </a>
+      <div style="background:var(--light);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--gray);max-width:260px;line-height:1.6;align-self:center;">
+        <strong style="color:var(--dark);">&#x2139;&#xFE0F; Note:</strong> VCP-DCV requires either a VMware training course or proof of previous VCP cert. With 12+ years of vSphere experience, you may be eligible for a delta exam path.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer style="background:var(--navy);color:rgba(255,255,255,.45);text-align:center;padding:20px 24px;font-size:12px;">
+  <p>Manikandan K &nbsp;&middot;&nbsp; <a href="index.html" style="color:rgba(255,255,255,.6);text-decoration:none;">Home</a> &nbsp;&middot;&nbsp; <a href="learning.html" style="color:rgba(255,255,255,.6);text-decoration:none;">Learning Hub</a></p>
+</footer>
+
+</body>
+</html>

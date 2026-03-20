@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Hub — Manikandan K</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --navy:#0F172A;--navy2:#1E3A5F;--purple:#7C3AED;--purple-light:#F5F3FF;
+  --azure:#0078D4;--aws-dark:#B45309;--gcp-dark:#1A73E8;
+  --green:#16A34A;--green-light:#F0FDF4;--gray:#6B7280;--light:#F3F4F6;--dark:#1F2937;
+  --radius:12px;--shadow:0 4px 20px rgba(0,0,0,.09);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F8FAFC;color:var(--dark);}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.96);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.08);}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-size:16px;font-weight:800;color:white;text-decoration:none;}
+.nav-logo span{color:#818CF8;}
+.nav-links{display:flex;gap:4px;}
+.nav-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:500;padding:6px 12px;border-radius:8px;transition:all .2s;}
+.nav-links a:hover,.nav-links a.active{color:white;background:rgba(255,255,255,.1);}
+
+.page-hero{background:linear-gradient(135deg,var(--navy),#1a1040);padding:52px 24px 44px;text-align:center;color:white;}
+.page-hero .badge{display:inline-block;background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.4);color:#C4B5FD;font-size:11px;font-weight:700;padding:4px 14px;border-radius:99px;margin-bottom:14px;letter-spacing:.4px;}
+.page-hero h1{font-size:clamp(24px,4vw,38px);font-weight:800;margin-bottom:8px;letter-spacing:-.3px;}
+.page-hero p{font-size:14px;color:rgba(255,255,255,.65);}
+
+.content{max-width:1100px;margin:0 auto;padding:32px 24px 64px;}
+
+/* Stats bar */
+.stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px;}
+.stat-pill{background:white;border-radius:10px;box-shadow:var(--shadow);padding:12px 20px;display:flex;align-items:center;gap:10px;border:1.5px solid var(--light);}
+.stat-pill .sp-num{font-size:22px;font-weight:800;}
+.stat-pill .sp-lbl{font-size:11px;color:var(--gray);font-weight:600;}
+.sp-total .sp-num{color:var(--navy2);}
+.sp-active .sp-num{color:var(--green);}
+.sp-progress .sp-num{color:#D97706;}
+.sp-planned .sp-num{color:var(--purple);}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.filter-btn{padding:7px 16px;border-radius:8px;border:1.5px solid var(--light);font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.filter-btn:hover{border-color:#C4B5FD;color:var(--purple);}
+.filter-btn.active{background:var(--purple);color:white;border-color:var(--purple);}
+.search-wrap{margin-left:auto;}
+.search-input{border:1.5px solid var(--light);border-radius:8px;padding:7px 14px;font-size:12px;font-family:inherit;color:var(--dark);width:220px;transition:border-color .2s;}
+.search-input:focus{outline:none;border-color:var(--purple);}
+
+/* Section heading */
+.section-heading{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.section-heading h2{font-size:15px;font-weight:800;color:var(--dark);}
+.section-count{font-size:11px;font-weight:700;color:var(--gray);background:var(--light);padding:2px 8px;border-radius:99px;}
+.divider{height:1px;background:var(--light);margin:32px 0;}
+
+/* Cards grid */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;}
+
+/* Learning Card */
+.lcard{background:white;border-radius:var(--radius);box-shadow:var(--shadow);border:1.5px solid var(--light);padding:22px;display:flex;flex-direction:column;gap:14px;transition:all .25s;text-decoration:none;color:inherit;position:relative;}
+.lcard:hover{transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,.12);border-color:#DDD6FE;}
+.lcard.pinned{border-color:#DDD6FE;border-width:2px;}
+.pinned-badge{position:absolute;top:-10px;left:16px;background:var(--purple);color:white;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;letter-spacing:.3px;}
+.lcard-header{display:flex;align-items:flex-start;gap:12px;}
+.lcard-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid var(--light);}
+.lcard-title{font-size:14px;font-weight:800;color:var(--dark);line-height:1.3;}
+.lcard-sub{font-size:12px;color:var(--gray);margin-top:4px;line-height:1.55;}
+.lcard-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.lcard-tag{font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--light);color:var(--gray);}
+.lcard-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;}
+.lcard-status{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:99px;}
+.s-active{background:#F0FDF4;color:#16A34A;}
+.s-progress{background:#FFF7ED;color:#B45309;}
+.s-planned{background:var(--purple-light);color:var(--purple);}
+.s-completed{background:#F0FDF4;color:#16A34A;}
+.lcard-link{font-size:11px;font-weight:700;color:var(--purple);display:flex;align-items:center;gap:4px;}
+.lcard-link:hover{text-decoration:underline;}
+
+/* Empty state */
+.empty-state{text-align:center;padding:48px 24px;color:var(--gray);}
+.empty-state .es-icon{font-size:40px;margin-bottom:12px;}
+.empty-state p{font-size:14px;}
+
+/* Loading */
+.loading{text-align:center;padding:40px;color:var(--gray);font-size:14px;}
+
+/* Firebase config notice */
+.fb-notice{background:#FFF7ED;border:1.5px solid #FDE68A;border-radius:10px;padding:14px 18px;display:flex;align-items:flex-start;gap:10px;margin-bottom:24px;font-size:12.5px;color:#92400E;line-height:1.6;}
+.fb-notice-icon{font-size:18px;flex-shrink:0;}
+.fb-notice a{color:#D97706;font-weight:700;}
+
+@media(max-width:640px){.content{padding:20px 14px 48px;}.cards-grid{grid-template-columns:1fr;}.search-wrap{margin-left:0;width:100%;}.search-input{width:100%;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">MK<span>.</span></a>
+    <div class="nav-links">
+      <a href="index.html">&#x2190; Home</a>
+      <a href="learning.html" class="active">Learning Hub</a>
+      <a href="blog.html">&#x270D;&#xFE0F; Blog</a>
+      <a href="resume.html">&#x1F4C4; Resume</a>
+      <a href="admin.html">&#x2699;&#xFE0F; Admin</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="badge">&#x1F4DA; LEARNING HUB</div>
+  <h1>My Learning Journey</h1>
+  <p>Lab trackers, courses, certifications, and study resources — all in one place.</p>
+</div>
+
+<div class="content">
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-pill sp-total"><span class="sp-num" id="stat-total">—</span><span class="sp-lbl">Total Items</span></div>
+    <div class="stat-pill sp-active"><span class="sp-num" id="stat-active">—</span><span class="sp-lbl">Active</span></div>
+    <div class="stat-pill sp-progress"><span class="sp-num" id="stat-prog">—</span><span class="sp-lbl">In Progress</span></div>
+    <div class="stat-pill sp-planned"><span class="sp-num" id="stat-planned">—</span><span class="sp-lbl">Planned</span></div>
+  </div>
+
+  <!-- Firebase notice (shown if not configured) -->
+  <div class="fb-notice" id="fb-notice" style="display:none">
+    <span class="fb-notice-icon">&#x2139;&#xFE0F;</span>
+    <div>Dynamic items from Firebase are not yet configured. Visit <a href="admin.html">Admin Panel</a> to connect Firebase and add learning items. The pinned lab trackers below always display.</div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('Cloud Labs',this)">&#x2601;&#xFE0F; Cloud Labs</button>
+    <button class="filter-btn" onclick="setFilter('IAM & Security',this)">&#x1F512; IAM &amp; Security</button>
+    <button class="filter-btn" onclick="setFilter('Certification',this)">&#x1F393; Certifications</button>
+    <button class="filter-btn" onclick="setFilter('Course',this)">&#x1F4FA; Courses</button>
+    <button class="filter-btn" onclick="setFilter('Book',this)">&#x1F4D6; Books</button>
+    <div class="search-wrap">
+      <input class="search-input" type="text" placeholder="&#x1F50D; Search..." oninput="setSearch(this.value)">
+    </div>
+  </div>
+
+  <!-- Pinned Labs section -->
+  <div class="section-heading">
+    <h2>&#x1F4CC; Pinned Lab Trackers</h2>
+    <span class="section-count" id="pinned-count">6</span>
+  </div>
+  <div class="cards-grid" id="pinned-grid">
+    <a href="../learning_lab/docker-terminal.html" class="lcard pinned" data-category="Cloud Labs" data-title="Docker Terminal Lab">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#0D1A2A,#1c3a5e);">&#x1F433;</div>
+        <div>
+          <div class="lcard-title" style="color:#2496ED;">Docker Terminal — Hands-On Lab</div>
+          <div class="lcard-sub">Simulated Docker engine — containers, images, networking, volumes, Docker Compose and Dockerfile with 10 guided exercises.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#0D1A2A;color:#2496ED;border:1px solid #2496ED;">docker</span>
+        <span class="lcard-tag">10 Exercises</span>
+        <span class="lcard-tag">Compose</span>
+        <span class="lcard-tag">Containers</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Launch Lab &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/k8s-terminal.html" class="lcard pinned" data-category="Cloud Labs" data-title="Kubernetes Terminal Lab">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#0A1628,#1a2848);">&#x2388;</div>
+        <div>
+          <div class="lcard-title" style="color:#326CE5;">Kubernetes Terminal — Hands-On Lab</div>
+          <div class="lcard-sub">Simulated kubectl — pods, deployments, services, namespaces, labels, rollouts, node ops and Helm with 10 guided exercises.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#0A1628;color:#326CE5;border:1px solid #326CE5;">kubernetes</span>
+        <span class="lcard-tag">10 Exercises</span>
+        <span class="lcard-tag">Helm</span>
+        <span class="lcard-tag">kubectl</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Launch Lab &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/linux-terminal.html" class="lcard pinned" data-category="Cloud Labs" data-title="Linux Terminal Lab">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#0D1117,#161B22);">&#x1F427;</div>
+        <div>
+          <div class="lcard-title" style="color:#3FB950;">Linux Terminal — Hands-On Lab</div>
+          <div class="lcard-sub">Interactive browser-based Linux shell — 50+ commands, pipes, redirects, virtual filesystem, guided exercises and cheatsheet.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#0D1117;color:#3FB950;border:1px solid #3FB950;">bash</span>
+        <span class="lcard-tag">8 Exercises</span>
+        <span class="lcard-tag">50+ Commands</span>
+        <span class="lcard-tag">Linux Admin</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Launch Terminal &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/index.html" class="lcard pinned" data-category="Cloud Labs" data-title="Cloud IaaS Lab Tracker">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);">&#x2601;&#xFE0F;</div>
+        <div>
+          <div class="lcard-title">Cloud IaaS Lab Tracker</div>
+          <div class="lcard-sub">12-week hands-on labs covering VMs, networking, storage, load balancing, DNS, monitoring, backup &amp; DR across Azure, AWS &amp; GCP.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#EFF6FF;color:#0078D4;">Azure</span>
+        <span class="lcard-tag" style="background:#FFF7ED;color:#B45309;">AWS</span>
+        <span class="lcard-tag" style="background:#EEF4FF;color:#1A73E8;">GCP</span>
+        <span class="lcard-tag">12 Phases</span>
+        <span class="lcard-tag">36 Labs</span>
+        <span class="lcard-tag">IaaS</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Open Tracker &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/iam.html" class="lcard pinned" data-category="IAM & Security" data-title="IAM Lab Tracker">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);">&#x1F512;</div>
+        <div>
+          <div class="lcard-title">IAM Lab Tracker</div>
+          <div class="lcard-sub">6-phase deep dive — user management, RBAC, service identities, federation (SSO/SAML), PIM, org policies, and audit logging.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#EFF6FF;color:#0078D4;">Entra ID</span>
+        <span class="lcard-tag" style="background:#FFF7ED;color:#B45309;">AWS IAM</span>
+        <span class="lcard-tag" style="background:#EEF4FF;color:#1A73E8;">GCP IAM</span>
+        <span class="lcard-tag">6 Phases</span>
+        <span class="lcard-tag">18 Labs</span>
+        <span class="lcard-tag">Security</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Open Tracker &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/az400.html" class="lcard pinned" data-category="Cloud Labs" data-title="AZ-400 Lab Tracker">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#DBEAFE,#BFDBFE);">&#x1F504;</div>
+        <div>
+          <div class="lcard-title">AZ-400 Lab Tracker</div>
+          <div class="lcard-sub">Azure DevOps Engineer Expert — Source control, CI/CD pipelines, IaC, security scanning, Azure Artifacts and observability.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#EFF6FF;color:#0F3460;">Azure DevOps</span>
+        <span class="lcard-tag">6 Phases</span>
+        <span class="lcard-tag">12 Labs</span>
+        <span class="lcard-tag">CI/CD</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Open Tracker &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/ps-terminal.html" class="lcard pinned" data-category="Cloud Labs" data-title="PowerShell Terminal Lab">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#012456,#1a3a6e);">&#x1F4BB;</div>
+        <div>
+          <div class="lcard-title" style="color:#012456;">PowerShell Terminal — Hands-On Lab</div>
+          <div class="lcard-sub">Interactive PS 7 simulator with pipeline objects, file system, processes, services and Azure PowerShell (Az module).</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#EFF6FF;color:#012456;">PowerShell 7</span>
+        <span class="lcard-tag">50+ Cmdlets</span>
+        <span class="lcard-tag">Pipeline</span>
+        <span class="lcard-tag">Azure Az</span>
+        <span class="lcard-tag">10 Exercises</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Launch Lab &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/az700.html" class="lcard pinned" data-category="Cloud Labs" data-title="AZ-700 Lab Tracker">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#E0F2FE,#BAE6FD);">&#x1F310;</div>
+        <div>
+          <div class="lcard-title">AZ-700 Lab Tracker</div>
+          <div class="lcard-sub">Azure Network Engineer — VNets, NSG, Firewall, Load Balancing, VPN/ExpressRoute, DNS, Private Link and Network Watcher.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#EFF6FF;color:#0078D4;">Azure</span>
+        <span class="lcard-tag">6 Phases</span>
+        <span class="lcard-tag">12 Labs</span>
+        <span class="lcard-tag">Networking</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Open Tracker &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/az500.html" class="lcard pinned" data-category="IAM & Security" data-title="AZ-500 Lab Tracker">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#FEF2F2,#FEE2E2);">&#x1F6E1;&#xFE0F;</div>
+        <div>
+          <div class="lcard-title">AZ-500 Lab Tracker</div>
+          <div class="lcard-sub">Azure Security Technologies — identity security, network security, data &amp; compute security, SIEM, Defender for Cloud.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#EFF6FF;color:#0078D4;">Azure</span>
+        <span class="lcard-tag">6 Phases</span>
+        <span class="lcard-tag">12 Labs</span>
+        <span class="lcard-tag">Security</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Open Tracker &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/sc300.html" class="lcard pinned" data-category="IAM & Security" data-title="SC-300 Lab Tracker">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);">&#x1F510;</div>
+        <div>
+          <div class="lcard-title">SC-300 Lab Tracker</div>
+          <div class="lcard-sub">Identity &amp; Access Administrator — Entra ID tenant, MFA/SSPR, Conditional Access, App SSO, PIM, Entitlement Management, Lifecycle Workflows.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#F5F3FF;color:#6D28D9;">Entra ID</span>
+        <span class="lcard-tag">4 Phases</span>
+        <span class="lcard-tag">9 Labs</span>
+        <span class="lcard-tag">Identity</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Open Tracker &#x2192;</span>
+      </div>
+    </a>
+    <a href="../learning_lab/soa-c02.html" class="lcard pinned" data-category="Cloud Labs" data-title="SOA-C02 Lab Tracker">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#FFF7ED,#FFEDD5);">&#x1F527;</div>
+        <div>
+          <div class="lcard-title">SOA-C02 Lab Tracker</div>
+          <div class="lcard-sub">AWS SysOps Administrator — CloudWatch, Auto Scaling, CloudFormation, IAM/SCPs, VPC/TGW, Security Hub, Cost Optimisation.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#FFF7ED;color:#B45309;">AWS</span>
+        <span class="lcard-tag">6 Phases</span>
+        <span class="lcard-tag">11 Labs</span>
+        <span class="lcard-tag">SysOps</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Open Tracker &#x2192;</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Dynamic items from Firebase -->
+  <div class="section-heading">
+    <h2>&#x1F4DA; All Learning Resources</h2>
+    <span class="section-count" id="dynamic-count">0</span>
+  </div>
+  <div id="dynamic-grid" class="cards-grid">
+    <div class="loading" id="loading-msg">&#x21BB; Loading resources...</div>
+  </div>
+</div>
+
+<script>
+// ── Firebase config (shared with admin panel) ──────────────────────────────
+let db = null;
+let allItems = [];
+let currentFilter = 'all';
+let currentSearch = '';
+
+function initFirebase(){
+  const cfg = JSON.parse(localStorage.getItem('mk_site_fb_config') || 'null');
+  if(!cfg){ showFbNotice(); renderDynamic([]); return; }
+  try{
+    const existing = firebase.apps.find(a => a.name === 'mk-site');
+    const app = existing || firebase.initializeApp(cfg, 'mk-site');
+    db = firebase.database(app);
+    loadItems();
+  } catch(e){ showFbNotice(); renderDynamic([]); }
+}
+
+function showFbNotice(){ document.getElementById('fb-notice').style.display = 'flex'; }
+
+function loadItems(){
+  if(!db){ showFbNotice(); renderDynamic([]); return; }
+  db.ref('learning_items').orderByChild('order').on('value', snap => {
+    const data = snap.val() || {};
+    allItems = Object.entries(data)
+      .map(([id, item]) => ({id, ...item}))
+      .filter(item => item.published !== false)
+      .sort((a,b) => (a.order||99) - (b.order||99));
+    renderDynamic(filtered());
+    updateStats();
+  });
+}
+
+function filtered(){
+  return allItems.filter(item => {
+    const matchCat = currentFilter === 'all' || item.category === currentFilter;
+    const q = currentSearch.toLowerCase();
+    const matchSearch = !q || item.title.toLowerCase().includes(q) || (item.description||'').toLowerCase().includes(q) || (item.tags||[]).some(t=>t.toLowerCase().includes(q));
+    return matchCat && matchSearch;
+  });
+}
+
+function setFilter(f, btn){
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter();
+}
+function setSearch(v){ currentSearch = v; applyFilter(); }
+
+function applyFilter(){
+  // Filter pinned cards
+  document.querySelectorAll('#pinned-grid .lcard').forEach(card => {
+    const cat = card.dataset.category || '';
+    const title = (card.dataset.title || '').toLowerCase();
+    const matchCat = currentFilter === 'all' || cat === currentFilter;
+    const q = currentSearch.toLowerCase();
+    const matchSearch = !q || title.includes(q);
+    card.style.display = (matchCat && matchSearch) ? '' : 'none';
+  });
+  const visiblePinned = document.querySelectorAll('#pinned-grid .lcard:not([style*="display: none"])').length;
+  document.getElementById('pinned-count').textContent = visiblePinned;
+
+  renderDynamic(filtered());
+}
+
+const STATUS_MAP = {
+  'active':    {cls:'s-active',    label:'&#x1F7E2; Active'},
+  'in-progress':{cls:'s-progress', label:'&#x1F7E1; In Progress'},
+  'planned':   {cls:'s-planned',   label:'&#x1F4CB; Planned'},
+  'completed': {cls:'s-completed', label:'&#x2705; Completed'},
+};
+
+function renderDynamic(items){
+  const grid = document.getElementById('dynamic-grid');
+  document.getElementById('loading-msg')?.remove();
+  document.getElementById('dynamic-count').textContent = items.length;
+
+  if(!items.length){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="es-icon">&#x1F4DA;</div>
+      <p>No learning items yet. <a href="admin.html" style="color:var(--purple);font-weight:700;">Add some in the Admin Panel &#x2192;</a></p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = items.map(item => {
+    const st = STATUS_MAP[item.status] || STATUS_MAP['planned'];
+    const tags = (item.tags || []).map(t => `<span class="lcard-tag">${t}</span>`).join('');
+    const href = item.url ? `href="${item.url}" target="${item.url.startsWith('http')?'_blank':'_self'}"` : '';
+    return `<a ${href} class="lcard" data-category="${item.category||''}" data-title="${item.title||''}">
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:${item.iconBg||'#F3F4F6'}">${item.icon||'&#x1F4DA;'}</div>
+        <div>
+          <div class="lcard-title">${item.title||'Untitled'}</div>
+          <div class="lcard-sub">${item.description||''}</div>
+        </div>
+      </div>
+      ${tags?`<div class="lcard-tags">${tags}</div>`:''}
+      <div class="lcard-footer">
+        <span class="lcard-status ${st.cls}">${st.label}</span>
+        ${item.url?`<span class="lcard-link">Open &#x2192;</span>`:''}
+      </div>
+    </a>`;
+  }).join('');
+}
+
+function updateStats(){
+  const total = allItems.length + 2; // +2 for pinned
+  const active = allItems.filter(i=>i.status==='active').length + 2;
+  const prog = allItems.filter(i=>i.status==='in-progress').length;
+  const planned = allItems.filter(i=>i.status==='planned').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-active').textContent = active;
+  document.getElementById('stat-prog').textContent = prog;
+  document.getElementById('stat-planned').textContent = planned;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateStats();
+  initFirebase();
+});
+</script>
+</body>
+</html>

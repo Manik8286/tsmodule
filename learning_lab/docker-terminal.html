@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker Terminal — Hands-On Lab</title>
+<style>
+:root{--bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--border:#30363D;--blue:#2496ED;--blue-light:#1c3a5e;--cyan:#79C0FF;--green:#3FB950;--yellow:#E3B341;--orange:#F0883E;--red:#FF7B72;--purple:#D2A8FF;--white:#C9D1D9;--gray:#8B949E;--header-bg:#0D1A2A;--radius:8px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--white);}
+.site-header{background:var(--header-bg);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:2px solid var(--blue);flex-shrink:0;}
+.site-header h1{font-size:16px;font-weight:700;}
+.site-header p{font-size:11px;color:#79C0FF;margin-top:1px;}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;}
+.nav-link{font-size:11px;padding:3px 10px;border-radius:5px;background:rgba(36,150,237,.15);color:#79C0FF;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(36,150,237,.35);color:white;}
+.app{display:flex;height:calc(100vh - 58px);overflow:hidden;}
+
+/* Sidebar */
+.sidebar{width:285px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+.stab{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--gray);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.stab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.stab:hover{color:var(--white);}
+.sidebar-content{flex:1;overflow-y:auto;padding:10px;}
+.sidebar-content::-webkit-scrollbar{width:4px;}
+.sidebar-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* Exercise items */
+.ex-section{margin-bottom:16px;}
+.ex-section-title{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.ex-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.ex-item:hover{border-color:var(--blue);}
+.ex-item.active{border-color:var(--blue);background:var(--blue-light);}
+.ex-item.done{border-color:var(--green);}
+.ex-title{font-size:12px;font-weight:600;color:var(--white);display:flex;align-items:center;gap:6px;}
+.ex-badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:700;}
+.badge-easy{background:#1a3a1a;color:var(--green);}
+.badge-medium{background:#1a2a3a;color:var(--blue);}
+.badge-hard{background:#2a1a2a;color:var(--purple);}
+.ex-desc{font-size:11px;color:var(--gray);margin-top:4px;line-height:1.5;}
+
+/* Cheatsheet */
+.cs-section{margin-bottom:14px;}
+.cs-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.cs-cmd{display:flex;gap:8px;margin-bottom:4px;padding:4px 6px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.cs-cmd:hover{background:var(--bg3);}
+.cs-cmd-name{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;color:var(--yellow);min-width:120px;flex-shrink:0;}
+.cs-cmd-desc{font-size:11px;color:var(--gray);line-height:1.4;}
+
+/* State panel */
+.state-section{margin-bottom:12px;}
+.state-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.state-item{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:11px;}
+.state-badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:9px;font-weight:700;margin-left:6px;}
+.badge-running{background:#1a3a1a;color:var(--green);}
+.badge-stopped{background:#2a1a1a;color:var(--red);}
+.badge-exited{background:#2a2a1a;color:var(--yellow);}
+
+/* Challenge bar */
+.challenge-bar{background:var(--bg2);border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0;}
+.challenge-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.challenge-text{font-size:12px;color:var(--white);line-height:1.5;}
+.challenge-hint{font-size:11px;color:var(--gray);margin-top:4px;display:none;}
+.challenge-hint.visible{display:block;}
+.challenge-btns{display:flex;gap:6px;margin-top:8px;}
+.cbtn{font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-weight:600;background:var(--bg3);color:var(--gray);transition:all .2s;}
+.cbtn:hover{color:var(--white);}
+.cbtn.hint{color:var(--purple);border-color:var(--purple);}
+.cbtn.skip{color:var(--orange);border-color:var(--orange);}
+
+/* Terminal */
+.terminal-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.term-top-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.term-dot{width:12px;height:12px;border-radius:50%;}
+.dot-red{background:#FF5F57;}.dot-yellow{background:#FFBD2E;}.dot-green{background:#28CA41;}
+.term-title{font-size:12px;color:var(--gray);margin-left:4px;flex:1;}
+.terminal{flex:1;overflow-y:auto;padding:14px 16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.65;cursor:text;}
+.terminal::-webkit-scrollbar{width:6px;}
+.terminal::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.line{display:flex;align-items:baseline;flex-wrap:wrap;}
+.prompt{color:var(--blue);white-space:nowrap;flex-shrink:0;}
+.cmd-echo{color:var(--white);}
+.out-line{white-space:pre-wrap;word-break:break-all;display:block;}
+.out-err{color:var(--red);}
+.out-ok{color:var(--green);}
+.out-info{color:var(--cyan);}
+.out-warn{color:var(--yellow);}
+.out-dim{color:var(--gray);}
+.out-blue{color:var(--blue);}
+.out-pull{color:var(--orange);}
+.input-row{display:flex;align-items:center;margin-top:4px;}
+.input-prompt{color:var(--blue);white-space:nowrap;flex-shrink:0;}
+#cmd-input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-family:inherit;font-size:13px;caret-color:white;}
+
+/* Progress */
+.prog-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:6px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:width .4s;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <h1>🐳 Docker Terminal — Hands-On Lab</h1>
+    <p>Simulated Docker engine · containers · images · networks · volumes · compose</p>
+  </div>
+  <div class="nav-links">
+    <a href="../personal_site/index.html" class="nav-link">🏠 Home</a>
+    <a href="../personal_site/learning.html" class="nav-link">📚 Learning Hub</a>
+    <a href="linux-terminal.html" class="nav-link">🐧 Linux Lab</a>
+    <a href="k8s-terminal.html" class="nav-link">☸ K8s Lab</a>
+    <a href="ps-terminal.html" class="nav-link">💻 PS Lab</a>
+    <a href="index.html" class="nav-link">☁️ IaaS Labs</a>
+  </div>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="stab active" onclick="showTab('exercises',this)">Exercises</div>
+      <div class="stab" onclick="showTab('cheatsheet',this)">Cheatsheet</div>
+      <div class="stab" onclick="showTab('state',this)">State</div>
+    </div>
+    <div class="sidebar-content" id="tab-exercises">
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:11px;font-weight:700;color:var(--white);">Lab Progress</span>
+          <span style="font-size:10px;color:var(--blue);" id="prog-text">0 / 0 done</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div id="ex-list"></div>
+    </div>
+    <div class="sidebar-content" id="tab-cheatsheet" style="display:none;">
+      <div id="cheatsheet-content"></div>
+    </div>
+    <div class="sidebar-content" id="tab-state" style="display:none;">
+      <div class="state-section">
+        <div class="state-title">🟢 Containers</div>
+        <div id="state-containers"><span style="color:var(--gray);font-size:11px;">No containers yet</span></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">📦 Images</div>
+        <div id="state-images"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">🌐 Networks</div>
+        <div id="state-networks"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">💾 Volumes</div>
+        <div id="state-volumes"><span style="color:var(--gray);font-size:11px;">No volumes yet</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="terminal-wrap">
+    <div class="term-top-bar">
+      <span class="term-dot dot-red"></span>
+      <span class="term-dot dot-yellow"></span>
+      <span class="term-dot dot-green"></span>
+      <span class="term-title">docker-lab ~ </span>
+      <span style="font-size:10px;color:var(--gray);">Engine: simulated · Context: default · Type <span style="color:var(--yellow)">help</span> to start</span>
+    </div>
+    <div class="terminal" id="terminal" onclick="focusInput()">
+      <div id="output"></div>
+      <div class="input-row">
+        <span class="input-prompt" id="live-prompt">$ &nbsp;</span>
+        <input type="text" id="cmd-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleKey(event)">
+      </div>
+    </div>
+    <div class="challenge-bar" id="challenge-bar" style="display:none;">
+      <div class="challenge-title">🎯 Current Challenge</div>
+      <div class="challenge-text" id="challenge-text"></div>
+      <div class="challenge-hint" id="challenge-hint"></div>
+      <div class="challenge-btns">
+        <button class="cbtn hint" onclick="showHint()">💡 Hint</button>
+        <button class="cbtn skip" onclick="skipChallenge()">⏭ Skip</button>
+        <button class="cbtn" onclick="resetExercise()" style="color:var(--red);border-color:var(--red);">🔄 Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Docker State ─────────────────────────────────────────────────────────────
+function makeId(len=12){ return [...Array(len)].map(()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join(''); }
+function shortId(id){ return id.slice(0,12); }
+function now(){ return new Date().toISOString().replace('T',' ').slice(0,19); }
+
+const IMAGES = {
+  'ubuntu:22.04':    {id:makeId(64),size:'77.8MB',created:'3 weeks ago',arch:'amd64'},
+  'ubuntu:latest':   {id:makeId(64),size:'77.8MB',created:'3 weeks ago',arch:'amd64'},
+  'nginx:latest':    {id:makeId(64),size:'187MB', created:'2 weeks ago',arch:'amd64'},
+  'nginx:alpine':    {id:makeId(64),size:'42.6MB',created:'2 weeks ago',arch:'amd64'},
+  'redis:7-alpine':  {id:makeId(64),size:'38.3MB',created:'1 week ago', arch:'amd64'},
+  'redis:latest':    {id:makeId(64),size:'138MB', created:'1 week ago', arch:'amd64'},
+  'mysql:8.0':       {id:makeId(64),size:'596MB', created:'4 weeks ago',arch:'amd64'},
+  'node:18-alpine':  {id:makeId(64),size:'172MB', created:'2 weeks ago',arch:'amd64'},
+  'python:3.11-slim':{id:makeId(64),size:'149MB', created:'1 week ago', arch:'amd64'},
+  'alpine:latest':   {id:makeId(64),size:'7.34MB',created:'5 weeks ago',arch:'amd64'},
+  'postgres:15':     {id:makeId(64),size:'379MB', created:'3 weeks ago',arch:'amd64'},
+};
+
+let containers = {};  // id -> container object
+let volumes = {};
+let networks = {
+  'bridge': {id:makeId(12),driver:'bridge',scope:'local',created:now(),containers:[]},
+  'host':   {id:makeId(12),driver:'host',  scope:'local',created:now(),containers:[]},
+  'none':   {id:makeId(12),driver:'null',  scope:'local',created:now(),containers:[]},
+};
+let customImages = {};  // built locally
+let cmdHistory = [];
+let histIndex = -1;
+let currentExercise = null;
+let currentTaskIdx = 0;
+let doneMap = {};
+
+// ─── Exercises ────────────────────────────────────────────────────────────────
+const EXERCISES = [
+  {id:'e1', title:'Hello Docker', badge:'easy',
+   desc:'Run your first containers and understand the basic lifecycle.',
+   tasks:[
+     {id:'t1', text:'Check Docker version: <code>docker version</code>',
+      check: c => /^docker\s+version/.test(c)},
+     {id:'t2', text:'Run hello-world: <code>docker run hello-world</code>',
+      check: c => /^docker\s+run\s+hello-world/.test(c)},
+     {id:'t3', text:'List running containers: <code>docker ps</code>',
+      check: c => /^docker\s+ps\s*$/.test(c)},
+     {id:'t4', text:'List ALL containers including stopped: <code>docker ps -a</code>',
+      check: c => /^docker\s+ps\s+-a/.test(c)},
+   ]},
+  {id:'e2', title:'Working with Images', badge:'easy',
+   desc:'Pull, list, inspect and remove Docker images.',
+   tasks:[
+     {id:'t1', text:'List local images: <code>docker images</code>',
+      check: c => /^docker\s+images/.test(c)},
+     {id:'t2', text:'Pull alpine image: <code>docker pull alpine:latest</code>',
+      check: c => /^docker\s+pull\s+alpine/.test(c)},
+     {id:'t3', text:'Inspect an image: <code>docker inspect alpine:latest</code>',
+      check: c => /^docker\s+inspect\s+alpine/.test(c)},
+     {id:'t4', text:'Check image history: <code>docker history nginx:latest</code>',
+      check: c => /^docker\s+history\s+nginx/.test(c)},
+     {id:'t5', text:'Search Docker Hub: <code>docker search nginx</code>',
+      check: c => /^docker\s+search\s+\w+/.test(c)},
+   ]},
+  {id:'e3', title:'Container Lifecycle', badge:'easy',
+   desc:'Create, start, stop, restart and remove containers.',
+   tasks:[
+     {id:'t1', text:'Run nginx detached: <code>docker run -d --name webserver nginx:latest</code>',
+      check: c => /^docker\s+run\s+.*-d.*nginx|^docker\s+run\s+.*nginx.*-d/.test(c)},
+     {id:'t2', text:'Stop the container: <code>docker stop webserver</code>',
+      check: c => /^docker\s+stop\s+\w+/.test(c)},
+     {id:'t3', text:'Start it again: <code>docker start webserver</code>',
+      check: c => /^docker\s+start\s+\w+/.test(c)},
+     {id:'t4', text:'Restart the container: <code>docker restart webserver</code>',
+      check: c => /^docker\s+restart\s+\w+/.test(c)},
+     {id:'t5', text:'Remove it (stop first): <code>docker rm -f webserver</code>',
+      check: c => /^docker\s+rm\s+.*webserver|^docker\s+rm\s+-f\s+\w+/.test(c)},
+   ]},
+  {id:'e4', title:'Port Mapping & Environment', badge:'medium',
+   desc:'Expose container ports and pass environment variables.',
+   tasks:[
+     {id:'t1', text:'Run nginx with port mapping: <code>docker run -d -p 8080:80 --name nginx-web nginx:latest</code>',
+      check: c => /^docker\s+run.*-p.*\d+:\d+.*nginx/.test(c)},
+     {id:'t2', text:'Run MySQL with env vars: <code>docker run -d -e MYSQL_ROOT_PASSWORD=secret --name mydb mysql:8.0</code>',
+      check: c => /^docker\s+run.*-e.*MYSQL.*mysql/.test(c)},
+     {id:'t3', text:'Run Redis with port: <code>docker run -d -p 6379:6379 --name cache redis:7-alpine</code>',
+      check: c => /^docker\s+run.*-p.*6379.*redis|docker\s+run.*redis.*-p.*6379/.test(c)},
+     {id:'t4', text:'Check port mappings: <code>docker port nginx-web</code>',
+      check: c => /^docker\s+port\s+\w+/.test(c)},
+   ]},
+  {id:'e5', title:'Exec & Logs', badge:'medium',
+   desc:'Run commands inside containers and read their logs.',
+   tasks:[
+     {id:'t1', text:'View container logs: <code>docker logs webserver</code>',
+      check: c => /^docker\s+logs\s+\w+/.test(c)},
+     {id:'t2', text:'Follow live logs: <code>docker logs -f webserver</code>',
+      check: c => /^docker\s+logs\s+.*-f|docker\s+logs\s+-f/.test(c)},
+     {id:'t3', text:'Execute a command in a container: <code>docker exec webserver ls /etc/nginx</code>',
+      check: c => /^docker\s+exec\s+\w+\s+\w+/.test(c)},
+     {id:'t4', text:'Open interactive shell: <code>docker exec -it webserver sh</code>',
+      check: c => /^docker\s+exec\s+.*-it.*sh|docker\s+exec\s+.*-i.*-t.*sh/.test(c)},
+     {id:'t5', text:'Inspect container details: <code>docker inspect webserver</code>',
+      check: c => /^docker\s+inspect\s+\w+/.test(c)},
+   ]},
+  {id:'e6', title:'Volumes', badge:'medium',
+   desc:'Persist container data using named volumes and bind mounts.',
+   tasks:[
+     {id:'t1', text:'Create a named volume: <code>docker volume create mydata</code>',
+      check: c => /^docker\s+volume\s+create\s+\w+/.test(c)},
+     {id:'t2', text:'List volumes: <code>docker volume ls</code>',
+      check: c => /^docker\s+volume\s+ls/.test(c)},
+     {id:'t3', text:'Run with volume mount: <code>docker run -d -v mydata:/data --name storage ubuntu:22.04 sleep 3600</code>',
+      check: c => /^docker\s+run.*-v\s+\w+:\/\w+/.test(c)},
+     {id:'t4', text:'Inspect a volume: <code>docker volume inspect mydata</code>',
+      check: c => /^docker\s+volume\s+inspect\s+\w+/.test(c)},
+     {id:'t5', text:'Remove a volume: <code>docker volume rm mydata</code>',
+      check: c => /^docker\s+volume\s+rm\s+\w+/.test(c)},
+   ]},
+  {id:'e7', title:'Networking', badge:'medium',
+   desc:'Create custom networks and connect containers.',
+   tasks:[
+     {id:'t1', text:'List networks: <code>docker network ls</code>',
+      check: c => /^docker\s+network\s+ls/.test(c)},
+     {id:'t2', text:'Create a bridge network: <code>docker network create --driver bridge app-network</code>',
+      check: c => /^docker\s+network\s+create\s+\w+/.test(c)},
+     {id:'t3', text:'Run container on custom network: <code>docker run -d --network app-network --name api nginx:alpine</code>',
+      check: c => /^docker\s+run.*--network\s+\w+/.test(c)},
+     {id:'t4', text:'Inspect the network: <code>docker network inspect app-network</code>',
+      check: c => /^docker\s+network\s+inspect\s+\w+/.test(c)},
+     {id:'t5', text:'Remove the network: <code>docker network rm app-network</code>',
+      check: c => /^docker\s+network\s+rm\s+\w+/.test(c)},
+   ]},
+  {id:'e8', title:'Building Images', badge:'hard',
+   desc:'Write Dockerfiles and build custom images.',
+   tasks:[
+     {id:'t1', text:'Show a sample Dockerfile: <code>dockerfile show</code>',
+      check: c => /^dockerfile\s+show/.test(c)},
+     {id:'t2', text:'Build an image: <code>docker build -t myapp:v1 .</code>',
+      check: c => /^docker\s+build\s+.*-t\s+\w+.*\.|docker\s+build\s+.*\.\s+-t\s+\w+/.test(c)},
+     {id:'t3', text:'List images to see your new image: <code>docker images</code>',
+      check: c => /^docker\s+images/.test(c)},
+     {id:'t4', text:'Tag the image: <code>docker tag myapp:v1 myapp:latest</code>',
+      check: c => /^docker\s+tag\s+\S+\s+\S+/.test(c)},
+     {id:'t5', text:'Remove an image: <code>docker rmi myapp:v1</code>',
+      check: c => /^docker\s+rmi\s+\S+/.test(c)},
+   ]},
+  {id:'e9', title:'Docker Compose', badge:'hard',
+   desc:'Define and run multi-container applications with Compose.',
+   tasks:[
+     {id:'t1', text:'Show compose file: <code>compose show</code>',
+      check: c => /^compose\s+show/.test(c)},
+     {id:'t2', text:'Start services: <code>docker compose up -d</code>',
+      check: c => /^docker\s+compose\s+up\s+-d|docker-compose\s+up\s+-d/.test(c)},
+     {id:'t3', text:'List compose services: <code>docker compose ps</code>',
+      check: c => /^docker\s+compose\s+ps|docker-compose\s+ps/.test(c)},
+     {id:'t4', text:'View compose logs: <code>docker compose logs</code>',
+      check: c => /^docker\s+compose\s+logs|docker-compose\s+logs/.test(c)},
+     {id:'t5', text:'Stop and remove services: <code>docker compose down</code>',
+      check: c => /^docker\s+compose\s+down|docker-compose\s+down/.test(c)},
+   ]},
+  {id:'e10', title:'System & Cleanup', badge:'hard',
+   desc:'Monitor resource usage and clean up unused Docker objects.',
+   tasks:[
+     {id:'t1', text:'View container stats: <code>docker stats --no-stream</code>',
+      check: c => /^docker\s+stats/.test(c)},
+     {id:'t2', text:'Check disk usage: <code>docker system df</code>',
+      check: c => /^docker\s+system\s+df/.test(c)},
+     {id:'t3', text:'View system info: <code>docker system info</code>',
+      check: c => /^docker\s+system\s+info|docker\s+info/.test(c)},
+     {id:'t4', text:'Remove stopped containers: <code>docker container prune</code>',
+      check: c => /^docker\s+container\s+prune/.test(c)},
+     {id:'t5', text:'Full cleanup: <code>docker system prune -a</code>',
+      check: c => /^docker\s+system\s+prune/.test(c)},
+   ]},
+];
+
+// ─── Cheatsheet ───────────────────────────────────────────────────────────────
+const CHEATSHEET = [
+  {section:'Images', cmds:[
+    {cmd:'docker images', desc:'List local images'},
+    {cmd:'docker pull nginx:latest', desc:'Pull image from registry'},
+    {cmd:'docker rmi nginx:latest', desc:'Remove an image'},
+    {cmd:'docker build -t myapp:v1 .', desc:'Build image from Dockerfile'},
+    {cmd:'docker tag src:v1 dest:v2', desc:'Tag an image'},
+    {cmd:'docker image prune', desc:'Remove unused images'},
+    {cmd:'docker inspect nginx:latest', desc:'Detailed image metadata'},
+    {cmd:'docker history nginx:latest', desc:'Image layer history'},
+    {cmd:'docker search nginx', desc:'Search Docker Hub'},
+  ]},
+  {section:'Containers', cmds:[
+    {cmd:'docker run -d nginx', desc:'Run container detached'},
+    {cmd:'docker run -it ubuntu bash', desc:'Interactive container shell'},
+    {cmd:'docker run --rm alpine echo hi', desc:'Run and auto-remove'},
+    {cmd:'docker run -p 8080:80 nginx', desc:'Map host:container port'},
+    {cmd:'docker run -e KEY=val nginx', desc:'Set env variable'},
+    {cmd:'docker run -v vol:/data nginx', desc:'Mount named volume'},
+    {cmd:'docker run --name myapp nginx', desc:'Assign container name'},
+    {cmd:'docker run --network mynet nginx', desc:'Use custom network'},
+    {cmd:'docker ps', desc:'List running containers'},
+    {cmd:'docker ps -a', desc:'List all containers'},
+    {cmd:'docker stop myapp', desc:'Stop container (SIGTERM)'},
+    {cmd:'docker start myapp', desc:'Start stopped container'},
+    {cmd:'docker restart myapp', desc:'Restart container'},
+    {cmd:'docker rm myapp', desc:'Remove stopped container'},
+    {cmd:'docker rm -f myapp', desc:'Force remove running container'},
+    {cmd:'docker container prune', desc:'Remove all stopped containers'},
+  ]},
+  {section:'Exec & Logs', cmds:[
+    {cmd:'docker exec myapp ls /app', desc:'Run command in container'},
+    {cmd:'docker exec -it myapp sh', desc:'Interactive shell in container'},
+    {cmd:'docker logs myapp', desc:'View container logs'},
+    {cmd:'docker logs -f myapp', desc:'Follow logs (live tail)'},
+    {cmd:'docker logs --tail 50 myapp', desc:'Last 50 log lines'},
+    {cmd:'docker inspect myapp', desc:'Detailed container metadata'},
+    {cmd:'docker top myapp', desc:'Running processes in container'},
+    {cmd:'docker stats --no-stream', desc:'Container resource usage'},
+    {cmd:'docker port myapp', desc:'List port mappings'},
+    {cmd:'docker diff myapp', desc:'Changed files in container'},
+    {cmd:'docker cp myapp:/etc/nginx .', desc:'Copy from container to host'},
+  ]},
+  {section:'Volumes', cmds:[
+    {cmd:'docker volume create mydata', desc:'Create named volume'},
+    {cmd:'docker volume ls', desc:'List volumes'},
+    {cmd:'docker volume inspect mydata', desc:'Volume details'},
+    {cmd:'docker volume rm mydata', desc:'Remove volume'},
+    {cmd:'docker volume prune', desc:'Remove unused volumes'},
+  ]},
+  {section:'Networking', cmds:[
+    {cmd:'docker network ls', desc:'List networks'},
+    {cmd:'docker network create mynet', desc:'Create bridge network'},
+    {cmd:'docker network inspect mynet', desc:'Network details'},
+    {cmd:'docker network connect mynet ctr', desc:'Connect container to network'},
+    {cmd:'docker network disconnect mynet ctr', desc:'Disconnect container'},
+    {cmd:'docker network rm mynet', desc:'Remove network'},
+    {cmd:'docker network prune', desc:'Remove unused networks'},
+  ]},
+  {section:'Compose', cmds:[
+    {cmd:'docker compose up -d', desc:'Start services (detached)'},
+    {cmd:'docker compose down', desc:'Stop & remove services'},
+    {cmd:'docker compose ps', desc:'List compose services'},
+    {cmd:'docker compose logs -f', desc:'Follow service logs'},
+    {cmd:'docker compose build', desc:'Build/rebuild services'},
+    {cmd:'docker compose pull', desc:'Pull service images'},
+    {cmd:'docker compose exec svc sh', desc:'Shell into service'},
+    {cmd:'docker compose restart svc', desc:'Restart a service'},
+    {cmd:'docker compose scale web=3', desc:'Scale service replicas'},
+  ]},
+  {section:'System', cmds:[
+    {cmd:'docker version', desc:'Client and server version'},
+    {cmd:'docker info', desc:'System-wide info'},
+    {cmd:'docker system df', desc:'Disk usage breakdown'},
+    {cmd:'docker system prune -a', desc:'Remove all unused objects'},
+    {cmd:'docker events', desc:'Real-time server events'},
+  ]},
+];
+
+// ─── Compose state ────────────────────────────────────────────────────────────
+let composeServices = {};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function out(html, cls=''){
+  const d = document.createElement('div');
+  d.className = 'out-line' + (cls?' '+cls:'');
+  d.innerHTML = html;
+  document.getElementById('output').appendChild(d);
+}
+
+function printPrompt(cmd){
+  const d = document.createElement('div');
+  d.className = 'line';
+  d.innerHTML = `<span class="prompt">$ &nbsp;</span><span class="cmd-echo">${esc(cmd)}</span>`;
+  document.getElementById('output').appendChild(d);
+}
+
+function scroll(){ const t=document.getElementById('terminal'); t.scrollTop=t.scrollHeight; }
+function focusInput(){ document.getElementById('cmd-input').focus(); }
+
+function resolveContainer(nameOrId){
+  const all = Object.values(containers);
+  return all.find(c => c.name===nameOrId || c.id.startsWith(nameOrId) || shortId(c.id)===nameOrId);
+}
+
+function resolveImage(ref){
+  if(IMAGES[ref]) return IMAGES[ref];
+  if(customImages[ref]) return customImages[ref];
+  // try adding :latest
+  const withLatest = ref.includes(':') ? null : ref+':latest';
+  if(withLatest && IMAGES[withLatest]) return IMAGES[withLatest];
+  if(withLatest && customImages[withLatest]) return customImages[withLatest];
+  return null;
+}
+
+function allImages(){
+  return {...IMAGES, ...customImages};
+}
+
+function containerIP(c){
+  return '172.17.0.' + (Object.keys(containers).indexOf(c.id) + 2);
+}
+
+// ─── Main executor ────────────────────────────────────────────────────────────
+function exec(raw){
+  const cmd = raw.trim();
+  if(!cmd) return;
+  cmdHistory.unshift(cmd);
+  histIndex = -1;
+  printPrompt(cmd);
+  checkTask(cmd);
+
+  const args = parseArgs(cmd);
+  if(!args.length){ scroll(); return; }
+
+  const base = args[0];
+  if(base === 'docker') runDocker(args.slice(1), cmd);
+  else if(base === 'docker-compose') runCompose(args.slice(1), cmd);
+  else if(base === 'dockerfile') runDockerfileCmd(args.slice(1));
+  else if(base === 'compose') runComposeAlias(args.slice(1));
+  else if(base === 'clear') document.getElementById('output').innerHTML='';
+  else if(base === 'help') showHelp();
+  else if(base === 'reset') { resetAll(); showWelcome(); }
+  else out(`${esc(base)}: command not found. Try <span style="color:var(--yellow)">docker</span> or <span style="color:var(--yellow)">help</span>`, 'out-err');
+
+  updateStatePanel();
+  scroll();
+}
+
+function parseArgs(cmd){
+  const args=[];let cur='';let inQ=false;let qC='';
+  for(let i=0;i<cmd.length;i++){
+    const c=cmd[i];
+    if(inQ){if(c===qC)inQ=false;else cur+=c;}
+    else if(c==='"'||c==="'"){inQ=true;qC=c;}
+    else if(c===' '||c==='\t'){if(cur){args.push(cur);cur='';}}
+    else cur+=c;
+  }
+  if(cur)args.push(cur);
+  return args;
+}
+
+// ─── Docker command router ────────────────────────────────────────────────────
+function runDocker(args, raw){
+  if(!args.length){ out('Usage: docker [OPTIONS] COMMAND\nTry: docker help', 'out-dim'); return; }
+  const sub = args[0];
+  switch(sub){
+    case 'version': cmdVersion(); break;
+    case 'info': case 'system': {
+      if(sub==='system'){ runDockerSystem(args.slice(1)); break; }
+      cmdInfo(); break;
+    }
+    case 'pull':   cmdPull(args.slice(1)); break;
+    case 'images': case 'image': {
+      if(sub==='image'&&args[1]==='prune'){ cmdImagePrune(); break; }
+      if(sub==='image'&&args[1]==='ls')  { cmdImages(args.slice(2)); break; }
+      cmdImages(args.slice(1)); break;
+    }
+    case 'rmi':    cmdRmi(args.slice(1)); break;
+    case 'build':  cmdBuild(args.slice(1)); break;
+    case 'tag':    cmdTag(args.slice(1)); break;
+    case 'history':cmdHistory2(args.slice(1)); break;
+    case 'search': cmdSearch(args.slice(1)); break;
+    case 'run':    cmdRun(args.slice(1)); break;
+    case 'ps':     cmdPs(args.slice(1)); break;
+    case 'start':  cmdStart(args.slice(1)); break;
+    case 'stop':   cmdStop(args.slice(1)); break;
+    case 'restart':cmdRestart(args.slice(1)); break;
+    case 'rm':     cmdRm(args.slice(1)); break;
+    case 'exec':   cmdExec(args.slice(1)); break;
+    case 'logs':   cmdLogs(args.slice(1)); break;
+    case 'inspect':cmdInspect(args.slice(1)); break;
+    case 'top':    cmdTop(args.slice(1)); break;
+    case 'stats':  cmdStats(args.slice(1)); break;
+    case 'port':   cmdPort(args.slice(1)); break;
+    case 'diff':   cmdDiff(args.slice(1)); break;
+    case 'cp':     cmdCp(args.slice(1)); break;
+    case 'network':runDockerNetwork(args.slice(1)); break;
+    case 'volume': runDockerVolume(args.slice(1)); break;
+    case 'container': runDockerContainer(args.slice(1)); break;
+    case 'compose': runCompose(args.slice(1)); break;
+    case 'events': cmdEvents(); break;
+    case 'help': showHelp(); break;
+    default: out(`docker: '${esc(sub)}' is not a docker command.\nSee 'docker help'`,'out-err');
+  }
+}
+
+// ─── Image commands ───────────────────────────────────────────────────────────
+function cmdVersion(){
+  out(`Client: Docker Engine - Community`);
+  out(` Version:           26.1.0`);
+  out(` API version:       1.45`);
+  out(` OS/Arch:           linux/amd64`,'out-dim');
+  out(``);
+  out(`Server: Docker Engine - Community (simulated)`);
+  out(` Engine:`);
+  out(`  Version:          26.1.0`);
+  out(`  API version:      1.45 (minimum version 1.24)`,'out-dim');
+}
+
+function cmdInfo(){
+  const runCount = Object.values(containers).filter(c=>c.status==='running').length;
+  const stopCount = Object.values(containers).filter(c=>c.status!=='running').length;
+  out(`Client: Docker Engine - Community`,'out-blue');
+  out(` Context:    default\n Namespace:  moby\n Debug Mode: false`,'out-dim');
+  out(``);
+  out(`Server:`,'out-blue');
+  out(` Containers: ${runCount+stopCount}`);
+  out(`  Running: ${runCount}`,'out-ok');
+  out(`  Paused: 0\n  Stopped: ${stopCount}`);
+  out(` Images: ${Object.keys(allImages()).length}`);
+  out(` Server Version: 26.1.0\n Operating System: Ubuntu 22.04.3 LTS\n Kernel Version: 5.15.0-94-generic\n OSType: linux\n Architecture: x86_64\n CPUs: 4\n Total Memory: 7.782GiB`,'out-dim');
+}
+
+function cmdPull(args){
+  const ref = args[0];
+  if(!ref){ out('Usage: docker pull IMAGE[:TAG]','out-err'); return; }
+  const fullRef = ref.includes(':') ? ref : ref+':latest';
+  if(allImages()[fullRef]){
+    out(`${fullRef}: Pulling from library/${ref.split(':')[0]}`,'out-pull');
+    out(`Digest: sha256:${makeId(64)}`,'out-dim');
+    out(`Status: Image is up to date for ${fullRef}`,'out-ok');
+  } else {
+    const fakeId = makeId(64);
+    IMAGES[fullRef] = {id:fakeId, size:'50MB', created:'just now', arch:'amd64'};
+    out(`${fullRef}: Pulling from library/${ref.split(':')[0]}`,'out-pull');
+    out(`a1b2c3d4e5f6: Pull complete`,'out-dim');
+    out(`b2c3d4e5f6a1: Pull complete`,'out-dim');
+    out(`Digest: sha256:${fakeId}`,'out-dim');
+    out(`Status: Downloaded newer image for ${fullRef}`,'out-ok');
+  }
+}
+
+function cmdImages(args){
+  const imgs = allImages();
+  const q = args.find(a=>!a.startsWith('-'));
+  const hdr = 'REPOSITORY'.padEnd(25)+'TAG'.padEnd(12)+'IMAGE ID'.padEnd(14)+'CREATED'.padEnd(16)+'SIZE';
+  out(hdr, 'out-dim');
+  Object.entries(imgs).forEach(([ref,img])=>{
+    if(q && !ref.includes(q)) return;
+    const [repo,tag] = ref.split(':');
+    out(`${repo.padEnd(25)}${(tag||'latest').padEnd(12)}${shortId(img.id).padEnd(14)}${img.created.padEnd(16)}${img.size}`);
+  });
+}
+
+function cmdRmi(args){
+  const force = args.includes('-f');
+  const targets = args.filter(a=>!a.startsWith('-'));
+  targets.forEach(ref=>{
+    const fullRef = ref.includes(':')?ref:ref+':latest';
+    if(!allImages()[fullRef]){ out(`Error: No such image: ${esc(ref)}`,'out-err'); return; }
+    const inUse = Object.values(containers).find(c=>c.image===fullRef);
+    if(inUse && !force){ out(`Error: image is being used by container ${shortId(inUse.id)}\nUse -f to force`,'out-err'); return; }
+    if(IMAGES[fullRef]) delete IMAGES[fullRef];
+    if(customImages[fullRef]) delete customImages[fullRef];
+    out(`Untagged: ${esc(fullRef)}`);
+    out(`Deleted: sha256:${makeId(64)}`, 'out-dim');
+  });
+}
+
+function cmdBuild(args){
+  const tIdx = args.indexOf('-t');
+  const tag = tIdx>=0 ? args[tIdx+1] : null;
+  const ctx = args.find(a=>!a.startsWith('-')&&a!==tag) || '.';
+  if(!tag){ out('docker build: -t flag required (e.g. docker build -t myapp:v1 .)','out-warn'); return; }
+  const fullRef = tag.includes(':')?tag:tag+':latest';
+  out(`[+] Building...`,'out-blue');
+  out(`[+] Building 0.0s (0/5)  internal booting buildkit`,'out-dim');
+  out(` => [internal] load .dockerignore`,'out-dim');
+  out(` => [internal] load build definition from Dockerfile`,'out-dim');
+  out(` => [1/3] FROM ubuntu:22.04`,'out-dim');
+  out(` => [2/3] RUN apt-get update && apt-get install -y curl`,'out-dim');
+  out(` => [3/3] COPY . /app`,'out-dim');
+  out(` => exporting to image`,'out-dim');
+  out(` => => writing image sha256:${makeId(16)}`,'out-dim');
+  out(` => => naming to docker.io/library/${esc(fullRef)}`);
+  const newId = makeId(64);
+  customImages[fullRef] = {id:newId, size:'185MB', created:'just now', arch:'amd64'};
+  out(`Successfully built ${shortId(newId)}`,'out-ok');
+  out(`Successfully tagged ${esc(fullRef)}`,'out-ok');
+}
+
+function cmdTag(args){
+  if(args.length<2){ out('Usage: docker tag SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG]','out-err'); return; }
+  const [src,dest] = args;
+  const srcRef = src.includes(':')?src:src+':latest';
+  const img = allImages()[srcRef];
+  if(!img){ out(`Error: No such image: ${esc(src)}`,'out-err'); return; }
+  const destRef = dest.includes(':')?dest:dest+':latest';
+  customImages[destRef] = {...img};
+  // (silent on success like real docker)
+}
+
+function cmdHistory2(args){
+  const ref = args[0];
+  if(!ref){ out('Usage: docker history IMAGE','out-err'); return; }
+  const fullRef = ref.includes(':')?ref:ref+':latest';
+  if(!allImages()[fullRef]){ out(`Error: No such image: ${esc(ref)}`,'out-err'); return; }
+  out('IMAGE'.padEnd(14)+'CREATED'.padEnd(16)+'CREATED BY'.padEnd(48)+'SIZE', 'out-dim');
+  const layers = [
+    ['CMD ["/bin/sh" "-c" "nginx -g \'daemon off;\'")', '0B'],
+    ['EXPOSE map[80/tcp:{}]','0B'],
+    ['COPY nginx.conf /etc/nginx/nginx.conf','3.2kB'],
+    ['RUN /bin/sh -c apt-get update && apt-get install -y nginx','87.4MB'],
+    ['ENV DEBIAN_FRONTEND=noninteractive','0B'],
+    ['ADD ubuntu:22.04 ...','77.8MB'],
+  ];
+  layers.forEach(([step,size])=>{
+    out(`${makeId(12).padEnd(14)}${'2 weeks ago'.padEnd(16)}${('/bin/sh -c #(nop) '+step).slice(0,47).padEnd(48)}${size}`,'out-dim');
+  });
+}
+
+function cmdSearch(args){
+  const query = args.find(a=>!a.startsWith('-'));
+  if(!query){ out('Usage: docker search TERM','out-err'); return; }
+  out('NAME'.padEnd(30)+'DESCRIPTION'.padEnd(45)+'STARS'.padEnd(8)+'OFFICIAL', 'out-dim');
+  const results = [
+    [query,`The official ${query} image`,Math.floor(Math.random()*10000),'[OK]'],
+    [query+'-official',`Official ${query} Docker image`,Math.floor(Math.random()*5000),'[OK]'],
+    ['bitnami/'+query,`Bitnami ${query} Docker Image`,Math.floor(Math.random()*2000),''],
+    [query+'/alpine',`${query} on Alpine Linux`,Math.floor(Math.random()*1000),''],
+  ];
+  results.forEach(([n,d,s,o])=>{
+    out(`${n.padEnd(30)}${d.slice(0,44).padEnd(45)}${String(s).padEnd(8)}${o}`);
+  });
+}
+
+// ─── Container commands ───────────────────────────────────────────────────────
+function cmdRun(args){
+  const detached = args.includes('-d');
+  const rm = args.includes('--rm');
+  const interactive = args.includes('-it')||args.includes('-i');
+  const ports=[], envs=[], vols=[];
+  let name=null, network='bridge', imgRef=null, cmd=[];
+  let restartPolicy='no';
+
+  for(let i=0;i<args.length;i++){
+    const a=args[i];
+    if(a==='-p'||a==='--publish'){ ports.push(args[++i]); }
+    else if(a.startsWith('-p')){ ports.push(a.slice(2)); }
+    else if(a==='-e'||a==='--env'){ envs.push(args[++i]); }
+    else if(a.startsWith('-e')){ envs.push(a.slice(2)); }
+    else if(a==='-v'||a==='--volume'){ vols.push(args[++i]); }
+    else if(a.startsWith('-v')&&a.length>2){ vols.push(a.slice(2)); }
+    else if(a==='--name'){ name=args[++i]; }
+    else if(a==='--network'){ network=args[++i]; }
+    else if(a==='--restart'){ restartPolicy=args[++i]; }
+    else if(!a.startsWith('-')&&!imgRef){ imgRef=a; }
+    else if(!a.startsWith('-')&&imgRef){ cmd.push(a); }
+  }
+
+  if(!imgRef){ out('docker run: image name required','out-err'); return; }
+
+  // Special hello-world
+  if(imgRef==='hello-world'){
+    out(``);
+    out(`Hello from Docker!`,'out-ok');
+    out(`This message shows that your installation appears to be working correctly.`);
+    out(``);
+    out(`To generate this message, Docker took the following steps:`,'out-dim');
+    out(` 1. The Docker client contacted the Docker daemon.`,'out-dim');
+    out(` 2. The Docker daemon pulled the "hello-world" image from Docker Hub.`,'out-dim');
+    out(` 3. The Docker daemon created a new container from that image.`,'out-dim');
+    out(` 4. The Docker daemon streamed that output to the Docker client.`,'out-dim');
+    return;
+  }
+
+  const fullRef = imgRef.includes(':')?imgRef:imgRef+':latest';
+  const img = allImages()[fullRef];
+  if(!img){
+    out(`Unable to find image '${esc(fullRef)}' locally`,'out-warn');
+    out(`Pulling from docker.io/library/${esc(imgRef.split(':')[0])}...`,'out-pull');
+    IMAGES[fullRef]={id:makeId(64),size:'50MB',created:'just now',arch:'amd64'};
+    out(`Status: Downloaded newer image for ${esc(fullRef)}`,'out-ok');
+  }
+
+  if(name && Object.values(containers).find(c=>c.name===name)){
+    out(`docker: Error response from daemon: Conflict. The container name "/${esc(name)}" is already in use.`,'out-err');
+    out(`Use 'docker rm ${esc(name)}' to remove it first.`,'out-dim');
+    return;
+  }
+
+  const id = makeId(64);
+  const cname = name || imgRef.split(':')[0].replace(/\//g,'-') + '_' + makeId(4);
+  const ctr = {
+    id, name:cname, image:fullRef, status:'running',
+    ports, envs, volumes:vols, network, cmd,
+    created:now(), restartPolicy, rm,
+    logs:[
+      `${now()} [${cname}] Container started`,
+      `${now()} [${cname}] Listening on internal port`,
+    ]
+  };
+
+  // Add image-specific log lines
+  if(imgRef.includes('nginx'))  ctr.logs.push(`${now()} nginx: the configuration file /etc/nginx/nginx.conf syntax is ok`, `${now()} nginx: start worker process`);
+  if(imgRef.includes('mysql'))  ctr.logs.push(`${now()} [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.36'`);
+  if(imgRef.includes('redis'))  ctr.logs.push(`${now()} * Ready to accept connections tcp`);
+  if(imgRef.includes('postgres'))ctr.logs.push(`${now()} database system is ready to accept connections`);
+
+  // Register volume names
+  vols.forEach(v => {
+    const [volName] = v.split(':');
+    if(!volName.startsWith('/') && !volumes[volName]){
+      volumes[volName]={name:volName,driver:'local',created:now(),containers:[cname]};
+    }
+  });
+
+  containers[id] = ctr;
+
+  if(network && networks[network]){
+    networks[network].containers.push(cname);
+  } else if(network && !networks[network]){
+    networks[network]={id:makeId(12),driver:'bridge',scope:'local',created:now(),containers:[cname]};
+  }
+
+  if(detached){
+    out(shortId(id),'out-ok');
+  } else if(interactive){
+    out(`root@${shortId(id)}:/#  (interactive session — type 'exit' to quit)`,'out-info');
+    out(`Commands available: ls, cat, echo, ps, env, apt, uname...`,'out-dim');
+    // Simulate exiting
+    out(`exit`,'out-dim');
+    if(rm){ delete containers[id]; }
+    else { containers[id].status='exited'; }
+  } else {
+    // Foreground — show some output then exit
+    if(cmd.length) out(cmd.join(' '),'out-ok');
+    else out(`${cname} started...`,'out-dim');
+    if(rm){ delete containers[id]; }
+    else { containers[id].status='exited'; }
+  }
+}
+
+function cmdPs(args){
+  const all = args.includes('-a');
+  const list = Object.values(containers).filter(c=>all?true:c.status==='running');
+  out('CONTAINER ID'.padEnd(14)+'IMAGE'.padEnd(22)+'COMMAND'.padEnd(20)+'CREATED'.padEnd(16)+'STATUS'.padEnd(14)+'PORTS'.padEnd(22)+'NAMES', 'out-dim');
+  if(!list.length){ out('(no containers)', 'out-dim'); return; }
+  list.forEach(c=>{
+    const portStr = c.ports.map(p=>p+'->tcp').join(', ').slice(0,20)||'';
+    const statusStr = c.status==='running'?'Up 2 minutes':`Exited (0) 1 minute ago`;
+    const cmdStr = (c.cmd[0]||'"/bin/sh"').slice(0,18);
+    out(`${shortId(c.id).padEnd(14)}${c.image.padEnd(22)}${cmdStr.padEnd(20)}${'just now'.padEnd(16)}${statusStr.padEnd(14)}${portStr.padEnd(22)}${c.name}`);
+  });
+}
+
+function cmdStop(args){
+  const targets = args.filter(a=>!a.startsWith('-'));
+  targets.forEach(t=>{
+    const c=resolveContainer(t);
+    if(!c){ out(`Error: No such container: ${esc(t)}`,'out-err'); return; }
+    if(c.status!=='running'){ out(`${esc(t)}`,'out-warn'); return; }
+    c.status='exited';
+    out(esc(c.name));
+  });
+}
+
+function cmdStart(args){
+  const targets = args.filter(a=>!a.startsWith('-'));
+  targets.forEach(t=>{
+    const c=resolveContainer(t);
+    if(!c){ out(`Error: No such container: ${esc(t)}`,'out-err'); return; }
+    if(c.status==='running'){ out(`${esc(t)}`,'out-warn'); return; }
+    c.status='running';
+    out(esc(c.name));
+  });
+}
+
+function cmdRestart(args){
+  const targets = args.filter(a=>!a.startsWith('-'));
+  targets.forEach(t=>{
+    const c=resolveContainer(t);
+    if(!c){ out(`Error: No such container: ${esc(t)}`,'out-err'); return; }
+    c.status='running';
+    out(esc(c.name));
+  });
+}
+
+function cmdRm(args){
+  const force = args.includes('-f');
+  const targets = args.filter(a=>!a.startsWith('-'));
+  targets.forEach(t=>{
+    const c=resolveContainer(t);
+    if(!c){ out(`Error: No such container: ${esc(t)}`,'out-err'); return; }
+    if(c.status==='running' && !force){ out(`Error: You cannot remove a running container ${shortId(c.id)}.\nStop it first or use -f`,'out-err'); return; }
+    delete containers[c.id];
+    out(esc(c.name));
+  });
+}
+
+function cmdExec(args){
+  const itIdx = args.findIndex(a=>a==='-it'||a==='-i'||a==='-t');
+  const nonFlags = args.filter(a=>!a.startsWith('-'));
+  const cName = nonFlags[0];
+  const execCmd = nonFlags.slice(1).join(' ');
+  if(!cName){ out('Usage: docker exec [OPTIONS] CONTAINER COMMAND','out-err'); return; }
+  const c = resolveContainer(cName);
+  if(!c){ out(`Error: No such container: ${esc(cName)}`,'out-err'); return; }
+  if(c.status!=='running'){ out(`Error: Container ${esc(cName)} is not running`,'out-err'); return; }
+
+  const interactive = args.includes('-it')||args.includes('-i');
+  if(interactive && (!execCmd||execCmd==='sh'||execCmd==='bash'||execCmd==='/bin/sh'||execCmd==='/bin/bash')){
+    out(`root@${shortId(c.id)}:/# (interactive shell in ${esc(c.name)})`, 'out-info');
+    out(`# ls`, 'out-dim');
+    out(`app  bin  etc  lib  tmp  usr  var`, 'out-dim');
+    out(`# exit`, 'out-dim');
+    return;
+  }
+
+  // Simulate common exec commands
+  if(!execCmd){ out('Usage: docker exec CONTAINER COMMAND','out-err'); return; }
+  if(execCmd.startsWith('ls')){ out(`bin  boot  dev  etc  lib  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var`); }
+  else if(execCmd==='pwd'){ out(`/`); }
+  else if(execCmd==='whoami'){ out(`root`); }
+  else if(execCmd==='env'){ c.envs.forEach(e=>out(esc(e))); out('PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin','out-dim'); }
+  else if(execCmd.startsWith('cat ')){ out(`(contents of ${esc(execCmd.slice(4))} in container ${esc(c.name)})`,'out-dim'); }
+  else { out(`${esc(execCmd)}: executed in container ${esc(c.name)}`,'out-ok'); }
+}
+
+function cmdLogs(args){
+  const follow = args.includes('-f');
+  const tail = args.includes('--tail') ? parseInt(args[args.indexOf('--tail')+1]||10) : null;
+  const cName = args.find(a=>!a.startsWith('-'));
+  if(!cName){ out('Usage: docker logs [OPTIONS] CONTAINER','out-err'); return; }
+  const c = resolveContainer(cName);
+  if(!c){ out(`Error: No such container: ${esc(cName)}`,'out-err'); return; }
+  const lines = tail ? c.logs.slice(-tail) : c.logs;
+  lines.forEach(l=>out(esc(l)));
+  if(follow){ out(`${now()} [${c.name}] ...following logs (press Ctrl+C to stop)`,'out-dim'); }
+}
+
+function cmdInspect(args){
+  const target = args.find(a=>!a.startsWith('-'));
+  if(!target){ out('Usage: docker inspect NAME|ID','out-err'); return; }
+  const c = resolveContainer(target);
+  if(c){
+    const json = {
+      Id: c.id,
+      Name: '/'+c.name,
+      Created: c.created,
+      State: {Status:c.status, Running:c.status==='running', Pid:Math.floor(Math.random()*10000)},
+      Image: c.image,
+      NetworkSettings: {
+        IPAddress: containerIP(c),
+        Ports: Object.fromEntries(c.ports.map(p=>[p.split(':')[1]+'/tcp',[{HostIp:'0.0.0.0',HostPort:p.split(':')[0]}]]))
+      },
+      Mounts: c.volumes.map(v=>({Type:'volume',Name:v.split(':')[0],Destination:v.split(':')[1]||v})),
+      Config: {Env:c.envs, Cmd:c.cmd, Image:c.image}
+    };
+    out(`[`, 'out-dim');
+    out(`  ${esc(JSON.stringify(json, null, 2).replace(/^/gm,'  ').trim())}`);
+    out(`]`, 'out-dim');
+    return;
+  }
+  const img = allImages()[target.includes(':')?target:target+':latest'];
+  if(img){
+    const json = {Id:'sha256:'+img.id, RepoTags:[target], Size:img.size, Architecture:img.arch, Created:img.created};
+    out(`[\n  ${esc(JSON.stringify(json,null,2))}\n]`);
+    return;
+  }
+  out(`Error: No such object: ${esc(target)}`,'out-err');
+}
+
+function cmdTop(args){
+  const cName = args[0];
+  const c = resolveContainer(cName);
+  if(!c){ out(`Error: No such container: ${esc(cName||'')}`,'out-err'); return; }
+  if(c.status!=='running'){ out(`Error: Container not running`,'out-err'); return; }
+  out('UID'.padEnd(10)+'PID'.padEnd(8)+'PPID'.padEnd(8)+'C'.padEnd(4)+'STIME'.padEnd(8)+'TTY'.padEnd(10)+'TIME'.padEnd(10)+'CMD','out-dim');
+  out(`${'root'.padEnd(10)}${'1'.padEnd(8)}${'0'.padEnd(8)}${'0'.padEnd(4)}${'12:00'.padEnd(8)}${'?'.padEnd(10)}${'00:00:01'.padEnd(10)}${c.image.split(':')[0]}`);
+  out(`${'root'.padEnd(10)}${'7'.padEnd(8)}${'1'.padEnd(8)}${'0'.padEnd(4)}${'12:00'.padEnd(8)}${'?'.padEnd(10)}${'00:00:00'.padEnd(10)}sleep 3600`,'out-dim');
+}
+
+function cmdStats(args){
+  const noStream = args.includes('--no-stream');
+  const running = Object.values(containers).filter(c=>c.status==='running');
+  out('CONTAINER ID'.padEnd(14)+'NAME'.padEnd(20)+'CPU %'.padEnd(10)+'MEM USAGE/LIMIT'.padEnd(24)+'MEM %'.padEnd(10)+'NET I/O'.padEnd(18)+'BLOCK I/O','out-dim');
+  if(!running.length){ out('(no running containers)','out-dim'); return; }
+  running.forEach(c=>{
+    const cpu = (Math.random()*5).toFixed(2)+'%';
+    const mem = Math.floor(Math.random()*500)+'MiB / 7.782GiB';
+    const memPct = (Math.random()*10).toFixed(2)+'%';
+    const net = `${(Math.random()*10).toFixed(1)}kB / ${(Math.random()*50).toFixed(1)}kB`;
+    const blk = `${(Math.random()*100).toFixed(0)}kB / ${(Math.random()*200).toFixed(0)}kB`;
+    out(`${shortId(c.id).padEnd(14)}${c.name.padEnd(20)}${cpu.padEnd(10)}${mem.padEnd(24)}${memPct.padEnd(10)}${net.padEnd(18)}${blk}`);
+  });
+}
+
+function cmdPort(args){
+  const cName = args[0];
+  const c = resolveContainer(cName);
+  if(!c){ out(`Error: No such container: ${esc(cName||'')}`,'out-err'); return; }
+  if(!c.ports.length){ out(`(no ports published)`,'out-dim'); return; }
+  c.ports.forEach(p=>{
+    const [host,cport]=p.split(':');
+    out(`${cport}/tcp -> 0.0.0.0:${host}`);
+  });
+}
+
+function cmdDiff(args){
+  const cName = args[0];
+  const c = resolveContainer(cName);
+  if(!c){ out(`Error: No such container: ${esc(cName||'')}`,'out-err'); return; }
+  out(`C /etc`,'out-warn');
+  out(`A /etc/nginx/conf.d/custom.conf`,'out-ok');
+  out(`C /var/log/nginx`,'out-warn');
+  out(`A /var/log/nginx/access.log`,'out-ok');
+}
+
+function cmdCp(args){
+  if(args.length<2){ out('Usage: docker cp CONTAINER:SRC_PATH DEST_PATH','out-err'); return; }
+  out(`Successfully copied files`,'out-ok');
+}
+
+function cmdEvents(){
+  out(`${now()} container create ${makeId(12)} (image=nginx, name=webserver)`,'out-dim');
+  out(`${now()} network connect bridge ${makeId(12)}`,'out-dim');
+  out(`${now()} container start ${makeId(12)} (image=nginx, name=webserver)`,'out-ok');
+  out(`(listening for events...)`,'out-dim');
+}
+
+// ─── Network subcommands ──────────────────────────────────────────────────────
+function runDockerNetwork(args){
+  const sub = args[0];
+  switch(sub){
+    case 'ls': {
+      out('NETWORK ID'.padEnd(14)+'NAME'.padEnd(20)+'DRIVER'.padEnd(12)+'SCOPE','out-dim');
+      Object.entries(networks).forEach(([name,n])=>{
+        out(`${shortId(n.id+'000000000000').padEnd(14)}${name.padEnd(20)}${n.driver.padEnd(12)}${n.scope}`);
+      });
+      break;
+    }
+    case 'create': {
+      const driver = args.includes('--driver') ? args[args.indexOf('--driver')+1] : 'bridge';
+      const name = args.find(a=>!a.startsWith('-')&&a!=='create'&&a!==driver);
+      if(!name){ out('Usage: docker network create [--driver DRIVER] NAME','out-err'); break; }
+      if(networks[name]){ out(`Error: network with name ${esc(name)} already exists`,'out-err'); break; }
+      const id = makeId(12);
+      networks[name]={id,driver,scope:'local',created:now(),containers:[]};
+      out(id,'out-ok');
+      break;
+    }
+    case 'inspect': {
+      const name = args[1];
+      const n = networks[name];
+      if(!n){ out(`Error: No such network: ${esc(name)}`,'out-err'); break; }
+      const json = {Name:name,Id:n.id,Driver:n.driver,Scope:n.scope,
+        Containers:Object.fromEntries(n.containers.map(cn=>[makeId(12),{Name:cn,IPv4Address:'172.18.0.'+Math.floor(Math.random()*10+2)+'/16'}]))};
+      out(`[\n  ${esc(JSON.stringify(json,null,2))}\n]`);
+      break;
+    }
+    case 'rm': case 'remove': {
+      const name = args[1];
+      if(!networks[name]){ out(`Error: No such network: ${esc(name)}`,'out-err'); break; }
+      if(['bridge','host','none'].includes(name)){ out(`Error: ${esc(name)} is a pre-defined network and cannot be removed`,'out-err'); break; }
+      delete networks[name];
+      out(esc(name));
+      break;
+    }
+    case 'connect': {
+      const [,netName,ctrName]=args;
+      const c=resolveContainer(ctrName);
+      if(!c||!networks[netName]){ out(`Error: network or container not found`,'out-err'); break; }
+      if(!networks[netName].containers.includes(c.name)) networks[netName].containers.push(c.name);
+      break;
+    }
+    case 'disconnect': {
+      const [,netName,ctrName]=args;
+      if(networks[netName]) networks[netName].containers=networks[netName].containers.filter(n=>n!==ctrName);
+      break;
+    }
+    case 'prune': {
+      const empty = Object.entries(networks).filter(([n,v])=>!['bridge','host','none'].includes(n)&&!v.containers.length);
+      empty.forEach(([n])=>delete networks[n]);
+      out(`Deleted Networks:\n${empty.map(([n])=>n).join('\n')||'(none)'}`, 'out-ok');
+      break;
+    }
+    default: out(`docker network: '${esc(sub)}' is not a network command`,'out-err');
+  }
+}
+
+// ─── Volume subcommands ───────────────────────────────────────────────────────
+function runDockerVolume(args){
+  const sub = args[0];
+  switch(sub){
+    case 'ls': {
+      out('DRIVER'.padEnd(12)+'VOLUME NAME','out-dim');
+      if(!Object.keys(volumes).length){ out('(no volumes)','out-dim'); break; }
+      Object.entries(volumes).forEach(([name,v])=>{
+        out(`${'local'.padEnd(12)}${esc(name)}`);
+      });
+      break;
+    }
+    case 'create': {
+      const name = args.find(a=>!a.startsWith('-')&&a!=='create');
+      if(!name){ out('Usage: docker volume create NAME','out-err'); break; }
+      volumes[name]={name,driver:'local',created:now(),containers:[]};
+      out(esc(name),'out-ok');
+      break;
+    }
+    case 'inspect': {
+      const name = args[1];
+      if(!volumes[name]){ out(`Error: No such volume: ${esc(name)}`,'out-err'); break; }
+      const json = {CreatedAt:volumes[name].created,Driver:'local',Mountpoint:`/var/lib/docker/volumes/${name}/_data`,Name:name,Scope:'local'};
+      out(`[\n  ${esc(JSON.stringify(json,null,2))}\n]`);
+      break;
+    }
+    case 'rm': case 'remove': {
+      const name = args[1];
+      if(!volumes[name]){ out(`Error: No such volume: ${esc(name)}`,'out-err'); break; }
+      delete volumes[name];
+      out(esc(name),'out-ok');
+      break;
+    }
+    case 'prune': {
+      const unused = Object.entries(volumes).filter(([n,v])=>!v.containers.length);
+      unused.forEach(([n])=>delete volumes[n]);
+      out(`Deleted Volumes:\n${unused.map(([n])=>n).join('\n')||'(none)'}`, 'out-ok');
+      out(`Total reclaimed space: ${unused.length*100}MB`,'out-dim');
+      break;
+    }
+    default: out(`docker volume: '${esc(sub)}' is not a volume command`,'out-err');
+  }
+}
+
+// ─── Container subcommand ─────────────────────────────────────────────────────
+function runDockerContainer(args){
+  const sub = args[0];
+  if(sub==='prune'){
+    const stopped = Object.entries(containers).filter(([,c])=>c.status!=='running');
+    stopped.forEach(([id])=>delete containers[id]);
+    out(`Deleted Containers:\n${stopped.map(([,c])=>c.name).join('\n')||'(none)'}`, 'out-ok');
+    out(`Total reclaimed space: ${stopped.length*50}MB`,'out-dim');
+  } else { out(`docker container: unknown sub-command '${esc(sub)}'`,'out-err'); }
+}
+
+// ─── System subcommands ───────────────────────────────────────────────────────
+function runDockerSystem(args){
+  const sub = args[0];
+  switch(sub){
+    case 'df': {
+      out('TYPE'.padEnd(20)+'TOTAL'.padEnd(10)+'ACTIVE'.padEnd(10)+'SIZE'.padEnd(14)+'RECLAIMABLE','out-dim');
+      const imgCount = Object.keys(allImages()).length;
+      const ctrCount = Object.keys(containers).length;
+      const volCount = Object.keys(volumes).length;
+      out(`${'Images'.padEnd(20)}${String(imgCount).padEnd(10)}${String(Object.values(containers).filter(c=>c.status==='running').length).padEnd(10)}${'2.14GB'.padEnd(14)}892MB`);
+      out(`${'Containers'.padEnd(20)}${String(ctrCount).padEnd(10)}${String(Object.values(containers).filter(c=>c.status==='running').length).padEnd(10)}${'156MB'.padEnd(14)}${Object.values(containers).filter(c=>c.status!=='running').length*50}MB`);
+      out(`${'Local Volumes'.padEnd(20)}${String(volCount).padEnd(10)}${'0'.padEnd(10)}${'0B'.padEnd(14)}0B`);
+      out(`${'Build Cache'.padEnd(20)}${'0'.padEnd(10)}${'0'.padEnd(10)}${'0B'.padEnd(14)}0B`);
+      break;
+    }
+    case 'info': cmdInfo(); break;
+    case 'prune': {
+      const force = args.includes('-a') || args.includes('--all');
+      const stopped = Object.entries(containers).filter(([,c])=>c.status!=='running');
+      stopped.forEach(([id])=>delete containers[id]);
+      if(force){ Object.keys(IMAGES).forEach(k=>delete IMAGES[k]); Object.keys(customImages).forEach(k=>delete customImages[k]); }
+      Object.entries(networks).filter(([n])=>!['bridge','host','none'].includes(n)).forEach(([n])=>delete networks[n]);
+      out(`Deleted Containers: ${stopped.length}`,'out-ok');
+      out(`Deleted Networks: pruned`,'out-ok');
+      if(force) out(`Deleted Images: all`,'out-ok');
+      out(`Total reclaimed space: ${Math.floor(Math.random()*2000)}MB`,'out-dim');
+      break;
+    }
+    default: out(`docker system: unknown command '${esc(sub)}'`,'out-err');
+  }
+}
+
+// ─── Image prune ──────────────────────────────────────────────────────────────
+function cmdImagePrune(){
+  const dangling = Object.entries(customImages).filter(([ref])=>!Object.values(containers).find(c=>c.image===ref));
+  dangling.forEach(([ref])=>delete customImages[ref]);
+  out(`Deleted Images:\n${dangling.map(([ref])=>ref).join('\n')||'(none)'}`, 'out-ok');
+  out(`Total reclaimed space: ${dangling.length*50}MB`,'out-dim');
+}
+
+// ─── Docker Compose ───────────────────────────────────────────────────────────
+const COMPOSE_SERVICES = ['web','api','db','redis','nginx'];
+const SAMPLE_COMPOSE = `version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+  api:
+    image: node:18-alpine
+    working_dir: /app
+    command: node server.js
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./app:/app
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=myapp
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:`;
+
+function runCompose(args){
+  const sub = args[0];
+  switch(sub){
+    case 'up': {
+      const detached = args.includes('-d');
+      out(`[+] Running 4/4`,'out-blue');
+      ['nginx','api','db','redis'].forEach((svc,i)=>{
+        const id = makeId(64);
+        const imgMap = {nginx:'nginx:alpine',api:'node:18-alpine',db:'postgres:15',redis:'redis:7-alpine'};
+        const portMap = {nginx:['80:80','443:443'],api:['3000:3000'],db:[],redis:['6379:6379']};
+        containers[id]={id,name:`myapp-${svc}-1`,image:imgMap[svc],status:'running',
+          ports:portMap[svc]||[],envs:[],volumes:[],network:'myapp_default',cmd:[],
+          created:now(),rm:false,logs:[`${now()} ${svc} service started`]};
+        composeServices[svc] = id;
+        out(` ✔ Container myapp-${svc}-1  ${'Started'.padEnd(12)}`,'out-ok');
+      });
+      if(!detached) out(`Attaching to myapp-nginx-1, myapp-api-1, myapp-db-1, myapp-redis-1`,'out-dim');
+      break;
+    }
+    case 'down': {
+      out(`[+] Running 4/4`,'out-blue');
+      Object.entries(composeServices).forEach(([svc,id])=>{
+        out(` ✔ Container myapp-${svc}-1  Removed`,'out-ok');
+        delete containers[id];
+      });
+      composeServices = {};
+      out(` ✔ Network myapp_default      Removed`,'out-ok');
+      break;
+    }
+    case 'ps': {
+      out('NAME'.padEnd(22)+'IMAGE'.padEnd(22)+'SERVICE'.padEnd(12)+'STATUS'.padEnd(12)+'PORTS','out-dim');
+      Object.entries(composeServices).forEach(([svc,id])=>{
+        const c=containers[id];
+        if(!c) return;
+        const portMap={nginx:'0.0.0.0:80->80/tcp',api:'0.0.0.0:3000->3000/tcp',db:'',redis:'0.0.0.0:6379->6379/tcp'};
+        out(`${('myapp-'+svc+'-1').padEnd(22)}${(c?.image||'').padEnd(22)}${svc.padEnd(12)}${'running'.padEnd(12)}${portMap[svc]||''}`);
+      });
+      if(!Object.keys(composeServices).length) out('(no compose services running — run: docker compose up -d)','out-dim');
+      break;
+    }
+    case 'logs': {
+      const svc = args.find(a=>!a.startsWith('-')&&a!=='logs');
+      const follow = args.includes('-f');
+      Object.entries(composeServices).forEach(([name,id])=>{
+        if(svc && name!==svc) return;
+        const c = containers[id];
+        if(!c) return;
+        c.logs.forEach(l=>out(`<span style="color:var(--cyan)">${esc(name)}</span>  | ${esc(l)}`));
+      });
+      if(follow) out(`...following (Ctrl+C to stop)`,'out-dim');
+      break;
+    }
+    case 'build':  out(`[+] Building 4 services...`,'out-blue'); out(`✔ Build complete`,'out-ok'); break;
+    case 'pull':   out(`[+] Pulling images for 4 services...`,'out-blue'); out(`✔ All images up to date`,'out-ok'); break;
+    case 'restart':{
+      const svc=args[1];
+      Object.entries(composeServices).filter(([n])=>!svc||n===svc).forEach(([n,id])=>{ if(containers[id]) containers[id].status='running'; out(` ✔ Container myapp-${n}-1  Restarted`,'out-ok'); });
+      break;
+    }
+    case 'exec':{
+      const svc=args[1]; const execCmd=args.slice(2).join(' ');
+      const id=composeServices[svc];
+      if(!id){ out(`No such service: ${esc(svc)}`,'out-err'); break; }
+      out(`(executing in myapp-${esc(svc)}-1)`,'out-dim'); out(esc(execCmd)||'sh');
+      break;
+    }
+    case 'scale': case 'up --scale': out(`Scaling services... (simulated)`,'out-ok'); break;
+    default: out(`docker compose: unknown subcommand '${esc(sub)}'`,'out-err');
+  }
+}
+
+function runComposeAlias(args){
+  if(args[0]==='show'){
+    out(`# docker-compose.yml`,'out-blue');
+    out(esc(SAMPLE_COMPOSE),'out-dim');
+  } else { runCompose(args); }
+}
+
+// ─── Dockerfile helper ────────────────────────────────────────────────────────
+const SAMPLE_DOCKERFILE = `FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \\
+    curl \\
+    nodejs \\
+    npm \\
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first (layer caching)
+COPY package*.json ./
+RUN npm install --production
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN useradd -r -s /bin/false appuser
+USER appuser
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \\
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start application
+CMD ["node", "server.js"]`;
+
+function runDockerfileCmd(args){
+  if(args[0]==='show'){
+    out(`# Dockerfile`,'out-blue');
+    out(esc(SAMPLE_DOCKERFILE),'out-dim');
+    out(``);
+    out(`💡 Key Dockerfile instructions:`,'out-info');
+    out(`  FROM     — base image`,'out-dim');
+    out(`  RUN      — execute command during build`,'out-dim');
+    out(`  COPY/ADD — copy files into image`,'out-dim');
+    out(`  WORKDIR  — set working directory`,'out-dim');
+    out(`  ENV      — set environment variables`,'out-dim');
+    out(`  EXPOSE   — document port (doesn't publish)`,'out-dim');
+    out(`  USER     — set runtime user (security!)`,'out-dim');
+    out(`  CMD      — default run command`,'out-dim');
+    out(`  ENTRYPOINT — fixed entrypoint command`,'out-dim');
+    out(`  HEALTHCHECK — container health check`,'out-dim');
+  } else {
+    out(`Usage: dockerfile show — display sample Dockerfile`,'out-dim');
+  }
+}
+
+// ─── Help ─────────────────────────────────────────────────────────────────────
+function showHelp(){
+  out(`<span style="color:var(--blue);font-weight:700;">🐳 Docker Terminal — Command Reference</span>`);
+  out(``);
+  out(`<b>Images:</b>   <span class="out-dim">docker pull, images, rmi, build, tag, inspect, history, search</span>`);
+  out(`<b>Containers:</b><span class="out-dim">docker run, ps, start, stop, restart, rm, exec, logs, inspect, stats, top, port</span>`);
+  out(`<b>Volumes:</b>  <span class="out-dim">docker volume create/ls/inspect/rm/prune</span>`);
+  out(`<b>Networks:</b> <span class="out-dim">docker network create/ls/inspect/connect/rm/prune</span>`);
+  out(`<b>Compose:</b>  <span class="out-dim">docker compose up/down/ps/logs/build/exec/restart</span>`);
+  out(`<b>System:</b>   <span class="out-dim">docker system df/info/prune, docker stats, docker events</span>`);
+  out(``);
+  out(`<b>Lab helpers:</b>`);
+  out(`  <span style="color:var(--yellow)">dockerfile show</span>  — view a sample Dockerfile`);
+  out(`  <span style="color:var(--yellow)">compose show</span>     — view a sample docker-compose.yml`);
+  out(``);
+  out(`<span class="out-dim">↑/↓ arrows for history · Tab for completion · Click Cheatsheet to insert commands</span>`);
+}
+
+// ─── Exercise system ──────────────────────────────────────────────────────────
+function checkTask(cmd){
+  if(!currentExercise) return;
+  const task = currentExercise.tasks[currentTaskIdx];
+  if(!task) return;
+  if(task.check(cmd)){
+    out(`✅ Task complete!`, 'out-ok');
+    currentTaskIdx++;
+    if(currentTaskIdx >= currentExercise.tasks.length){
+      out(``, '');
+      out(`🎉 Exercise "${currentExercise.title}" completed!`, 'out-ok');
+      doneMap[currentExercise.id] = true;
+      currentExercise = null;
+      currentTaskIdx = 0;
+      document.getElementById('challenge-bar').style.display='none';
+      buildExerciseList();
+    } else { updateChallenge(); }
+  }
+}
+
+function startExercise(ex){
+  currentExercise = ex;
+  currentTaskIdx = 0;
+  document.getElementById('challenge-bar').style.display='block';
+  updateChallenge();
+  out(``, '');
+  out(`<span class="out-blue">▶ Exercise: ${esc(ex.title)}</span>`);
+  out(`<span class="out-dim">${esc(ex.desc)}</span>`);
+  out(`<span class="out-dim">${ex.tasks.length} tasks · Use the sidebar cheatsheet for help</span>`);
+  scroll();
+  buildExerciseList();
+  focusInput();
+}
+
+function updateChallenge(){
+  if(!currentExercise) return;
+  const task = currentExercise.tasks[currentTaskIdx];
+  if(!task) return;
+  document.getElementById('challenge-text').innerHTML =
+    `<span class="out-dim">Task ${currentTaskIdx+1}/${currentExercise.tasks.length}:</span> ${task.text}`;
+  document.getElementById('challenge-hint').classList.remove('visible');
+}
+
+function showHint(){
+  if(!currentExercise) return;
+  const task = currentExercise.tasks[currentTaskIdx];
+  const el = document.getElementById('challenge-hint');
+  el.innerHTML = `💡 ${task.text}`;
+  el.classList.add('visible');
+}
+
+function skipChallenge(){
+  currentTaskIdx++;
+  if(currentExercise && currentTaskIdx >= currentExercise.tasks.length){
+    out(`⏭ Exercise skipped`, 'out-warn');
+    currentExercise = null; currentTaskIdx = 0;
+    document.getElementById('challenge-bar').style.display='none';
+    buildExerciseList();
+  } else { out(`⏭ Task skipped`,'out-warn'); updateChallenge(); }
+  scroll();
+}
+
+function resetExercise(){
+  currentExercise = null; currentTaskIdx = 0;
+  document.getElementById('challenge-bar').style.display='none';
+  buildExerciseList();
+}
+
+// ─── State panel ──────────────────────────────────────────────────────────────
+function updateStatePanel(){
+  // Containers
+  const cEl = document.getElementById('state-containers');
+  const cList = Object.values(containers);
+  if(!cList.length){ cEl.innerHTML='<span style="color:var(--gray);font-size:11px;">No containers yet</span>'; }
+  else {
+    cEl.innerHTML = cList.map(c=>`<div class="state-item">
+      <span style="font-family:monospace;color:var(--cyan);">${esc(shortId(c.id))}</span>
+      <span class="state-badge badge-${c.status==='running'?'running':'exited'}">${c.status}</span>
+      <br><span style="color:var(--white);font-size:12px;">${esc(c.name)}</span>
+      <br><span style="color:var(--gray);font-size:10px;">${esc(c.image)}</span>
+    </div>`).join('');
+  }
+  // Images
+  const iEl = document.getElementById('state-images');
+  iEl.innerHTML = Object.entries(allImages()).slice(0,8).map(([ref,img])=>`
+    <div class="state-item"><span style="color:var(--yellow);font-size:11px;">${esc(ref)}</span>
+    <span style="color:var(--gray);font-size:10px;float:right;">${img.size}</span></div>`).join('');
+  // Networks
+  const nEl = document.getElementById('state-networks');
+  nEl.innerHTML = Object.entries(networks).map(([name,n])=>`
+    <div class="state-item"><span style="color:var(--purple);font-size:11px;">${esc(name)}</span>
+    <span style="color:var(--gray);font-size:10px;float:right;">${n.driver}</span></div>`).join('');
+  // Volumes
+  const vEl = document.getElementById('state-volumes');
+  const vList = Object.values(volumes);
+  if(!vList.length){ vEl.innerHTML='<span style="color:var(--gray);font-size:11px;">No volumes yet</span>'; }
+  else { vEl.innerHTML = vList.map(v=>`<div class="state-item"><span style="color:var(--orange);font-size:11px;">${esc(v.name)}</span></div>`).join(''); }
+}
+
+// ─── Build sidebar ────────────────────────────────────────────────────────────
+function buildExerciseList(){
+  const done = Object.keys(doneMap).length;
+  const total = EXERCISES.length;
+  document.getElementById('prog-text').textContent = `${done} / ${total} done`;
+  document.getElementById('prog-fill').style.width = (total?done/total*100:0)+'%';
+
+  const el = document.getElementById('ex-list');
+  el.innerHTML='';
+  const groups = {easy:[],medium:[],hard:[]};
+  EXERCISES.forEach(ex=>groups[ex.badge].push(ex));
+  ['easy','medium','hard'].forEach(level=>{
+    const items = groups[level];
+    if(!items.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'ex-section';
+    const labels = {easy:'Beginner',medium:'Intermediate',hard:'Advanced'};
+    sec.innerHTML = `<div class="ex-section-title"><span class="ex-badge badge-${level}">${level.toUpperCase()}</span> ${labels[level]}</div>`;
+    items.forEach(ex=>{
+      const isDone = doneMap[ex.id];
+      const isActive = currentExercise && currentExercise.id===ex.id;
+      const d=document.createElement('div');
+      d.className=`ex-item${isActive?' active':''}${isDone?' done':''}`;
+      d.onclick=()=>startExercise(ex);
+      d.innerHTML=`<div class="ex-title">${isDone?'<span style="color:var(--green)">✓</span> ':''}${esc(ex.title)}</div><div class="ex-desc">${esc(ex.desc)}</div>`;
+      sec.appendChild(d);
+    });
+    el.appendChild(sec);
+  });
+}
+
+function buildCheatsheet(){
+  const el = document.getElementById('cheatsheet-content');
+  el.innerHTML='';
+  CHEATSHEET.forEach(section=>{
+    const sec = document.createElement('div');
+    sec.className = 'cs-section';
+    sec.innerHTML = `<div class="cs-title">${esc(section.section)}</div>`;
+    section.cmds.forEach(c=>{
+      const d = document.createElement('div');
+      d.className = 'cs-cmd';
+      d.title = 'Click to insert';
+      d.onclick = ()=>insertCmd(c.cmd);
+      d.innerHTML = `<span class="cs-cmd-name">${esc(c.cmd)}</span><span class="cs-cmd-desc">${esc(c.desc)}</span>`;
+      sec.appendChild(d);
+    });
+    el.appendChild(sec);
+  });
+}
+
+function showTab(id, el){
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['exercises','cheatsheet','state'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===id?'':'none';
+  });
+  if(id==='state') updateStatePanel();
+}
+
+function insertCmd(cmd){
+  const input = document.getElementById('cmd-input');
+  input.value = cmd;
+  focusInput();
+}
+
+// ─── Key handler ─────────────────────────────────────────────────────────────
+function handleKey(e){
+  const input = document.getElementById('cmd-input');
+  if(e.key==='Enter'){
+    const cmd = input.value; input.value='';
+    exec(cmd); scroll();
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    if(histIndex<cmdHistory.length-1){ histIndex++; input.value=cmdHistory[histIndex]; }
+  } else if(e.key==='ArrowDown'){
+    e.preventDefault();
+    if(histIndex>0){ histIndex--; input.value=cmdHistory[histIndex]; }
+    else{ histIndex=-1; input.value=''; }
+  } else if(e.key==='Tab'){
+    e.preventDefault();
+    tabComplete();
+  } else if(e.key==='c'&&e.ctrlKey){
+    e.preventDefault();
+    out(`^C`,'out-err');
+    input.value=''; scroll();
+  } else if(e.key==='l'&&e.ctrlKey){
+    e.preventDefault();
+    document.getElementById('output').innerHTML='';
+  }
+}
+
+function tabComplete(){
+  const input = document.getElementById('cmd-input');
+  const val = input.value;
+  const parts = val.split(' ');
+  if(parts.length===1){
+    const cmds=['docker','docker-compose','dockerfile','compose','clear','help','reset'];
+    const m=cmds.filter(c=>c.startsWith(val));
+    if(m.length===1) input.value=m[0]+' ';
+    else if(m.length>1) { out(m.join('  '),'out-dim'); scroll(); }
+  } else if(parts[0]==='docker'&&parts.length===2){
+    const subs=['run','ps','start','stop','restart','rm','exec','logs','inspect','images','pull','rmi','build','tag','history','search','port','top','stats','diff','cp','network','volume','system','compose','events','version','info','help'];
+    const m=subs.filter(s=>s.startsWith(parts[1]));
+    if(m.length===1){ input.value='docker '+m[0]+' '; }
+    else if(m.length>1){ out(m.join('  '),'out-dim'); scroll(); }
+  } else if(parts[0]==='docker'&&parts.length>=3){
+    // Container name completion
+    const last=parts[parts.length-1];
+    const names=Object.values(containers).map(c=>c.name).filter(n=>n.startsWith(last));
+    const imgRefs=Object.keys(allImages()).filter(r=>r.startsWith(last));
+    const matches=[...new Set([...names,...imgRefs])];
+    if(matches.length===1){ parts[parts.length-1]=matches[0]; input.value=parts.join(' ')+' '; }
+    else if(matches.length>1){ out(matches.join('  '),'out-dim'); scroll(); }
+  }
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function resetAll(){
+  containers={}; volumes={}; composeServices={};
+  Object.keys(networks).filter(n=>!['bridge','host','none'].includes(n)).forEach(n=>delete networks[n]);
+  Object.keys(customImages).forEach(k=>delete customImages[k]);
+}
+
+// ─── Welcome ──────────────────────────────────────────────────────────────────
+function showWelcome(){
+  out(`<span style="color:var(--blue);font-weight:700;">╔══════════════════════════════════════════════════════╗</span>`);
+  out(`<span style="color:var(--blue);font-weight:700;">║  🐳 Docker Terminal — Hands-On Lab  v1.0             ║</span>`);
+  out(`<span style="color:var(--blue);font-weight:700;">╚══════════════════════════════════════════════════════╝</span>`);
+  out(``);
+  out(`<span class="out-dim">Simulated Docker engine with full container, image, network & volume management.</span>`);
+  out(``);
+  out(`Quick start:`);
+  out(`  <span style="color:var(--yellow)">docker version</span>          — check Docker version`);
+  out(`  <span style="color:var(--yellow)">docker images</span>           — list available images`);
+  out(`  <span style="color:var(--yellow)">docker run -d nginx:latest</span> — run nginx container`);
+  out(`  <span style="color:var(--yellow)">dockerfile show</span>         — view sample Dockerfile`);
+  out(`  <span style="color:var(--yellow)">compose show</span>            — view sample compose file`);
+  out(``);
+  out(`<span class="out-dim">→ Click an Exercise in the sidebar to start a guided lab</span>`);
+  out(`<span class="out-dim">→ Click any command in the Cheatsheet tab to insert it</span>`);
+  out(`<span class="out-dim">→ Check the State tab to see containers, images & networks</span>`);
+  out(``);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildExerciseList();
+buildCheatsheet();
+updateStatePanel();
+showWelcome();
+focusInput();
+</script>
+</body>
+</html>

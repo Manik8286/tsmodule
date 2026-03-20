@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOA-C02 Lab Tracker — AWS SysOps Administrator</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{--accent:#7C2D12;--accent-light:#FFF7ED;--accent-mid:#C2410C;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#7C2D12;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#FED7AA;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#FED7AA;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--accent);}
+.stat-block.done .num{color:var(--green);}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#7C2D12,#F97316);transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--accent);color:white;border-color:var(--accent);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.1);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#FED7AA;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#4ADE80;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;border-left:4px solid var(--accent-mid);background:var(--accent-light);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid var(--accent-mid);cursor:pointer;font-weight:600;background:white;color:var(--accent-mid);transition:all .2s;}
+.lab-toggle:hover{background:var(--accent-mid);color:white;}
+.mini-bar-wrap{width:60px;}
+.mini-bar{background:#E5E7EB;border-radius:99px;height:5px;overflow:hidden;}
+.mini-bar-fill{height:100%;border-radius:99px;background:var(--green);transition:width .4s;}
+.mini-pct{font-size:9px;color:var(--gray);text-align:right;margin-top:1px;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--accent-mid);color:var(--accent-mid);}
+.detail-btn.open{background:var(--accent-light);border-color:var(--accent-mid);color:var(--accent-mid);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#FFF7ED;border-left:3px solid var(--accent-mid);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--accent-mid);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#FFEDD5;padding:1px 4px;border-radius:3px;color:#C2410C;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-ta{width:100%;border:1px solid #FDE68A;border-radius:6px;padding:6px 8px;font-size:11.5px;font-family:inherit;resize:vertical;min-height:52px;background:#FFFFF5;}
+.note-ta:focus{outline:none;border-color:#F59E0B;}
+.val-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;margin-bottom:2px;transition:background .15s;}
+.val-row:hover{background:var(--light);}
+.val-row.done{background:var(--green-light);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .2s;font-size:10px;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.val-text{font-size:11.5px;line-height:1.4;}
+.val-row.done .val-text{text-decoration:line-through;color:var(--gray);}
+.lab-notes-area{margin:10px 0 4px;background:#FFF7ED;border-radius:8px;padding:10px 12px;border:1px solid #FED7AA;}
+.lab-notes-lbl{font-size:10px;font-weight:700;color:var(--accent-mid);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.lab-notes-ta{width:100%;border:1px solid #FDBA74;border-radius:6px;padding:6px 8px;font-size:11.5px;font-family:inherit;resize:vertical;min-height:44px;background:white;}
+.lab-notes-ta:focus{outline:none;border-color:var(--accent-mid);}
+.refs-section{margin-top:14px;padding:12px 14px;background:var(--accent-light);border-left:3px solid var(--accent-mid);border-radius:0 8px 8px 0;}
+.refs-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.refs-title{font-size:10px;font-weight:700;color:var(--accent-mid);text-transform:uppercase;letter-spacing:.6px;}
+.refs-toggle{font-size:10px;color:var(--gray);}
+.refs-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
+.ref-item{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;}
+.ref-icon{flex-shrink:0;}
+.ref-item a{color:var(--accent-mid);text-decoration:none;}
+.ref-item a:hover{text-decoration:underline;}
+.sync-bar{background:rgba(255,255,255,.08);border-radius:8px;padding:6px 14px;font-size:10px;color:#FED7AA;display:flex;align-items:center;gap:8px;}
+.fb-dot{width:7px;height:7px;border-radius:50%;background:#4ADE80;}
+.fb-dot.off{background:#9CA3AF;}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>SOA-C02 — AWS SysOps Administrator Lab Tracker</h1>
+      <p>Deploy, manage and operate AWS workloads at scale</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="sync-bar"><span class="fb-dot off" id="fbDot"></span><span id="fbStatus">Local only</span></div>
+      <div class="nav-links">
+        <a href="../personal_site/index.html" class="nav-link">🏠 Home</a>
+        <a href="index.html" class="nav-link">☁️ IaaS Labs</a>
+        <a href="iam.html" class="nav-link">🔒 IAM Labs</a>
+        <a href="az700.html" class="nav-link">🌐 AZ-700</a>
+        <a href="az500.html" class="nav-link">🛡️ AZ-500</a>
+        <a href="sc300.html" class="nav-link">👤 SC-300</a>
+        <a href="az400.html" class="nav-link">&#x1F504; AZ-400</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="totalSteps">0</div><div class="lbl">Total Steps</div></div>
+  <div class="stat-block done"><div class="num" id="doneSteps">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block"><div class="num" id="totalLabs">0</div><div class="lbl">Labs</div></div>
+  <div class="stat-block"><div class="num" id="doneLabs">0</div><div class="lbl">Labs Done</div></div>
+  <div class="big-bar-wrap">
+    <div class="big-bar-label"><span>Overall Progress</span><span id="pctLabel">0%</span></div>
+    <div class="big-bar"><div class="big-bar-fill" id="bigBarFill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterPhase('all',this)">All Phases</button>
+  <button class="tab" onclick="filterPhase('p1',this)">1 · Monitoring</button>
+  <button class="tab" onclick="filterPhase('p2',this)">2 · Reliability</button>
+  <button class="tab" onclick="filterPhase('p3',this)">3 · Deployment</button>
+  <button class="tab" onclick="filterPhase('p4',this)">4 · Security</button>
+  <button class="tab" onclick="filterPhase('p5',this)">5 · Networking</button>
+  <button class="tab" onclick="filterPhase('p6',this)">6 · Cost</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+const APP_KEY = 'soac02_lab_tracker';
+const FB_PATH = 'soac02_progress';
+
+const PHASES = [
+  {id:'p1',badge:'PHASE 1',title:'Monitoring, Logging & Remediation',week:'Week 1-2',labs:[
+    {id:'p1-cw',title:'CloudWatch Metrics, Alarms & Dashboards',meta:'AWS Console · CLI · CloudWatch Agent',
+     steps:[
+       {id:'sw1s1',text:'Deploy CloudWatch Agent on EC2 instances for custom metrics',details:['Launch EC2 instance (Amazon Linux 2023)','Install CloudWatch Agent: sudo yum install amazon-cloudwatch-agent','Configure agent: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard','Start agent and verify metrics in CloudWatch console']},
+       {id:'sw1s2',text:'Create CloudWatch Alarms for CPU, memory and disk',details:['Namespace: AWS/EC2 → CPUUtilization → threshold 80%','Metric: CWAgent/mem_used_percent → threshold 85%','Alarm action: SNS topic → email notification','Test alarm by stressing CPU: stress-ng --cpu 4 --timeout 60']},
+       {id:'sw1s3',text:'Build a CloudWatch Dashboard for multi-service visibility',details:['CloudWatch → Dashboards → Create dashboard','Add widgets: Line chart (CPU), Number (active instances), Logs (recent errors)','Add cross-account metrics if available','Share dashboard URL with team']},
+       {id:'sw1s4',text:'Configure CloudWatch Logs Insights queries',details:['CloudWatch → Logs Insights → Select log group','Query: fields @timestamp, @message | filter @message like /ERROR/ | limit 20','Save query as named query','Create subscription filter to forward logs to Lambda']},
+     ],
+     validation:[
+       {id:'sw1v1',text:'CloudWatch Agent sends memory and disk metrics within 5 minutes'},
+       {id:'sw1v2',text:'CPU alarm triggers SNS email when threshold exceeded'},
+       {id:'sw1v3',text:'Logs Insights query returns error log entries successfully'},
+     ]},
+    {id:'p1-ct',title:'CloudTrail & AWS Config',meta:'CloudTrail · Config · EventBridge',
+     steps:[
+       {id:'sw1s5',text:'Enable CloudTrail multi-region trail with S3 and CloudWatch Logs',details:['CloudTrail → Create trail → Apply to all regions','S3 bucket for log storage, enable log file validation','CloudWatch Logs integration for real-time analysis','Enable data events for S3 and Lambda']},
+       {id:'sw1s6',text:'Configure AWS Config rules for compliance',details:['AWS Config → Rules → Add rule','Add: ec2-instance-no-public-ip (managed rule)','Add: s3-bucket-server-side-encryption-enabled','Add custom Config rule via Lambda for custom check','Review compliance dashboard']},
+       {id:'sw1s7',text:'Create EventBridge rule for security events',details:['EventBridge → Rules → Create rule','Pattern: source=aws.iam, detail-type=AWS API Call via CloudTrail','Event: CreateUser, DeleteUser, AttachRolePolicy','Target: SNS topic → security team email']},
+     ],
+     validation:[
+       {id:'sw1v4',text:'CloudTrail events appear in CloudWatch Logs within 15 minutes'},
+       {id:'sw1v5',text:'AWS Config marks non-compliant resources in dashboard'},
+       {id:'sw1v6',text:'EventBridge rule fires on IAM user creation event'},
+     ]},
+  ]},
+  {id:'p2',badge:'PHASE 2',title:'Reliability & Business Continuity',week:'Week 3-4',labs:[
+    {id:'p2-ha',title:'High Availability with Auto Scaling & ELB',meta:'EC2 · ASG · ALB',
+     steps:[
+       {id:'sw2s1',text:'Create Launch Template and Auto Scaling Group',details:['EC2 → Launch Templates → Create template','AMI: Amazon Linux 2023, Instance type: t3.micro','User data: yum install -y httpd && systemctl start httpd','ASG: min 2, desired 2, max 6, multi-AZ (3 subnets)']},
+       {id:'sw2s2',text:'Configure Application Load Balancer with health checks',details:['EC2 → Load Balancers → Create ALB','Scheme: internet-facing, select 3 AZs','Target group: EC2 instances, health check path /index.html','Create listener rule: forward all to target group']},
+       {id:'sw2s3',text:'Set up scaling policies based on CPU utilization',details:['ASG → Automatic scaling → Add policy','Target tracking: CPU = 50%','Scale in cooldown: 300s, Scale out cooldown: 60s','Test: generate load and watch ASG scale out','Watch ALB distribute traffic across new instances']},
+     ],
+     validation:[
+       {id:'sw2v1',text:'ALB distributes traffic to instances in multiple AZs'},
+       {id:'sw2v2',text:'ASG scales out when CPU exceeds target for 2 minutes'},
+       {id:'sw2v3',text:'Terminating one instance triggers replacement automatically'},
+     ]},
+    {id:'p2-backup',title:'Backup, Snapshots & Disaster Recovery',meta:'AWS Backup · RDS · S3',
+     steps:[
+       {id:'sw2s4',text:'Configure AWS Backup plan for EC2, RDS and EFS',details:['AWS Backup → Backup plans → Create plan','Rule 1: daily backup, 35-day retention, move to cold storage after 30 days','Rule 2: weekly backup, 1-year retention','Assign resources: tag-based (BackupRequired=true)']},
+       {id:'sw2s5',text:'Test RDS Multi-AZ failover',details:['Launch RDS MySQL Multi-AZ instance','Connect with MySQL Workbench, create test database','Trigger failover: RDS Console → Actions → Reboot with failover','Measure downtime and verify connection resumes']},
+       {id:'sw2s6',text:'Implement S3 cross-region replication for DR',details:['Source bucket: enable versioning','Create destination bucket in different region, enable versioning','Source → Management → Replication → Create rule','All objects, IAM role (auto-created), status Enabled','Upload test file and verify replication']},
+     ],
+     validation:[
+       {id:'sw2v4',text:'AWS Backup job completes successfully for tagged resources'},
+       {id:'sw2v5',text:'RDS Multi-AZ failover completes in under 60 seconds'},
+       {id:'sw2v6',text:'Objects replicate to destination bucket within 15 minutes'},
+     ]},
+  ]},
+  {id:'p3',badge:'PHASE 3',title:'Deployment & Automation',week:'Week 5-6',labs:[
+    {id:'p3-cfn',title:'CloudFormation Infrastructure as Code',meta:'CloudFormation · SSM · Systems Manager',
+     steps:[
+       {id:'sw3s1',text:'Write CloudFormation template for VPC + EC2 + RDS stack',details:['Create YAML template with Parameters section for env (dev/prod)','Resources: VPC, 2 public + 2 private subnets, IGW, NAT GW','EC2 in public subnet, RDS MySQL in private subnets','Outputs: VPC ID, EC2 public IP, RDS endpoint']},
+       {id:'sw3s2',text:'Deploy stack with rollback testing',details:['CloudFormation → Stacks → Create stack → Upload template','Monitor stack events during creation','Introduce deliberate error (invalid AMI) and observe rollback','Fix error and redeploy using Change Sets']},
+       {id:'sw3s3',text:'Use Systems Manager Parameter Store and Automation',details:['SSM → Parameter Store → Create parameter: /myapp/db/password (SecureString)','Reference parameter in CloudFormation: {{resolve:ssm-secure:/myapp/db/password}}','SSM Automation → Create runbook for instance patching','Run document AWS-PatchInstanceWithRollback on EC2 instance']},
+     ],
+     validation:[
+       {id:'sw3v1',text:'CloudFormation stack creates all resources in under 10 minutes'},
+       {id:'sw3v2',text:'Stack rollback triggered on deliberate template error'},
+       {id:'sw3v3',text:'SSM Patch Manager shows patch compliance status'},
+     ]},
+    {id:'p3-ops',title:'AWS Systems Manager OpsCenter & Patch Manager',meta:'Systems Manager · OpsCenter',
+     steps:[
+       {id:'sw3s4',text:'Configure Systems Manager inventory and compliance',details:['SSM → Inventory → Setup inventory (all instances)','View software inventory, network config, patches','State Manager → Create association: AWS-ConfigureAWSPackage','Apply to instance tag group']},
+       {id:'sw3s5',text:'Set up Patch Manager with patch baseline and maintenance window',details:['SSM → Patch Manager → Configure patching','Create custom patch baseline: critical + important patches only','Maintenance window: Saturday 2am, 2 hour duration','Associate baseline with patch group tag: PatchGroup=Production']},
+     ],
+     validation:[
+       {id:'sw3v4',text:'Inventory data visible for all managed instances'},
+       {id:'sw3v5',text:'Patch compliance report shows Missing/Installed count per instance'},
+     ]},
+  ]},
+  {id:'p4',badge:'PHASE 4',title:'Security & Compliance',week:'Week 7-8',labs:[
+    {id:'p4-iam',title:'IAM Policies, Roles & Permission Boundaries',meta:'IAM · SCP · AWS Organizations',
+     steps:[
+       {id:'sw4s1',text:'Create IAM policies with least privilege using Policy Simulator',details:['IAM → Policies → Create policy (JSON)','Allow only required EC2 and S3 actions with resource ARN conditions','Use IAM Policy Simulator to test effect before attaching','Attach policy to test user and verify access']},
+       {id:'sw4s2',text:'Configure IAM roles for EC2, Lambda and cross-account access',details:['EC2 instance role: SSMCore + S3ReadOnly','Lambda execution role: CloudWatchLogs + DynamoDBRead','Cross-account role: trust policy allowing Account B to assume','Test: aws sts assume-role from Account B']},
+       {id:'sw4s3',text:'Implement Service Control Policies in AWS Organizations',details:['Organizations → Policies → Service control policies → Enable','Create SCP: Deny EC2 in non-approved regions','SCP: Deny disabling CloudTrail','Attach SCP to Development OU, test from member account']},
+     ],
+     validation:[
+       {id:'sw4v1',text:'Policy Simulator confirms allowed and denied actions correctly'},
+       {id:'sw4v2',text:'Cross-account role assumption works with sts:AssumeRole'},
+       {id:'sw4v3',text:'SCP blocks EC2 launch in restricted region from member account'},
+     ]},
+    {id:'p4-sec',title:'Security Hub, GuardDuty & Inspector',meta:'Security Hub · GuardDuty · Inspector',
+     steps:[
+       {id:'sw4s4',text:'Enable Security Hub and configure standards',details:['Security Hub → Enable Security Hub','Enable standards: AWS Foundational Security Best Practices, CIS AWS Foundations','Wait 24 hours for initial findings','Filter critical and high findings, remediate top issues']},
+       {id:'sw4s5',text:'Enable GuardDuty and review threat findings',details:['GuardDuty → Enable GuardDuty (all regions)','Enable S3 protection, EKS audit logs, RDS protection','Generate test finding: GuardDuty → Settings → Generate sample findings','Review findings: UnauthorizedAccess, Recon, CryptoCurrency']},
+       {id:'sw4s6',text:'Configure Inspector for vulnerability scanning',details:['Inspector → Enable Inspector','Enable EC2 scanning and ECR scanning','Review critical CVE findings per instance','Export findings to Security Hub']},
+     ],
+     validation:[
+       {id:'sw4v4',text:'Security Hub shows compliance score for enabled standards'},
+       {id:'sw4v5',text:'GuardDuty sample findings appear within 5 minutes'},
+       {id:'sw4v6',text:'Inspector CVE findings link to affected EC2 instances'},
+     ]},
+  ]},
+  {id:'p5',badge:'PHASE 5',title:'Networking & Content Delivery',week:'Week 9-10',labs:[
+    {id:'p5-vpc',title:'VPC Design, Peering & Transit Gateway',meta:'VPC · TGW · PrivateLink',
+     steps:[
+       {id:'sw5s1',text:'Design and build 3-tier VPC (public, private app, private data)',details:['VPC CIDR: 10.0.0.0/16','Public subnets: 10.0.1.0/24, 10.0.2.0/24 (IGW attached)','Private app: 10.0.11.0/24, 10.0.12.0/24 (NAT GW)','Private data: 10.0.21.0/24, 10.0.22.0/24 (no internet)','Route tables, NACLs, Security Groups per tier']},
+       {id:'sw5s2',text:'Configure VPC peering between two VPCs',details:['Create VPC B: 10.1.0.0/16','VPC A → Peering connections → Create peering with VPC B','Accept peering in VPC B','Update route tables in both VPCs','Test: ping EC2 in VPC A from EC2 in VPC B']},
+       {id:'sw5s3',text:'Set up Transit Gateway for hub-and-spoke networking',details:['Transit Gateway → Create TGW','Attach VPC A, VPC B, VPC C','Create TGW route table and associate all attachments','Propagate routes from each attachment','Test transitive routing: VPC A → VPC B → VPC C (not possible with peering)']},
+       {id:'sw5s4',text:'Implement VPC Endpoints for S3 and DynamoDB',details:['VPC → Endpoints → Create endpoint','Service: com.amazonaws.us-east-1.s3 (Gateway type)','Associate with private subnet route tables','Test: aws s3 ls from private EC2 (no internet, no NAT needed)','Create Interface endpoint for SSM to manage private instances']},
+     ],
+     validation:[
+       {id:'sw5v1',text:'EC2 in private subnet reaches S3 via VPC Gateway Endpoint'},
+       {id:'sw5v2',text:'Transit Gateway enables VPC A to VPC C communication'},
+       {id:'sw5v3',text:'SSM Session Manager works on private EC2 via Interface Endpoint'},
+     ]},
+  ]},
+  {id:'p6',badge:'PHASE 6',title:'Cost Optimisation & Tagging',week:'Week 11-12',labs:[
+    {id:'p6-cost',title:'Cost Explorer, Budgets & Savings Plans',meta:'Cost Explorer · Budgets · Trusted Advisor',
+     steps:[
+       {id:'sw6s1',text:'Analyse costs with Cost Explorer and identify top spending',details:['Cost Explorer → Enable (24h delay for first use)','Group by Service, filter last 3 months','Identify top 3 cost drivers','Drill into EC2 costs: by instance type, region, purchase option']},
+       {id:'sw6s2',text:'Create cost budgets with alerts',details:['Budgets → Create budget → Cost budget','Monthly budget: $100, alert at 80% and 100%','Email and SNS notifications','Create RI/Savings Plan utilization budget (target 80% utilization)']},
+       {id:'sw6s3',text:'Purchase Savings Plans and Reserved Instances analysis',details:['Cost Explorer → Savings Plans → Recommendations','Review Compute Savings Plan recommendation','Simulate 1-year vs 3-year commitment cost savings','Cost Explorer → Reserved Instances → Recommendations (for RDS, ElastiCache)']},
+       {id:'sw6s4',text:'Implement resource tagging strategy and Cost Allocation Tags',details:['Organizations → Tag policies → Create tag policy','Required tags: Environment, Project, Owner, CostCenter','Activate tags as Cost Allocation Tags (Billing → Cost Allocation Tags)','Use AWS Config rule: required-tags to enforce compliance','Tag editor to bulk-tag untagged resources']},
+       {id:'sw6s5',text:'Review Trusted Advisor recommendations',details:['Trusted Advisor → All checks','Cost optimization: idle RDS instances, unattached EIPs, underutilized EC2','Security: open S3 buckets, MFA on root account','Performance: high utilization EBS, CloudFront optimizations','Remediate at least 3 findings']},
+     ],
+     validation:[
+       {id:'sw6v1',text:'Cost Explorer shows spend breakdown by service and tag'},
+       {id:'sw6v2',text:'Budget alert email received when threshold simulated'},
+       {id:'sw6v3',text:'AWS Config marks resources missing required tags as non-compliant'},
+       {id:'sw6v4',text:'Trusted Advisor identifies and shows remediation for cost findings'},
+     ]},
+  ]},
+];
+
+const LAB_RESOURCES = {
+  'p1-cw':[
+    {title:'Amazon CloudWatch documentation',url:'https://docs.aws.amazon.com/cloudwatch/'},
+    {title:'CloudWatch Agent configuration reference',url:'https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html'},
+  ],
+  'p1-ct':[
+    {title:'AWS CloudTrail documentation',url:'https://docs.aws.amazon.com/cloudtrail/'},
+    {title:'AWS Config managed rules list',url:'https://docs.aws.amazon.com/config/latest/developerguide/managed-rules-by-aws-config.html'},
+  ],
+  'p2-ha':[
+    {title:'Amazon EC2 Auto Scaling documentation',url:'https://docs.aws.amazon.com/autoscaling/ec2/userguide/'},
+    {title:'Application Load Balancer documentation',url:'https://docs.aws.amazon.com/elasticloadbalancing/latest/application/'},
+  ],
+  'p2-backup':[
+    {title:'AWS Backup documentation',url:'https://docs.aws.amazon.com/aws-backup/latest/devguide/'},
+    {title:'Amazon S3 replication documentation',url:'https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html'},
+  ],
+  'p3-cfn':[
+    {title:'AWS CloudFormation documentation',url:'https://docs.aws.amazon.com/cloudformation/'},
+    {title:'AWS Systems Manager documentation',url:'https://docs.aws.amazon.com/systems-manager/'},
+  ],
+  'p3-ops':[
+    {title:'AWS Systems Manager Patch Manager',url:'https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-patch.html'},
+    {title:'AWS Systems Manager State Manager',url:'https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-state.html'},
+  ],
+  'p4-iam':[
+    {title:'IAM best practices',url:'https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html'},
+    {title:'Service Control Policies',url:'https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html'},
+  ],
+  'p4-sec':[
+    {title:'AWS Security Hub documentation',url:'https://docs.aws.amazon.com/securityhub/'},
+    {title:'Amazon GuardDuty documentation',url:'https://docs.aws.amazon.com/guardduty/'},
+  ],
+  'p5-vpc':[
+    {title:'Amazon VPC documentation',url:'https://docs.aws.amazon.com/vpc/'},
+    {title:'AWS Transit Gateway documentation',url:'https://docs.aws.amazon.com/vpc/latest/tgw/'},
+  ],
+  'p6-cost':[
+    {title:'AWS Cost Explorer documentation',url:'https://docs.aws.amazon.com/cost-management/latest/userguide/ce-what-is.html'},
+    {title:'AWS Budgets documentation',url:'https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html'},
+    {title:'AWS Trusted Advisor documentation',url:'https://docs.aws.amazon.com/awssupport/latest/user/trusted-advisor.html'},
+  ],
+};
+
+let state={steps:{},notes:{},labNotes:{},valChecks:{}};
+let expandedPhases={};
+let expandedLabs={};
+let expandedDetails={};
+let expandedNotes={};
+let expandedRefs={};
+let currentFilter='all';
+let db=null;
+let userId=null;
+
+function initFirebase(){
+  const raw=localStorage.getItem('mk_site_fb_config');
+  if(!raw)return;
+  try{
+    const cfg=JSON.parse(raw);
+    if(!firebase.apps.find(a=>a.name==='soac02'))firebase.initializeApp(cfg,'soac02');
+    db=firebase.app('soac02').database();
+    userId=localStorage.getItem('mk_site_fb_uid')||'user_'+Math.random().toString(36).slice(2,8);
+    localStorage.setItem('mk_site_fb_uid',userId);
+    document.getElementById('fbDot').classList.remove('off');
+    document.getElementById('fbStatus').textContent='Firebase synced';
+    loadFromFB();
+  }catch(e){console.warn('Firebase init failed',e);}
+}
+
+function loadFromFB(){
+  if(!db)return;
+  db.ref(FB_PATH+'/'+userId).once('value').then(snap=>{
+    if(snap.val())state=Object.assign({steps:{},notes:{},labNotes:{},valChecks:{}},snap.val());
+    build();updateStats();
+  });
+}
+
+function saveToFB(){if(!db)return;db.ref(FB_PATH+'/'+userId).set(state);}
+function loadLocal(){const s=localStorage.getItem(APP_KEY);if(s)state=JSON.parse(s);}
+function saveLocal(){localStorage.setItem(APP_KEY,JSON.stringify(state));}
+function save(){saveLocal();saveToFB();}
+function toggleStep(id){state.steps[id]=!state.steps[id];save();build();updateStats();}
+function toggleVal(id){state.valChecks[id]=!state.valChecks[id];save();build();updateStats();}
+function toggleNote(id){expandedNotes[id]=!expandedNotes[id];build();updateStats();}
+function toggleDetail(id){expandedDetails[id]=!expandedDetails[id];build();}
+function saveNote(id,val){state.notes[id]=val;save();build();updateStats();}
+function saveLabNote(labId,val){state.labNotes[labId]=val;save();}
+function togglePhase(id){expandedPhases[id]=!expandedPhases[id];build();}
+function toggleLab(id){expandedLabs[id]=!expandedLabs[id];build();}
+function filterPhase(id,el){currentFilter=id;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');build();updateStats();}
+
+function phaseStepCount(phase){
+  let total=0,done=0;
+  phase.labs.forEach(lab=>{
+    lab.steps.forEach(s=>{if(state.steps[s.id])done++;total++;});
+    (lab.validation||[]).forEach(v=>{if(state.valChecks[v.id])done++;total++;});
+  });
+  return{total,done};
+}
+
+function labStepCount(lab){
+  let total=0,done=0;
+  lab.steps.forEach(s=>{if(state.steps[s.id])done++;total++;});
+  (lab.validation||[]).forEach(v=>{if(state.valChecks[v.id])done++;total++;});
+  return{total,done};
+}
+
+function buildRefs(labId){
+  const refs=LAB_RESOURCES[labId]||[];
+  if(!refs.length)return'';
+  const open=!!expandedRefs[labId];
+  const listHTML=refs.map(r=>`<div class="ref-item"><span class="ref-icon">📖</span><a href="${r.url}" target="_blank" rel="noopener">${r.title}</a></div>`).join('');
+  return`<div class="refs-section"><div class="refs-header" onclick="expandedRefs['${labId}']=!expandedRefs['${labId}'];build();updateStats()"><span class="refs-title">🔗 Official References (${refs.length})</span><span class="refs-toggle">${open?'▼ Hide':'▶ Show'}</span></div>${open?`<div class="refs-list">${listHTML}</div>`:''}</div>`;
+}
+
+function build(){
+  const phases=currentFilter==='all'?PHASES:PHASES.filter(p=>p.id===currentFilter);
+  let html='';
+  phases.forEach(phase=>{
+    const{total,done}=phaseStepCount(phase);
+    const pct=total?Math.round(done/total*100):0;
+    const open=!!expandedPhases[phase.id];
+    html+=`<div class="phase-card${open?' open':''}" id="pc-${phase.id}">
+      <div class="phase-header" onclick="togglePhase('${phase.id}')">
+        <div class="phase-header-left"><span class="phase-badge">${phase.badge}</span><div><div class="phase-title">${phase.title}</div><div class="phase-week">${phase.week}</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px;"><div class="phase-progress-bar"><div class="phase-progress-fill" style="width:${pct}%"></div></div><span style="font-size:11px;color:#FED7AA;">${done}/${total}</span><span class="chevron">▼</span></div>
+      </div>
+      <div class="phase-body">`;
+    phase.labs.forEach(lab=>{
+      const{total:lt,done:ld}=labStepCount(lab);
+      const lpct=lt?Math.round(ld/lt*100):0;
+      const lopen=!!expandedLabs[lab.id];
+      html+=`<div class="lab-section${lopen?' open':''}" id="ls-${lab.id}">
+        <div class="lab-header">
+          <div class="lab-title-area"><div class="lab-title">${lab.title}</div><div class="lab-meta">${lab.meta}</div></div>
+          <div class="lab-stats"><div class="mini-bar-wrap"><div class="mini-bar"><div class="mini-bar-fill" style="width:${lpct}%"></div></div><div class="mini-pct">${ld}/${lt}</div></div><button class="lab-toggle" onclick="toggleLab('${lab.id}')">${lopen?'▲ Collapse':'▼ Expand'}</button></div>
+        </div>
+        <div class="steps-list"><div class="section-lbl">Lab Steps</div>`;
+      lab.steps.forEach((s,i)=>{
+        const done=!!state.steps[s.id];
+        const dopen=!!expandedDetails[s.id];
+        const nopen=!!expandedNotes[s.id];
+        const hasNote=!!(state.notes[s.id]&&state.notes[s.id].trim());
+        html+=`<div class="step-row${done?' done':''}"><div class="step-check" onclick="toggleStep('${s.id}')">${done?'✓':''}</div><div class="step-main"><div class="step-top"><span class="step-num">${i+1}.</span><span class="step-text">${s.text}</span>${s.details?`<button class="detail-btn${dopen?' open':''}" onclick="toggleDetail('${s.id}')">${dopen?'▲ Less':'▼ Details'}</button>`:''}<button class="note-btn${hasNote?' has-note':''}${nopen?' open':''}" onclick="toggleNote('${s.id}')">${hasNote?'📝':'+ Note'}</button></div>${dopen&&s.details?`<div class="step-details open">${s.details.map((d,j)=>`<div class="detail-item"><span class="di-num">${j+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}${nopen?`<div class="step-note-panel open"><textarea class="note-ta" placeholder="Add your notes here..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea></div>`:''}</div></div>`;
+      });
+      if(lab.validation&&lab.validation.length){
+        html+=`<div class="section-lbl">Validation Checks</div>`;
+        lab.validation.forEach(v=>{
+          const vdone=!!state.valChecks[v.id];
+          html+=`<div class="val-row${vdone?' done':''}"><div class="val-check" onclick="toggleVal('${v.id}')">${vdone?'✓':''}</div><span class="val-text">${v.text}</span></div>`;
+        });
+      }
+      html+=`<div class="lab-notes-area"><div class="lab-notes-lbl">Lab Notes</div><textarea class="lab-notes-ta" placeholder="Overall notes for this lab..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea></div>${buildRefs(lab.id)}</div></div>`;
+    });
+    html+=`</div></div>`;
+  });
+  document.getElementById('content').innerHTML=html;
+}
+
+function updateStats(){
+  let totalS=0,doneS=0,totalL=0,doneL=0;
+  PHASES.forEach(phase=>{
+    phase.labs.forEach(lab=>{
+      totalL++;
+      const{total,done}=labStepCount(lab);
+      totalS+=total;doneS+=done;
+      if(done===total&&total>0)doneL++;
+    });
+  });
+  document.getElementById('totalSteps').textContent=totalS;
+  document.getElementById('doneSteps').textContent=doneS;
+  document.getElementById('totalLabs').textContent=totalL;
+  document.getElementById('doneLabs').textContent=doneL;
+  const pct=totalS?Math.round(doneS/totalS*100):0;
+  document.getElementById('pctLabel').textContent=pct+'%';
+  document.getElementById('bigBarFill').style.width=pct+'%';
+}
+
+loadLocal();
+if(PHASES.length)expandedPhases[PHASES[0].id]=true;
+build();updateStats();initFirebase();
+</script>
+</body>
+</html>

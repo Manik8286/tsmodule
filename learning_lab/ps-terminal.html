@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PowerShell Terminal — Hands-On Lab</title>
+<style>
+:root{--bg:#012456;--bg2:#0D2137;--bg3:#1a3a5c;--border:#1e4d7b;--blue:#00ADEF;--blue-light:#0d2a4a;--cyan:#79C0FF;--green:#4EC94E;--yellow:#FFFF54;--orange:#F0883E;--red:#FF6B6B;--purple:#C792EA;--white:#EEEDF0;--gray:#8B9DB8;--header-bg:#001a3d;--radius:8px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--white);}
+.site-header{background:var(--header-bg);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:2px solid var(--blue);flex-shrink:0;}
+.site-header h1{font-size:16px;font-weight:700;}
+.site-header p{font-size:11px;color:#79C0FF;margin-top:1px;}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;}
+.nav-link{font-size:11px;padding:3px 10px;border-radius:5px;background:rgba(0,173,239,.15);color:#79C0FF;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(0,173,239,.35);color:white;}
+.app{display:flex;height:calc(100vh - 58px);overflow:hidden;}
+.sidebar{width:290px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+.stab{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--gray);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.stab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.stab:hover{color:var(--white);}
+.sidebar-content{flex:1;overflow-y:auto;padding:10px;}
+.sidebar-content::-webkit-scrollbar{width:4px;}
+.sidebar-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.ex-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.ex-item:hover{border-color:var(--blue);}
+.ex-item.active{border-color:var(--blue);background:var(--blue-light);}
+.ex-item.done{border-color:var(--green);}
+.ex-title{font-size:12px;font-weight:600;color:var(--white);display:flex;align-items:center;gap:6px;}
+.ex-badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:700;}
+.badge-easy{background:#1a3a1a;color:var(--green);}
+.badge-medium{background:#1a2a3a;color:var(--blue);}
+.badge-hard{background:#2a1a2a;color:var(--purple);}
+.ex-desc{font-size:11px;color:var(--gray);margin-top:4px;line-height:1.5;}
+.cs-section{margin-bottom:14px;}
+.cs-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.cs-cmd{display:flex;gap:8px;margin-bottom:4px;padding:4px 6px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.cs-cmd:hover{background:var(--bg3);}
+.cs-cmd-name{font-family:'Cascadia Code','Consolas',monospace;font-size:11px;color:var(--yellow);min-width:150px;flex-shrink:0;}
+.cs-cmd-desc{font-size:11px;color:var(--gray);line-height:1.4;}
+.state-section{margin-bottom:12px;}
+.state-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.state-item{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:11px;font-family:'Cascadia Code','Consolas',monospace;}
+.challenge-bar{background:var(--bg2);border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0;}
+.challenge-title{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.challenge-text{font-size:12px;color:var(--white);line-height:1.5;}
+.challenge-hint{font-size:11px;color:var(--gray);margin-top:4px;display:none;}
+.challenge-hint.visible{display:block;}
+.challenge-btns{display:flex;gap:6px;margin-top:8px;}
+.cbtn{font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-weight:600;background:var(--bg3);color:var(--gray);transition:all .2s;}
+.cbtn:hover{color:var(--white);}
+.cbtn.hint{color:var(--purple);border-color:var(--purple);}
+.cbtn.skip{color:var(--orange);border-color:var(--orange);}
+.terminal-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.term-top-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.term-dot{width:12px;height:12px;border-radius:50%;}
+.dot-red{background:#FF5F57;}.dot-yellow{background:#FFBD2E;}.dot-green{background:#28CA41;}
+.term-title{font-size:12px;color:var(--gray);margin-left:4px;flex:1;}
+.terminal{flex:1;overflow-y:auto;padding:14px 16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.65;cursor:text;}
+.terminal::-webkit-scrollbar{width:6px;}
+.terminal::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.line{display:flex;align-items:baseline;flex-wrap:wrap;}
+.prompt{color:var(--yellow);white-space:nowrap;flex-shrink:0;}
+.cmd-echo{color:var(--white);}
+.out-line{white-space:pre-wrap;word-break:break-all;display:block;}
+.out-err{color:var(--red);}
+.out-ok{color:var(--green);}
+.out-info{color:var(--cyan);}
+.out-warn{color:var(--orange);}
+.out-dim{color:var(--gray);}
+.out-yellow{color:var(--yellow);}
+.out-purple{color:var(--purple);}
+.out-header{color:var(--cyan);font-weight:bold;}
+.input-row{display:flex;align-items:center;margin-top:4px;}
+.input-prompt{color:var(--yellow);white-space:nowrap;flex-shrink:0;}
+#cmd-input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-family:inherit;font-size:13px;caret-color:var(--yellow);}
+.prog-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:6px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:width .4s;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <h1>&#x1F4BB; PowerShell Terminal &#8212; Hands-On Lab</h1>
+    <p>Simulated PowerShell 7 &middot; cmdlets &middot; pipeline &middot; objects &middot; Azure Az module &middot; scripting</p>
+  </div>
+  <div class="nav-links">
+    <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+    <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+    <a href="linux-terminal.html" class="nav-link">&#x1F427; Linux Lab</a>
+    <a href="docker-terminal.html" class="nav-link">&#x1F433; Docker Lab</a>
+    <a href="k8s-terminal.html" class="nav-link">&#x2388; K8s Lab</a>
+    <a href="az400.html" class="nav-link">&#x1F504; AZ-400</a>
+  </div>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="stab active" onclick="showTab('exercises',this)">Exercises</div>
+      <div class="stab" onclick="showTab('cheatsheet',this)">Cheatsheet</div>
+      <div class="stab" onclick="showTab('state',this)">State</div>
+    </div>
+    <div class="sidebar-content" id="tab-exercises">
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:11px;font-weight:700;color:var(--white);">Lab Progress</span>
+          <span style="font-size:10px;color:var(--blue);" id="prog-text">0 / 0 done</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div id="ex-list"></div>
+    </div>
+    <div class="sidebar-content" id="tab-cheatsheet" style="display:none;">
+      <div id="cheatsheet-content"></div>
+    </div>
+    <div class="sidebar-content" id="tab-state" style="display:none;">
+      <div class="state-section">
+        <div class="state-title">&#x1F4C2; Location</div>
+        <div id="state-pwd" class="state-item"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">&#x24C5; Variables</div>
+        <div id="state-vars"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">&#x2699; Processes (top 5)</div>
+        <div id="state-procs"></div>
+      </div>
+      <div class="state-section">
+        <div class="state-title">&#x1F527; Services</div>
+        <div id="state-svcs"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="terminal-wrap">
+    <div class="term-top-bar">
+      <span class="term-dot dot-red"></span>
+      <span class="term-dot dot-yellow"></span>
+      <span class="term-dot dot-green"></span>
+      <span class="term-title">PowerShell 7.4.0</span>
+      <span style="font-size:10px;color:var(--gray);">PS C:\Users\PSUser &nbsp;|&nbsp; Type <span style="color:var(--yellow)">Get-Help</span> or <span style="color:var(--yellow)">help</span> to start</span>
+    </div>
+    <div class="terminal" id="terminal" onclick="focusInput()">
+      <div id="output"></div>
+      <div class="input-row">
+        <span class="input-prompt" id="live-prompt">PS C:\Users\PSUser&gt;&nbsp;</span>
+        <input type="text" id="cmd-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleKey(event)">
+      </div>
+    </div>
+    <div class="challenge-bar" id="challenge-bar" style="display:none;">
+      <div class="challenge-title">&#x1F3AF; Current Challenge</div>
+      <div class="challenge-text" id="challenge-text"></div>
+      <div class="challenge-hint" id="challenge-hint"></div>
+      <div class="challenge-btns">
+        <button class="cbtn hint" onclick="showHint()">&#x1F4A1; Hint</button>
+        <button class="cbtn skip" onclick="skipChallenge()">&#x23ED; Skip</button>
+        <button class="cbtn" onclick="resetExercise()" style="color:var(--red);border-color:var(--red);">&#x1F504; Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Filesystem ────────────────────────────────────────────────────────────────
+const FS = {
+  'C:\\': {type:'dir', children:['Users','Windows','Program Files','Temp']},
+  'C:\\Users': {type:'dir', children:['PSUser']},
+  'C:\\Users\\PSUser': {type:'dir', children:['Documents','Desktop','Scripts','.azure']},
+  'C:\\Users\\PSUser\\Documents': {type:'dir', children:['report.csv','servers.txt','config.json','notes.txt']},
+  'C:\\Users\\PSUser\\Desktop': {type:'dir', children:['readme.txt']},
+  'C:\\Users\\PSUser\\Scripts': {type:'dir', children:['deploy.ps1','backup.ps1','monitor.ps1']},
+  'C:\\Users\\PSUser\\.azure': {type:'dir', children:['config']},
+  'C:\\Windows': {type:'dir', children:['System32']},
+  'C:\\Windows\\System32': {type:'dir', children:[]},
+  'C:\\Program Files': {type:'dir', children:['PowerShell']},
+  'C:\\Program Files\\PowerShell': {type:'dir', children:['7']},
+  'C:\\Temp': {type:'dir', children:['setup.log','temp.txt']},
+  'C:\\Users\\PSUser\\Documents\\report.csv':{type:'file',content:`Name,Department,Salary,Status
+Alice Johnson,Engineering,95000,Active
+Bob Smith,Marketing,72000,Active
+Carol White,Engineering,88000,Active
+Dave Brown,HR,65000,Inactive
+Eve Davis,Engineering,102000,Active
+Frank Wilson,Marketing,68000,Active`},
+  'C:\\Users\\PSUser\\Documents\\servers.txt':{type:'file',content:`web-server-01
+web-server-02
+db-server-01
+db-server-02
+app-server-01`},
+  'C:\\Users\\PSUser\\Documents\\config.json':{type:'file',content:`{
+  "appName": "MyWebApp",
+  "environment": "production",
+  "database": {
+    "host": "db-server-01",
+    "port": 5432,
+    "name": "appdb"
+  },
+  "features": {
+    "caching": true,
+    "logging": true,
+    "debugMode": false
+  },
+  "maxConnections": 100
+}`},
+  'C:\\Users\\PSUser\\Documents\\notes.txt':{type:'file',content:`PowerShell Lab Notes
+====================
+- Use Get-Help <cmdlet> -Examples for examples
+- Pipeline passes objects, not text
+- $_ refers to current pipeline object
+- Use Format-Table or Format-List for output
+- Ctrl+C to cancel long-running commands`},
+  'C:\\Users\\PSUser\\Desktop\\readme.txt':{type:'file',content:`Welcome to the PowerShell Lab!
+Run: Get-Help to see available commands
+Run: Set-Location C:\Users\PSUser\Documents to navigate`},
+  'C:\\Users\\PSUser\\Scripts\\deploy.ps1':{type:'file',content:`param(
+    [string]$Environment = "staging",
+    [string]$Version = "1.0.0"
+)
+
+Write-Host "Deploying version $Version to $Environment..." -ForegroundColor Cyan
+Start-Sleep -Seconds 2
+Write-Host "Deployment complete!" -ForegroundColor Green`},
+  'C:\\Users\\PSUser\\Scripts\\backup.ps1':{type:'file',content:`$backupPath = "C:\Temp\backup_$(Get-Date -Format 'yyyyMMdd').zip"
+$sourcePath = "C:\Users\PSUser\Documents"
+
+Write-Host "Creating backup: $backupPath"
+Compress-Archive -Path $sourcePath -DestinationPath $backupPath
+Write-Host "Backup complete: $backupPath" -ForegroundColor Green`},
+  'C:\\Users\\PSUser\\Scripts\\monitor.ps1':{type:'file',content:`$threshold = 80
+$processes = Get-Process | Where-Object { $_.CPU -gt $threshold }
+if ($processes) {
+    Write-Warning "High CPU processes detected:"
+    $processes | Select-Object Name, CPU, Id | Format-Table
+} else {
+    Write-Host "All processes within normal CPU range." -ForegroundColor Green
+}`},
+  'C:\\Temp\\setup.log':{type:'file',content:`[2024-01-15 08:00:01] INFO  Setup started
+[2024-01-15 08:00:05] INFO  Checking prerequisites
+[2024-01-15 08:00:10] INFO  Installing components
+[2024-01-15 08:01:30] WARN  Component 'LegacyLib' is deprecated
+[2024-01-15 08:02:00] INFO  Setup completed successfully`},
+  'C:\\Temp\\temp.txt':{type:'file',content:`Temporary file - safe to delete`},
+  'C:\\Users\\PSUser\\.azure\\config':{type:'file',content:`[cloud]
+name = AzureCloud
+[core]
+output = table`},
+};
+
+// ── Process list ──────────────────────────────────────────────────────────────
+const PROCS = [
+  {Name:'pwsh',Id:1000,CPU:0.52,WorkingSet:65536,Handles:420,Status:'Running'},
+  {Name:'code',Id:2340,CPU:2.14,WorkingSet:524288,Handles:892,Status:'Running'},
+  {Name:'chrome',Id:3120,CPU:5.80,WorkingSet:1048576,Handles:1234,Status:'Running'},
+  {Name:'chrome',Id:3121,CPU:1.20,WorkingSet:204800,Handles:456,Status:'Running'},
+  {Name:'explorer',Id:4000,CPU:0.10,WorkingSet:81920,Handles:670,Status:'Running'},
+  {Name:'svchost',Id:5001,CPU:0.05,WorkingSet:20480,Handles:200,Status:'Running'},
+  {Name:'svchost',Id:5002,CPU:0.03,WorkingSet:18432,Handles:190,Status:'Running'},
+  {Name:'Teams',Id:6100,CPU:3.40,WorkingSet:819200,Handles:1100,Status:'Running'},
+  {Name:'notepad',Id:7000,CPU:0.01,WorkingSet:8192,Handles:120,Status:'Running'},
+  {Name:'WindowsTerminal',Id:8000,CPU:0.80,WorkingSet:131072,Handles:380,Status:'Running'},
+];
+let procs = JSON.parse(JSON.stringify(PROCS));
+
+// ── Service list ──────────────────────────────────────────────────────────────
+let services = [
+  {Name:'wuauserv',DisplayName:'Windows Update',Status:'Running',StartType:'Automatic'},
+  {Name:'WinDefend',DisplayName:'Windows Defender Antivirus',Status:'Running',StartType:'Automatic'},
+  {Name:'spooler',DisplayName:'Print Spooler',Status:'Stopped',StartType:'Automatic'},
+  {Name:'W32Time',DisplayName:'Windows Time',Status:'Running',StartType:'Automatic'},
+  {Name:'BITS',DisplayName:'Background Intelligent Transfer',Status:'Stopped',StartType:'Manual'},
+  {Name:'Dhcp',DisplayName:'DHCP Client',Status:'Running',StartType:'Automatic'},
+  {Name:'Dnscache',DisplayName:'DNS Client',Status:'Running',StartType:'Automatic'},
+  {Name:'LanmanServer',DisplayName:'Server',Status:'Running',StartType:'Automatic'},
+  {Name:'WSearch',DisplayName:'Windows Search',Status:'Running',StartType:'Automatic'},
+  {Name:'EventLog',DisplayName:'Windows Event Log',Status:'Running',StartType:'Automatic'},
+];
+
+// ── Azure VM simulation ───────────────────────────────────────────────────────
+const AZ_SUBSCRIPTIONS = [{Name:'Dev Subscription',Id:'a1b2c3d4-0001',State:'Enabled'},{Name:'Prod Subscription',Id:'a1b2c3d4-0002',State:'Enabled'}];
+const AZ_RGS = [{ResourceGroupName:'rg-dev',Location:'eastus',ProvisioningState:'Succeeded'},{ResourceGroupName:'rg-prod',Location:'westeurope',ProvisioningState:'Succeeded'},{ResourceGroupName:'rg-monitoring',Location:'eastus',ProvisioningState:'Succeeded'}];
+const AZ_VMS = [
+  {Name:'vm-web-01',ResourceGroupName:'rg-dev',Location:'eastus',PowerState:'VM running',Size:'Standard_B2s'},
+  {Name:'vm-web-02',ResourceGroupName:'rg-dev',Location:'eastus',PowerState:'VM running',Size:'Standard_B2s'},
+  {Name:'vm-db-01',ResourceGroupName:'rg-prod',Location:'westeurope',PowerState:'VM deallocated',Size:'Standard_D4s_v3'},
+];
+let azConnected = false;
+let azContext = null;
+
+// ── Variables store ───────────────────────────────────────────────────────────
+let vars = {
+  PSVersionTable: {PSVersion:'7.4.0',OS:'Microsoft Windows 10.0.22621',Platform:'Win32NT'},
+  HOME: 'C:\\Users\\PSUser',
+  COMPUTERNAME: 'PSLAB-PC',
+  USERNAME: 'PSUser',
+  USERPROFILE: 'C:\\Users\\PSUser',
+  TEMP: 'C:\\Temp',
+  PSModulePath: 'C:\\Program Files\\PowerShell\\7\\Modules',
+  env: {PATH:'C:\\Windows\\System32;C:\\Windows', JAVA_HOME:'C:\\Program Files\\Java\\jdk-17'},
+};
+let userVars = {};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let cwd = 'C:\\Users\\PSUser';
+let cmdHistory = [];
+let histIndex = -1;
+let currentExercise = null;
+let currentTaskIdx = 0;
+let doneMap = {};
+let lastOutput = [];   // last pipeline result (array of objects)
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function resolvePath(p) {
+  if (!p) return cwd;
+  p = p.trim().replace(/\//g, '\\');
+  if (p === '~') return 'C:\\Users\\PSUser';
+  if (p === '..') {
+    const parts = cwd.split('\\');
+    if (parts.length > 1) parts.pop();
+    return parts.join('\\') || 'C:\\';
+  }
+  if (p === '.') return cwd;
+  if (/^[A-Za-z]:\\/.test(p)) return p.replace(/\\$/, '') || p;
+  return (cwd + '\\' + p).replace(/\\\\/, '\\');
+}
+function fsGet(p) { return FS[p] || FS[p + '\\'] || null; }
+function isDir(p) { const e = fsGet(p); return e && e.type === 'dir'; }
+function isFile(p) { const e = fsGet(p); return e && e.type === 'file'; }
+function getChildren(p) {
+  const e = fsGet(p);
+  if (!e || e.type !== 'dir') return [];
+  return (e.children || []).map(c => ({ name: c, full: p + '\\' + c, entry: fsGet(p + '\\' + c) || {type:'dir'} }));
+}
+function formatSize(bytes) {
+  if (bytes >= 1048576) return (bytes/1048576).toFixed(0) + ' MB';
+  if (bytes >= 1024) return (bytes/1024).toFixed(0) + ' KB';
+  return bytes + ' B';
+}
+function padR(s, n) { return String(s).padEnd(n); }
+function padL(s, n) { return String(s).padStart(n); }
+function fmtDate() { return new Date().toLocaleDateString('en-US',{year:'numeric',month:'2-digit',day:'2-digit'}) + ' ' + new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+
+// ── Output ────────────────────────────────────────────────────────────────────
+const outEl = document.getElementById('output');
+function print(text, cls='') {
+  const d = document.createElement('div');
+  d.className = 'out-line' + (cls ? ' ' + cls : '');
+  d.innerHTML = text;
+  outEl.appendChild(d);
+  scrollBottom();
+}
+function println(text='', cls='') { print(text, cls); }
+function scrollBottom() { document.getElementById('terminal').scrollTop = 99999; }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Arg parser ────────────────────────────────────────────────────────────────
+function tokenize(input) {
+  const tokens = []; let cur = '', inQ = false, qc = '';
+  for (const ch of input) {
+    if (inQ) { if (ch === qc) inQ = false; else cur += ch; }
+    else if (ch === '"' || ch === "'") { inQ = true; qc = ch; }
+    else if (ch === ' ') { if (cur) tokens.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  if (cur) tokens.push(cur);
+  return tokens;
+}
+
+function parsePS(tokens) {
+  // returns {params: {}, positional: [], flags: []}
+  const p = {params:{}, positional:[], flags:[]};
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (t.startsWith('-')) {
+      const key = t.slice(1).toLowerCase();
+      const next = tokens[i+1];
+      if (next && !next.startsWith('-')) { p.params[key] = next; i++; }
+      else p.flags.push(key);
+    } else {
+      p.positional.push(t);
+    }
+  }
+  return p;
+}
+
+// ── Variable expansion ────────────────────────────────────────────────────────
+function expandVars(s) {
+  return s.replace(/\$(\w+)/g, (_, n) => {
+    const k = n.toLowerCase();
+    if (k === 'pwd') return cwd;
+    if (k === 'home') return vars.HOME;
+    if (k === 'env') return '';
+    if (userVars[n] !== undefined) return userVars[n];
+    if (vars[n] !== undefined) return typeof vars[n] === 'object' ? JSON.stringify(vars[n]) : vars[n];
+    return '$' + n;
+  });
+}
+
+// ── Pipeline processing ───────────────────────────────────────────────────────
+function runPipeline(segments) {
+  // segments: array of token arrays
+  let result = null;
+  for (let i = 0; i < segments.length; i++) {
+    result = runSegment(segments[i], result, i === segments.length - 1);
+  }
+}
+
+function runSegment(tokens, input, isLast) {
+  if (!tokens.length) return null;
+  const cmd = tokens[0].toLowerCase();
+  const rest = tokens.slice(1);
+
+  // Handle variable assignment: $name = value
+  const assignMatch = tokens[0].match(/^\$(\w+)$/);
+  if (assignMatch && tokens[1] === '=') {
+    const varName = assignMatch[1];
+    const valueStr = tokens.slice(2).join(' ');
+    const expanded = expandVars(valueStr);
+    // Try to parse as number
+    if (!isNaN(expanded) && expanded !== '') userVars[varName] = Number(expanded);
+    else userVars[varName] = expanded;
+    println('');
+    updateStatePanel();
+    return userVars[varName];
+  }
+
+  const aliases = {
+    'ls':'get-childitem','dir':'get-childitem','gci':'get-childitem',
+    'cd':'set-location','sl':'set-location','chdir':'set-location',
+    'cat':'get-content','gc':'get-content','type':'get-content',
+    'pwd':'get-location','gl':'get-location',
+    'rm':'remove-item','del':'remove-item','ri':'remove-item',
+    'cp':'copy-item','copy':'copy-item',
+    'mv':'move-item','move':'move-item',
+    'mkdir':'new-item',
+    'cls':'clear-host','clear':'clear-host',
+    'echo':'write-output',
+    'gps':'get-process',
+    'gsv':'get-service',
+    'sls':'select-string',
+    'where':'where-object',
+    'sort':'sort-object',
+    'select':'select-object',
+    'group':'group-object',
+    'measure':'measure-object',
+    'ft':'format-table',
+    'fl':'format-list',
+    'help':'get-help',
+    'man':'get-help',
+  };
+  const resolved = aliases[cmd] || cmd;
+
+  switch(resolved) {
+    case 'get-help': return cmdHelp(rest, input);
+    case 'get-command': return cmdGetCommand(rest, input);
+    case 'get-module': return cmdGetModule(rest, input);
+    case 'get-location': return cmdGetLocation(input);
+    case 'set-location': return cmdSetLocation(rest, input);
+    case 'get-childitem': return cmdGci(rest, input);
+    case 'get-item': return cmdGetItem(rest, input);
+    case 'get-content': return cmdGetContent(rest, input);
+    case 'set-content': return cmdSetContent(rest, input);
+    case 'add-content': return cmdAddContent(rest, input);
+    case 'out-file': return cmdOutFile(rest, input);
+    case 'new-item': return cmdNewItem(rest, input);
+    case 'remove-item': return cmdRemoveItem(rest, input);
+    case 'copy-item': return cmdCopyItem(rest, input);
+    case 'move-item': return cmdMoveItem(rest, input);
+    case 'test-path': return cmdTestPath(rest, input);
+    case 'get-process': return cmdGetProcess(rest, input);
+    case 'stop-process': return cmdStopProcess(rest, input);
+    case 'start-process': return cmdStartProcess(rest, input);
+    case 'get-service': return cmdGetService(rest, input);
+    case 'start-service': return cmdStartService(rest, input);
+    case 'stop-service': return cmdStopService(rest, input);
+    case 'restart-service': return cmdRestartService(rest, input);
+    case 'where-object': return cmdWhereObject(rest, input);
+    case 'select-object': return cmdSelectObject(rest, input);
+    case 'sort-object': return cmdSortObject(rest, input);
+    case 'group-object': return cmdGroupObject(rest, input);
+    case 'measure-object': return cmdMeasureObject(rest, input);
+    case 'format-table': return cmdFormatTable(rest, input);
+    case 'format-list': return cmdFormatList(rest, input);
+    case 'format-wide': return cmdFormatWide(rest, input);
+    case 'write-host': return cmdWriteHost(rest, input);
+    case 'write-output': return cmdWriteOutput(rest, input);
+    case 'write-error': println(rest.map(r=>expandVars(r)).join(' '), 'out-err'); return null;
+    case 'write-warning': println('WARNING: ' + rest.map(r=>expandVars(r)).join(' '), 'out-warn'); return null;
+    case 'write-verbose': println('VERBOSE: ' + rest.map(r=>expandVars(r)).join(' '), 'out-dim'); return null;
+    case 'get-variable': return cmdGetVariable(rest, input);
+    case 'set-variable': return cmdSetVariable(rest, input);
+    case 'remove-variable': { const n=rest[0]||''; delete userVars[n]; return null; }
+    case 'get-date': return cmdGetDate(rest, input);
+    case 'select-string': return cmdSelectString(rest, input);
+    case 'import-csv': return cmdImportCsv(rest, input);
+    case 'export-csv': return cmdExportCsv(rest, input);
+    case 'convertto-json': return cmdConvertToJson(rest, input);
+    case 'convertfrom-json': return cmdConvertFromJson(rest, input);
+    case 'compress-archive': return cmdCompressArchive(rest, input);
+    case 'expand-archive': return cmdExpandArchive(rest, input);
+    case 'get-computerinfo': return cmdGetComputerInfo(input);
+    case 'get-netadapter': return cmdGetNetAdapter(input);
+    case 'test-netconnection': return cmdTestNetConnection(rest, input);
+    case 'resolve-dnsname': return cmdResolveDns(rest, input);
+    case 'start-sleep': { const sec=parseInt(rest[1]||rest[0]||'1'); println(`Sleeping ${sec}s (simulated)`,'out-dim'); return null; }
+    case 'measure-command': println('Days: 0  Hours: 0  Minutes: 0  Seconds: 0  Milliseconds: 42',''); return null;
+    case 'invoke-webrequest': case 'iwr': case 'curl': case 'wget': return cmdInvokeWebRequest(rest, input);
+    case 'clear-host': outEl.innerHTML=''; return null;
+    case 'exit': println('(Use browser to close the tab)','out-dim'); return null;
+    // Azure
+    case 'connect-azaccount': return cmdConnectAz(rest);
+    case 'get-azsubscription': return cmdGetAzSubscription(rest);
+    case 'set-azcontext': return cmdSetAzContext(rest);
+    case 'get-azresourcegroup': return cmdGetAzRG(rest);
+    case 'new-azresourcegroup': return cmdNewAzRG(rest);
+    case 'get-azvm': return cmdGetAzVM(rest);
+    case 'start-azvm': return cmdStartAzVM(rest);
+    case 'stop-azvm': return cmdStopAzVM(rest);
+    case 'get-azstorageaccount': return cmdGetAzStorage(rest);
+    case 'get-azkeyvaultsecret': return cmdGetAzKVSecret(rest);
+    default:
+      println(`The term '${escHtml(tokens[0])}' is not recognized as the name of a cmdlet, function, script file, or operable program.`, 'out-err');
+      println(`Suggestion: Check the spelling or run Get-Help for available commands.`, 'out-dim');
+      return null;
+  }
+}
+
+// ── Command implementations ───────────────────────────────────────────────────
+function cmdHelp(rest) {
+  const topic = rest[0]?.toLowerCase().replace(/^get-/,'');
+  if (!rest.length || rest[0] === '-full') {
+    println(`&#x1F4BB;  PowerShell Lab &#x2014; Available Commands`,'out-info');println('');
+    println(`  NAVIGATION`, 'out-dim');
+    println(`    Get-Location (pwd)          Set-Location (cd) &lt;path&gt;`);
+    println(`    Get-ChildItem (ls/dir)       Get-Item &lt;path&gt;           Test-Path &lt;path&gt;`);
+    println(`  FILE OPERATIONS`, 'out-dim');
+    println(`    Get-Content (cat) &lt;file&gt;    Set-Content &lt;file&gt;         Add-Content &lt;file&gt;`);
+    println(`    New-Item (mkdir) &lt;name&gt;     Remove-Item (rm) &lt;path&gt;    Copy-Item   Move-Item`);
+    println(`    Compress-Archive             Expand-Archive              Out-File`);
+    println(`  OBJECTS &amp; PIPELINE`, 'out-dim');
+    println(`    Where-Object { $_.Prop -eq "val" }    Select-Object -Property Name,Status`);
+    println(`    Sort-Object -Property Name            Group-Object -Property Dept`);
+    println(`    Measure-Object -Property Salary -Sum  Format-Table   Format-List`);
+    println(`  DATA`, 'out-dim');
+    println(`    Import-Csv &lt;file&gt;    Export-Csv &lt;file&gt;    ConvertTo-Json    ConvertFrom-Json`);
+    println(`    Select-String -Pattern "regex" -Path &lt;file&gt;`);
+    println(`  SYSTEM`, 'out-dim');
+    println(`    Get-Process (gps)   Stop-Process -Name/-Id    Get-Service (gsv)`);
+    println(`    Start-Service       Stop-Service              Get-ComputerInfo`);
+    println(`    Get-NetAdapter      Test-NetConnection         Resolve-DnsName`);
+    println(`  VARIABLES`, 'out-dim');
+    println(`    $name = value       Get-Variable   Remove-Variable   $PSVersionTable`);
+    println(`  AZURE`, 'out-dim');
+    println(`    Connect-AzAccount   Get-AzSubscription    Set-AzContext`);
+    println(`    Get-AzResourceGroup Get-AzVM    Start-AzVM    Stop-AzVM`);
+    println('');
+    println(`  Tip: pipe with |   e.g.  Get-Process | Where-Object { $_.CPU -gt 1 } | Sort-Object CPU`,'out-dim');
+    return null;
+  }
+  const examples = {
+    'childitem': `Get-ChildItem C:\\Users\\PSUser\\Documents\nGet-ChildItem -Recurse -Filter *.txt\nGet-ChildItem | Where-Object { $_.Length -gt 1000 }`,
+    'content': `Get-Content report.csv\nGet-Content servers.txt | ForEach-Object { "Server: $_" }`,
+    'process': `Get-Process\nGet-Process -Name chrome\nGet-Process | Where-Object { $_.CPU -gt 2 } | Sort-Object CPU -Descending`,
+    'service': `Get-Service\nGet-Service -Name wuauserv\nGet-Service | Where-Object { $_.Status -eq "Stopped" }`,
+    'whereobject': `Get-Process | Where-Object { $_.CPU -gt 1 }\nImport-Csv report.csv | Where-Object { $_.Department -eq "Engineering" }`,
+    'selectobject': `Get-Process | Select-Object Name,Id,CPU\nImport-Csv report.csv | Select-Object -First 3`,
+    'importcsv': `Import-Csv C:\\Users\\PSUser\\Documents\\report.csv\nImport-Csv report.csv | Where-Object { $_.Status -eq "Active" }`,
+    'convertto-json': `Get-Process | Select-Object Name,Id | ConvertTo-Json\n$data | ConvertTo-Json -Depth 3`,
+    'azvm': `Get-AzVM\nGet-AzVM -ResourceGroupName rg-dev\nStop-AzVM -Name vm-web-01 -ResourceGroupName rg-dev`,
+  };
+  const key = Object.keys(examples).find(k => topic && topic.includes(k));
+  if (key) { println(`Examples for ${rest[0]}:`,'out-info'); println(''); println(escHtml(examples[key]),'out-yellow'); }
+  else { println(`Get-Help: no detailed help for '${escHtml(rest[0])}'. Try: Get-Help -Full`,'out-warn'); }
+  return null;
+}
+
+function cmdGetCommand(rest) {
+  const p = parsePS(rest);
+  const filter = p.positional[0] || '';
+  const cmds = ['Get-ChildItem','Get-Content','Set-Content','Get-Location','Set-Location',
+    'New-Item','Remove-Item','Copy-Item','Move-Item','Test-Path','Get-Item',
+    'Get-Process','Stop-Process','Get-Service','Start-Service','Stop-Service',
+    'Where-Object','Select-Object','Sort-Object','Group-Object','Measure-Object',
+    'Format-Table','Format-List','Import-Csv','Export-Csv','ConvertTo-Json',
+    'ConvertFrom-Json','Select-String','Compress-Archive','Expand-Archive',
+    'Write-Host','Write-Output','Write-Error','Write-Warning',
+    'Get-Variable','Set-Variable','Get-Date','Get-ComputerInfo',
+    'Get-NetAdapter','Test-NetConnection','Resolve-DnsName',
+    'Connect-AzAccount','Get-AzSubscription','Get-AzResourceGroup','Get-AzVM',
+    'Start-AzVM','Stop-AzVM','Get-AzStorageAccount'];
+  const filtered = filter ? cmds.filter(c => c.toLowerCase().includes(filter.toLowerCase())) : cmds;
+  println(padR('CommandType',15) + padR('Name',35) + 'Version    Source','out-dim');
+  println(padR('-----------',15) + padR('----',35) + '-------    ------','out-dim');
+  filtered.forEach(c => println(padR('Cmdlet',15) + padR(c,35) + '7.4.0      Microsoft.PowerShell.Core'));
+  return filtered.map(c=>({Name:c,CommandType:'Cmdlet'}));
+}
+
+function cmdGetModule(rest) {
+  const modules = [
+    {Name:'Microsoft.PowerShell.Core',Version:'7.4.0'},
+    {Name:'Microsoft.PowerShell.Management',Version:'7.4.0'},
+    {Name:'Microsoft.PowerShell.Utility',Version:'7.4.0'},
+    {Name:'Az.Accounts',Version:'2.13.2'},
+    {Name:'Az.Compute',Version:'6.3.0'},
+    {Name:'Az.Resources',Version:'6.11.0'},
+    {Name:'Az.Storage',Version:'5.10.1'},
+  ];
+  println(padR('ModuleType',12)+padR('Version',10)+padR('Name',35)+'ExportedCommands','out-dim');
+  println(padR('----------',12)+padR('-------',10)+padR('----',35)+'----------------','out-dim');
+  modules.forEach(m=>println(padR('Manifest',12)+padR(m.Version,10)+padR(m.Name,35)+'...'));
+  return modules;
+}
+
+function cmdGetLocation() {
+  println(`Path`,'out-dim');println(`----`,'out-dim');println(cwd);
+  return {Path:cwd};
+}
+
+function cmdSetLocation(rest) {
+  const raw = rest[0]?.replace(/"/g,'').replace(/'/g,'') || cwd;
+  const target = expandVars(raw);
+  const resolved = resolvePath(target);
+  if (!isDir(resolved)) { println(`Set-Location: Cannot find path '${escHtml(resolved)}' because it does not exist.`,'out-err'); return null; }
+  cwd = resolved;
+  document.getElementById('live-prompt').textContent = 'PS ' + cwd + '> ';
+  updateStatePanel();
+  return null;
+}
+
+function cmdGci(rest) {
+  const p = parsePS(rest);
+  const target = p.positional[0] ? resolvePath(expandVars(p.positional[0])) : cwd;
+  const recurse = p.flags.includes('recurse') || p.flags.includes('r');
+  const filter = p.params['filter'];
+  if (!isDir(target)) { if (isFile(target)) { println(target); return [{FullName:target}]; } println(`Get-ChildItem: Cannot find path '${escHtml(target)}'.`,'out-err'); return null; }
+  const children = getChildren(target);
+  const filtered = filter ? children.filter(c => c.name.endsWith(filter.replace('*',''))) : children;
+  if (!filtered.length) { println(''); return []; }
+  println('');println(`    Directory: ${escHtml(target)}`,'out-dim');println('');
+  println(padR('Mode',10) + padR('LastWriteTime',22) + padR('Length',10) + 'Name','out-dim');
+  println(padR('----',10) + padR('-------------',22) + padR('------',10) + '----','out-dim');
+  const result = [];
+  filtered.forEach(c => {
+    const isD = c.entry && c.entry.type === 'dir';
+    const len = isD ? '' : (c.entry?.content?.length || 0).toString();
+    println(padR(isD?'d----':'-----',10) + padR(fmtDate(),22) + padR(len,10) + escHtml(c.name), isD ? 'out-cyan' : '');
+    result.push({Name:c.name, FullName:c.full, Mode:isD?'d----':'-----', Length:isD?0:(c.entry?.content?.length||0), LastWriteTime:fmtDate()});
+  });
+  println('');
+  return result;
+}
+
+function cmdGetItem(rest) {
+  const p = parsePS(rest);
+  const target = resolvePath(expandVars(p.positional[0]||cwd));
+  if (!fsGet(target)) { println(`Get-Item: Cannot find path '${escHtml(target)}'.`,'out-err'); return null; }
+  const isD = isDir(target);
+  println(`    Directory: ${escHtml(target.split('\\').slice(0,-1).join('\\'))}`,'out-dim');println('');
+  println(padR('Mode',10)+padR('LastWriteTime',22)+padR('Length',10)+'Name','out-dim');
+  println(padR(isD?'d----':'-----',10)+padR(fmtDate(),22)+padR('',10)+escHtml(target.split('\\').pop()),isD?'out-cyan':'');
+  return {Name:target.split('\\').pop(), FullName:target, Mode:isD?'d----':'-----'};
+}
+
+function cmdGetContent(rest, input) {
+  if (input) { println(JSON.stringify(input,null,2),'out-dim'); return input; }
+  const p = parsePS(rest);
+  const raw = p.positional[0] || p.params['path'] || '';
+  const target = resolvePath(expandVars(raw));
+  if (!isFile(target)) { println(`Get-Content: Cannot find path '${escHtml(target)}' because it does not exist.`,'out-err'); return null; }
+  const lines = FS[target].content.split('\n');
+  const tail = p.params['tail'] ? lines.slice(-parseInt(p.params['tail'])) : (p.params['totalcount'] ? lines.slice(0, parseInt(p.params['totalcount'])) : lines);
+  tail.forEach(l => println(escHtml(l)));
+  return lines;
+}
+
+function cmdSetContent(rest, input) {
+  const p = parsePS(rest);
+  const target = resolvePath(expandVars(p.positional[0]||p.params['path']||''));
+  const value = p.positional[1] || p.params['value'] || (input?JSON.stringify(input):'');
+  if (!target) { println('Set-Content: -Path required','out-err'); return null; }
+  if (!FS[target]) FS[target] = {type:'file', content:''};
+  FS[target].content = expandVars(value);
+  const parent = target.split('\\').slice(0,-1).join('\\');
+  const fname = target.split('\\').pop();
+  if (FS[parent] && !FS[parent].children.includes(fname)) FS[parent].children.push(fname);
+  return null;
+}
+
+function cmdAddContent(rest, input) {
+  const p = parsePS(rest);
+  const target = resolvePath(expandVars(p.positional[0]||p.params['path']||''));
+  const value = p.positional[1] || p.params['value'] || '';
+  if (!FS[target]) FS[target] = {type:'file', content:''};
+  FS[target].content += '\n' + expandVars(value);
+  return null;
+}
+
+function cmdOutFile(rest, input) {
+  const p = parsePS(rest);
+  const target = resolvePath(expandVars(p.positional[0]||p.params['filepath']||p.params['path']||''));
+  if (!target) { println('Out-File: -FilePath required','out-err'); return null; }
+  const content = input ? (Array.isArray(input) ? input.map(o=>typeof o==='object'?JSON.stringify(o):o).join('\n') : String(input)) : '';
+  FS[target] = {type:'file', content};
+  const parent = target.split('\\').slice(0,-1).join('\\');
+  const fname = target.split('\\').pop();
+  if (FS[parent] && !FS[parent].children.includes(fname)) FS[parent].children.push(fname);
+  println(`File saved: ${escHtml(target)}`,'out-ok');
+  return null;
+}
+
+function cmdNewItem(rest) {
+  const p = parsePS(rest);
+  const rawName = p.positional[0] || p.params['name'] || p.params['path'] || '';
+  const name = expandVars(rawName);
+  const itemType = (p.params['itemtype'] || p.params['type'] || 'directory').toLowerCase();
+  const target = resolvePath(name);
+  const parent = target.split('\\').slice(0,-1).join('\\');
+  const fname = target.split('\\').pop();
+  if (fsGet(target)) { println(`New-Item: '${escHtml(target)}' already exists.`,'out-warn'); return null; }
+  if (itemType === 'file') { FS[target] = {type:'file',content:p.params['value']||''}; }
+  else { FS[target] = {type:'dir',children:[]}; }
+  if (FS[parent] && !FS[parent].children.includes(fname)) FS[parent].children.push(fname);
+  println('');
+  const isD = itemType !== 'file';
+  println(padR(isD?'d----':'-----',10)+padR(fmtDate(),22)+padR('',10)+escHtml(fname),isD?'out-cyan':'');
+  return {Name:fname, FullName:target};
+}
+
+function cmdRemoveItem(rest) {
+  const p = parsePS(rest);
+  const target = resolvePath(expandVars(p.positional[0]||p.params['path']||''));
+  if (!fsGet(target)) { println(`Remove-Item: Cannot find path '${escHtml(target)}'.`,'out-err'); return null; }
+  const entry = fsGet(target);
+  if (entry.type==='dir' && entry.children.length && !p.flags.includes('recurse') && !p.flags.includes('r') && !p.flags.includes('force')) {
+    println(`Remove-Item: '${escHtml(target)}' contains items. Use -Recurse to delete.`,'out-err'); return null;
+  }
+  const parent = target.split('\\').slice(0,-1).join('\\');
+  const fname = target.split('\\').pop();
+  if (FS[parent]) FS[parent].children = FS[parent].children.filter(c=>c!==fname);
+  delete FS[target];
+  return null;
+}
+
+function cmdCopyItem(rest) {
+  const p = parsePS(rest);
+  const src = resolvePath(expandVars(p.positional[0]||p.params['path']||''));
+  const dst = resolvePath(expandVars(p.positional[1]||p.params['destination']||''));
+  if (!fsGet(src)) { println(`Copy-Item: Cannot find '${escHtml(src)}'.`,'out-err'); return null; }
+  const entry = fsGet(src);
+  FS[dst] = {type:entry.type, content:entry.content, children:entry.children?[...entry.children]:[]};
+  const parent = dst.split('\\').slice(0,-1).join('\\');
+  const fname = dst.split('\\').pop();
+  if (FS[parent] && !FS[parent].children.includes(fname)) FS[parent].children.push(fname);
+  return null;
+}
+
+function cmdMoveItem(rest) {
+  cmdCopyItem(rest);
+  const p = parsePS(rest);
+  const src = resolvePath(expandVars(p.positional[0]||p.params['path']||''));
+  const parent = src.split('\\').slice(0,-1).join('\\');
+  const fname = src.split('\\').pop();
+  if (FS[parent]) FS[parent].children = FS[parent].children.filter(c=>c!==fname);
+  delete FS[src];
+  return null;
+}
+
+function cmdTestPath(rest) {
+  const p = parsePS(rest);
+  const target = resolvePath(expandVars(p.positional[0]||p.params['path']||''));
+  const result = !!fsGet(target);
+  println(result ? 'True' : 'False', result ? 'out-ok' : 'out-warn');
+  return result;
+}
+
+function cmdGetProcess(rest, input) {
+  const p = parsePS(rest);
+  const nameFilter = p.params['name'] || p.positional[0] || '';
+  const idFilter = p.params['id'] ? parseInt(p.params['id']) : null;
+  let list = procs;
+  if (nameFilter) list = list.filter(pr => pr.Name.toLowerCase().includes(nameFilter.toLowerCase().replace('*','')));
+  if (idFilter) list = list.filter(pr => pr.Id === idFilter);
+  if (!list.length) { println(`Get-Process: No process found with name '${escHtml(nameFilter)}'.`,'out-err'); return null; }
+  println(' Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName','out-dim');
+  println(' -------  ------    -----      -----     ------     --  -- -----------','out-dim');
+  list.forEach(pr => {
+    println(padL(pr.Handles,9)+padL(25,8)+padL(Math.round(pr.WorkingSet/1024),10)+padL(Math.round(pr.WorkingSet/1024),10)+padL(pr.CPU.toFixed(2),11)+padL(pr.Id,7)+'   1 '+pr.Name);
+  });
+  return list;
+}
+
+function cmdStopProcess(rest) {
+  const p = parsePS(rest);
+  const name = p.params['name'] || '';
+  const id = p.params['id'] ? parseInt(p.params['id']) : null;
+  const idx = procs.findIndex(pr => (name && pr.Name.toLowerCase()===name.toLowerCase()) || (id && pr.Id===id));
+  if (idx===-1) { println(`Stop-Process: No process found.`,'out-err'); return null; }
+  const pr = procs[idx];
+  procs.splice(idx,1);
+  println(`Process '${pr.Name}' (${pr.Id}) stopped.`,'out-ok');
+  updateStatePanel();
+  return null;
+}
+
+function cmdStartProcess(rest) {
+  const p = parsePS(rest);
+  const name = p.positional[0] || p.params['filepath'] || 'unknown';
+  println(`Starting process: ${escHtml(name)} (simulated)`,'out-ok');
+  return null;
+}
+
+function cmdGetService(rest, input) {
+  const p = parsePS(rest);
+  const name = p.params['name'] || p.positional[0] || '';
+  let list = services;
+  if (name) list = list.filter(s => s.Name.toLowerCase().includes(name.toLowerCase().replace('*','')));
+  if (!list.length) { println(`Get-Service: No service found with name '${escHtml(name)}'.`,'out-err'); return null; }
+  println(padR('Status',10)+padR('Name',25)+'DisplayName','out-dim');
+  println(padR('------',10)+padR('----',25)+'----------- ','out-dim');
+  list.forEach(s => {
+    const cls = s.Status==='Running'?'out-ok':'out-warn';
+    println(padR(s.Status,10)+padR(s.Name,25)+s.DisplayName, cls);
+  });
+  return list;
+}
+
+function cmdStartService(rest) {
+  const name = rest[0] || parsePS(rest).params['name'] || '';
+  const svc = services.find(s=>s.Name.toLowerCase()===name.toLowerCase());
+  if (!svc) { println(`Cannot find service '${escHtml(name)}'.`,'out-err'); return null; }
+  svc.Status = 'Running'; println(`Service '${svc.Name}' started.`,'out-ok'); updateStatePanel(); return null;
+}
+
+function cmdStopService(rest) {
+  const name = rest[0] || parsePS(rest).params['name'] || '';
+  const svc = services.find(s=>s.Name.toLowerCase()===name.toLowerCase());
+  if (!svc) { println(`Cannot find service '${escHtml(name)}'.`,'out-err'); return null; }
+  svc.Status = 'Stopped'; println(`Service '${svc.Name}' stopped.`,'out-ok'); updateStatePanel(); return null;
+}
+
+function cmdRestartService(rest) {
+  cmdStopService(rest); cmdStartService(rest); return null;
+}
+
+function cmdWhereObject(rest, input) {
+  if (!input || !Array.isArray(input)) { println('Where-Object: requires pipeline input.','out-err'); return null; }
+  // extract property and comparison from script block string
+  const block = rest.join(' ').replace(/[{}]/g,'').trim();
+  // patterns: $_.Prop -op val   or   $_.Prop -like "pattern"
+  const m = block.match(/\$_\.?(\w+)\s+(-\w+)\s+['"]?([^'"]+)['"]?/);
+  if (!m) { println('Where-Object: could not parse condition: '+escHtml(block),'out-err'); return input; }
+  const [,prop,op,val] = m;
+  const numVal = parseFloat(val);
+  const filtered = input.filter(obj => {
+    const v = obj[prop] !== undefined ? obj[prop] : obj[Object.keys(obj).find(k=>k.toLowerCase()===prop.toLowerCase())];
+    if (v === undefined) return false;
+    const nv = parseFloat(v);
+    switch(op.toLowerCase()) {
+      case '-eq': return String(v).toLowerCase() === val.toLowerCase();
+      case '-ne': return String(v).toLowerCase() !== val.toLowerCase();
+      case '-gt': return nv > numVal;
+      case '-lt': return nv < numVal;
+      case '-ge': return nv >= numVal;
+      case '-le': return nv <= numVal;
+      case '-like': return String(v).toLowerCase().includes(val.toLowerCase().replace(/\*/g,''));
+      case '-notlike': return !String(v).toLowerCase().includes(val.toLowerCase().replace(/\*/g,''));
+      case '-match': try{return new RegExp(val,'i').test(String(v));}catch{return false;}
+      case '-contains': return String(v).toLowerCase().includes(val.toLowerCase());
+      default: return true;
+    }
+  });
+  return filtered;
+}
+
+function cmdSelectObject(rest, input) {
+  if (!input) return null;
+  const p = parsePS(rest);
+  const props = (p.params['property']||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const first = p.params['first'] ? parseInt(p.params['first']) : null;
+  const last = p.params['last'] ? parseInt(p.params['last']) : null;
+  const skip = p.params['skip'] ? parseInt(p.params['skip']) : null;
+  const expand = p.params['expandproperty'] || '';
+  let list = Array.isArray(input) ? input : [input];
+  if (skip) list = list.slice(skip);
+  if (first) list = list.slice(0, first);
+  if (last) list = list.slice(-last);
+  if (expand) {
+    const result = list.map(o=>o[expand]||o[Object.keys(o).find(k=>k.toLowerCase()===expand.toLowerCase())]);
+    result.forEach(r=>println(String(r)));
+    return result;
+  }
+  if (!props.length) return list;
+  const result = list.map(o => {
+    const newObj = {};
+    props.forEach(prop => { const k = Object.keys(o).find(k=>k.toLowerCase()===prop.toLowerCase()); if(k) newObj[prop]=o[k]; });
+    return newObj;
+  });
+  return result;
+}
+
+function cmdSortObject(rest, input) {
+  if (!input || !Array.isArray(input)) return input;
+  const p = parsePS(rest);
+  const prop = p.params['property'] || p.positional[0] || '';
+  const desc = p.flags.includes('descending');
+  if (!prop) return input;
+  return [...input].sort((a,b) => {
+    const va = a[prop]||a[Object.keys(a).find(k=>k.toLowerCase()===prop.toLowerCase())]||'';
+    const vb = b[prop]||b[Object.keys(b).find(k=>k.toLowerCase()===prop.toLowerCase())]||'';
+    const na = parseFloat(va), nb = parseFloat(vb);
+    const cmp = (!isNaN(na)&&!isNaN(nb)) ? na-nb : String(va).localeCompare(String(vb));
+    return desc ? -cmp : cmp;
+  });
+}
+
+function cmdGroupObject(rest, input) {
+  if (!input || !Array.isArray(input)) { println('Group-Object: requires pipeline input.','out-err'); return null; }
+  const p = parsePS(rest);
+  const prop = p.params['property'] || p.positional[0] || '';
+  const groups = {};
+  input.forEach(o => {
+    const k = String(o[prop]||o[Object.keys(o).find(ky=>ky.toLowerCase()===prop.toLowerCase())]||'');
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(o);
+  });
+  println(padR('Count',8)+padR('Name',25)+'Group','out-dim');
+  println(padR('-----',8)+padR('----',25)+'-----','out-dim');
+  Object.entries(groups).forEach(([k,v]) => println(padR(v.length,8)+padR(k,25)+'{ ... }'));
+  return Object.entries(groups).map(([k,v])=>({Count:v.length,Name:k,Group:v}));
+}
+
+function cmdMeasureObject(rest, input) {
+  if (!input || !Array.isArray(input)) { println('Measure-Object: requires pipeline input.','out-err'); return null; }
+  const p = parsePS(rest);
+  const prop = p.params['property'] || p.positional[0] || '';
+  const doSum = p.flags.includes('sum') || p.flags.includes('s');
+  const doAvg = p.flags.includes('average') || p.flags.includes('avg');
+  const doMin = p.flags.includes('minimum') || p.flags.includes('min');
+  const doMax = p.flags.includes('maximum') || p.flags.includes('max');
+  const vals = prop ? input.map(o=>{const k=Object.keys(o).find(k=>k.toLowerCase()===prop.toLowerCase());return parseFloat(o[k]);}).filter(n=>!isNaN(n)) : [];
+  println(`Count    : ${input.length}`);
+  if (prop) {
+    println(`Property : ${prop}`);
+    if (doSum||(!doAvg&&!doMin&&!doMax)) println(`Sum      : ${vals.reduce((a,b)=>a+b,0)}`);
+    if (doAvg) println(`Average  : ${(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2)}`);
+    if (doMin) println(`Minimum  : ${Math.min(...vals)}`);
+    if (doMax) println(`Maximum  : ${Math.max(...vals)}`);
+  }
+  return {Count:input.length};
+}
+
+function printTable(objects, props) {
+  if (!objects || !objects.length) { println('(empty)','out-dim'); return; }
+  const keys = props && props.length ? props : Object.keys(objects[0]);
+  const widths = keys.map(k => Math.max(k.length, ...objects.map(o=>String(o[k]??'').length)) + 2);
+  println(keys.map((k,i)=>padR(k,widths[i])).join('').trimEnd(),'out-dim');
+  println(keys.map((k,i)=>padR('-'.repeat(k.length),widths[i])).join('').trimEnd(),'out-dim');
+  objects.forEach(o => println(keys.map((k,i)=>padR(String(o[k]??''),widths[i])).join('').trimEnd()));
+}
+
+function cmdFormatTable(rest, input) {
+  if (!input) return null;
+  const p = parsePS(rest);
+  const props = p.params['property'] ? p.params['property'].split(',').map(s=>s.trim()) : null;
+  const list = Array.isArray(input) ? input : [input];
+  printTable(list, props);
+  return null;
+}
+
+function cmdFormatList(rest, input) {
+  if (!input) return null;
+  const p = parsePS(rest);
+  const props = p.params['property'] ? p.params['property'].split(',').map(s=>s.trim()) : null;
+  const list = Array.isArray(input) ? input : [input];
+  list.forEach((o,i) => {
+    if (i > 0) println('');
+    const keys = props || Object.keys(o);
+    keys.forEach(k => println(`${padR(k,20)}: ${escHtml(String(o[k]??''))}`));
+  });
+  return null;
+}
+
+function cmdFormatWide(rest, input) {
+  if (!input || !Array.isArray(input)) return null;
+  const p = parsePS(rest);
+  const prop = p.params['property'] || Object.keys(input[0]||{})[0] || 'Name';
+  const cols = parseInt(p.params['column']||'3');
+  const vals = input.map(o=>String(o[prop]??''));
+  const rows = [];
+  for (let i=0;i<vals.length;i+=cols) rows.push(vals.slice(i,i+cols));
+  rows.forEach(r => println(r.map(v=>padR(v,25)).join('')));
+  return null;
+}
+
+function cmdWriteHost(rest) {
+  const p = parsePS(rest);
+  const msg = p.positional.map(t=>expandVars(t)).join(' ');
+  const fg = p.params['foregroundcolor']||'';
+  const cls = {green:'out-ok',red:'out-err',yellow:'out-yellow',cyan:'out-info',gray:'out-dim',magenta:'out-purple'}[fg.toLowerCase()]||'';
+  println(escHtml(msg), cls);
+  return null;
+}
+
+function cmdWriteOutput(rest, input) {
+  if (input !== null && input !== undefined) { println(Array.isArray(input)?input.join('\n'):escHtml(String(input))); return input; }
+  const msg = rest.map(t=>expandVars(t)).join(' ');
+  println(escHtml(msg));
+  return msg;
+}
+
+function cmdGetVariable(rest) {
+  const name = rest[0]?.replace(/^\$/,'') || '';
+  const all = {...vars,...userVars};
+  if (name) {
+    const v = all[name];
+    if (v===undefined){println(`Get-Variable: Variable '${escHtml(name)}' not found.`,'out-err');return null;}
+    println(`Name                           Value`,'out-dim');
+    println(`----                           -----`,'out-dim');
+    println(`${padR(name,31)}${typeof v==='object'?JSON.stringify(v):escHtml(String(v))}`);
+    return {Name:name,Value:v};
+  }
+  println(`Name                           Value`,'out-dim');
+  println(`----                           -----`,'out-dim');
+  Object.entries(all).slice(0,20).forEach(([k,v])=>println(`${padR(k,31)}${typeof v==='object'?'{...}':escHtml(String(v))}`));
+  return all;
+}
+
+function cmdSetVariable(rest) {
+  const p = parsePS(rest);
+  const name = p.params['name'] || p.positional[0] || '';
+  const val = p.params['value'] || p.positional[1] || '';
+  if (!name){println('Set-Variable: -Name is required.','out-err');return null;}
+  userVars[name] = isNaN(val)?val:Number(val);
+  updateStatePanel();
+  return null;
+}
+
+function cmdGetDate(rest) {
+  const p = parsePS(rest);
+  const fmt = p.params['format'];
+  const now = new Date();
+  if (fmt) {
+    let s = fmt;
+    s = s.replace('yyyy',now.getFullYear()).replace('MM',String(now.getMonth()+1).padStart(2,'0'));
+    s = s.replace('dd',String(now.getDate()).padStart(2,'0')).replace('HH',String(now.getHours()).padStart(2,'0'));
+    s = s.replace('mm',String(now.getMinutes()).padStart(2,'0')).replace('ss',String(now.getSeconds()).padStart(2,'0'));
+    println(s);
+    return s;
+  }
+  println(now.toString());
+  return now;
+}
+
+function cmdSelectString(rest) {
+  const p = parsePS(rest);
+  const pattern = p.params['pattern'] || p.positional[0] || '';
+  const pathArg = p.params['path'] || p.positional[1] || '';
+  const inputArr = p.params['inputobject'];
+  const ci = p.flags.includes('casesensitive') ? '' : 'i';
+  let lines = [];
+  if (pathArg) {
+    const target = resolvePath(expandVars(pathArg));
+    if (!isFile(target)){println(`Select-String: Cannot find file '${escHtml(target)}'.`,'out-err');return null;}
+    lines = FS[target].content.split('\n').map((l,i)=>({file:target,line:i+1,text:l}));
+  }
+  if (!lines.length){println('Select-String: requires -Path or pipeline input.','out-warn');return null;}
+  try {
+    const rx = new RegExp(pattern, ci);
+    const matches = lines.filter(l=>rx.test(l.text));
+    matches.forEach(m=>println(`${escHtml(m.file)}:${m.line}:${escHtml(m.text)}`, 'out-ok'));
+    if (!matches.length) println('(no matches found)','out-dim');
+    return matches;
+  } catch { println(`Select-String: invalid regex '${escHtml(pattern)}'`,'out-err'); return null; }
+}
+
+function cmdImportCsv(rest) {
+  const p = parsePS(rest);
+  const target = resolvePath(expandVars(p.positional[0]||p.params['path']||''));
+  if (!isFile(target)){println(`Import-Csv: Cannot find file '${escHtml(target)}'.`,'out-err');return null;}
+  const lines = FS[target].content.split('\n').filter(l=>l.trim());
+  if (!lines.length) return [];
+  const headers = lines[0].split(',').map(h=>h.trim());
+  const rows = lines.slice(1).map(line=>{
+    const vals = line.split(',').map(v=>v.trim());
+    const obj = {};
+    headers.forEach((h,i)=>obj[h]=vals[i]||'');
+    return obj;
+  });
+  printTable(rows, null);
+  return rows;
+}
+
+function cmdExportCsv(rest, input) {
+  const p = parsePS(rest);
+  const target = resolvePath(expandVars(p.positional[0]||p.params['path']||''));
+  if (!input||!Array.isArray(input)){println('Export-Csv: requires pipeline input.','out-err');return null;}
+  const headers = Object.keys(input[0]);
+  const lines = [headers.join(','), ...input.map(o=>headers.map(h=>String(o[h]??'')).join(','))];
+  FS[target] = {type:'file', content:lines.join('\n')};
+  const parent = target.split('\\').slice(0,-1).join('\\');
+  const fname = target.split('\\').pop();
+  if (FS[parent] && !FS[parent].children.includes(fname)) FS[parent].children.push(fname);
+  println(`Exported ${input.length} objects to ${escHtml(target)}`,'out-ok');
+  return null;
+}
+
+function cmdConvertToJson(rest, input) {
+  if (!input){println('ConvertTo-Json: requires pipeline input.','out-err');return null;}
+  const depth = parseInt(parsePS(rest).params['depth']||'2');
+  const json = JSON.stringify(input, null, 2);
+  println(escHtml(json),'out-purple');
+  return json;
+}
+
+function cmdConvertFromJson(rest, input) {
+  const p = parsePS(rest);
+  const raw = p.positional[0] || p.params['inputobject'] || (typeof input==='string'?input:'');
+  try {
+    const obj = JSON.parse(expandVars(raw)||'{}');
+    println(JSON.stringify(obj,null,2),'out-purple');
+    return obj;
+  } catch { println('ConvertFrom-Json: invalid JSON.','out-err'); return null; }
+}
+
+function cmdCompressArchive(rest) {
+  const p = parsePS(rest);
+  const src = p.params['path'] || p.positional[0] || '';
+  const dst = p.params['destinationpath'] || p.positional[1] || '';
+  if (!src||!dst){println('Compress-Archive: -Path and -DestinationPath required.','out-err');return null;}
+  println(`Compressing '${escHtml(src)}' → '${escHtml(dst)}' ... Done`,'out-ok');
+  return null;
+}
+
+function cmdExpandArchive(rest) {
+  const p = parsePS(rest);
+  const src = p.params['path'] || p.positional[0] || '';
+  const dst = p.params['destinationpath'] || p.positional[1] || cwd;
+  println(`Extracting '${escHtml(src)}' → '${escHtml(dst)}' ... Done`,'out-ok');
+  return null;
+}
+
+function cmdGetComputerInfo() {
+  println(`CsName                       : PSLAB-PC`);
+  println(`WindowsProductName           : Windows 11 Pro`);
+  println(`WindowsVersion               : 22H2`);
+  println(`WindowsBuildLabEx            : 22621.2715`);
+  println(`OsArchitecture               : 64-bit`);
+  println(`CsProcessors                 : Intel Core i7-12700K`);
+  println(`CsTotalPhysicalMemory        : 34359738368`);
+  println(`OsLastBootUpTime             : ${fmtDate()}`);
+  return {CsName:'PSLAB-PC',OsArchitecture:'64-bit'};
+}
+
+function cmdGetNetAdapter() {
+  println(padR('Name',20)+padR('InterfaceDescription',35)+padR('Status',12)+'LinkSpeed','out-dim');
+  println(padR('----',20)+padR('--------------------',35)+padR('------',12)+'----------','out-dim');
+  println(padR('Ethernet',20)+padR('Intel(R) Ethernet Connection',35)+padR('Up',12)+'1 Gbps');
+  println(padR('Wi-Fi',20)+padR('Intel(R) Wi-Fi 6 AX201',35)+padR('Disconnected',12)+'0 bps','out-dim');
+  return [{Name:'Ethernet',Status:'Up'},{Name:'Wi-Fi',Status:'Disconnected'}];
+}
+
+function cmdTestNetConnection(rest) {
+  const p = parsePS(rest);
+  const host = p.positional[0] || p.params['computername'] || '8.8.8.8';
+  const port = p.params['port'];
+  println(`ComputerName     : ${escHtml(host)}`);
+  if (port) { println(`RemotePort       : ${escHtml(port)}`); println(`TcpTestSucceeded : True`,'out-ok'); }
+  else { println(`PingSucceeded    : True`,'out-ok'); println(`PingReplyDetails : RTT 12ms`); }
+  return {ComputerName:host,PingSucceeded:true};
+}
+
+function cmdResolveDns(rest) {
+  const p = parsePS(rest);
+  const name = p.positional[0] || p.params['name'] || 'example.com';
+  println(`Name                                           Type   TTL   Section    IPAddress`,'out-dim');
+  println(`----                                           ----   ---   -------    ---------`,'out-dim');
+  println(`${padR(name,47)}A      3600  Answer     93.184.216.34`);
+  return [{Name:name,Type:'A',IPAddress:'93.184.216.34'}];
+}
+
+function cmdInvokeWebRequest(rest) {
+  const p = parsePS(rest);
+  const uri = p.params['uri'] || p.positional[0] || '';
+  if (!uri){println('Invoke-WebRequest: -Uri is required.','out-err');return null;}
+  println(`StatusCode        : 200`,'out-ok');
+  println(`StatusDescription : OK`);
+  println(`ContentLength     : 1256`);
+  println(`Content           : (simulated response body)`,'out-dim');
+  return {StatusCode:200,StatusDescription:'OK'};
+}
+
+// ── Azure cmdlets ─────────────────────────────────────────────────────────────
+function cmdConnectAz(rest) {
+  println(`WARNING: Connect-AzAccount opens a browser in real PS. Simulating authentication...`,'out-warn');
+  println('Authenticating...');
+  setTimeout(()=>{
+    azConnected = true;
+    azContext = {Account:'psuser@contoso.com', Subscription:AZ_SUBSCRIPTIONS[0].Name, SubscriptionId:AZ_SUBSCRIPTIONS[0].Id, Tenant:'contoso.onmicrosoft.com'};
+    println(`Account          : psuser@contoso.com`,'out-ok');
+    println(`SubscriptionName : ${AZ_SUBSCRIPTIONS[0].Name}`,'out-ok');
+    println(`SubscriptionId   : ${AZ_SUBSCRIPTIONS[0].Id}`,'out-ok');
+    println(`TenantId         : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`);
+    scrollBottom();
+  }, 600);
+  return null;
+}
+
+function requireAz() {
+  if (!azConnected){println(`Connect-AzAccount: Run Connect-AzAccount first.`,'out-err');return false;}
+  return true;
+}
+
+function cmdGetAzSubscription(rest) {
+  if (!requireAz()) return null;
+  println(padR('Name',30)+padR('Id',40)+'State','out-dim');
+  println(padR('----',30)+padR('--',40)+'-----','out-dim');
+  AZ_SUBSCRIPTIONS.forEach(s=>println(padR(s.Name,30)+padR(s.Id,40)+s.State,'out-ok'));
+  return AZ_SUBSCRIPTIONS;
+}
+
+function cmdSetAzContext(rest) {
+  if (!requireAz()) return null;
+  const p = parsePS(rest);
+  const sub = p.params['subscription'] || p.params['subscriptionid'] || p.positional[0] || '';
+  const found = AZ_SUBSCRIPTIONS.find(s=>s.Name.toLowerCase().includes(sub.toLowerCase())||s.Id===sub);
+  if (!found){println(`Set-AzContext: Subscription '${escHtml(sub)}' not found.`,'out-err');return null;}
+  azContext.Subscription = found.Name;
+  azContext.SubscriptionId = found.Id;
+  println(`Account          : ${azContext.Account}`,'out-ok');
+  println(`SubscriptionName : ${found.Name}`,'out-ok');
+  println(`SubscriptionId   : ${found.Id}`,'out-ok');
+  return azContext;
+}
+
+function cmdGetAzRG(rest) {
+  if (!requireAz()) return null;
+  const p = parsePS(rest);
+  const name = p.params['name'] || p.positional[0] || '';
+  let list = AZ_RGS;
+  if (name) list = list.filter(r=>r.ResourceGroupName.toLowerCase().includes(name.toLowerCase()));
+  println(padR('ResourceGroupName',30)+padR('Location',15)+'ProvisioningState','out-dim');
+  println(padR('-----------------',30)+padR('--------',15)+'------------------','out-dim');
+  list.forEach(r=>println(padR(r.ResourceGroupName,30)+padR(r.Location,15)+r.ProvisioningState,'out-ok'));
+  return list;
+}
+
+function cmdNewAzRG(rest) {
+  if (!requireAz()) return null;
+  const p = parsePS(rest);
+  const name = p.params['name'] || p.positional[0] || '';
+  const loc = p.params['location'] || p.positional[1] || 'eastus';
+  AZ_RGS.push({ResourceGroupName:name,Location:loc,ProvisioningState:'Succeeded'});
+  println(`ResourceGroupName : ${name}`,'out-ok');
+  println(`Location          : ${loc}`);
+  println(`ProvisioningState : Succeeded`,'out-ok');
+  return {ResourceGroupName:name,Location:loc};
+}
+
+function cmdGetAzVM(rest) {
+  if (!requireAz()) return null;
+  const p = parsePS(rest);
+  const rg = p.params['resourcegroupname'] || '';
+  const name = p.params['name'] || p.positional[0] || '';
+  let list = AZ_VMS;
+  if (rg) list = list.filter(v=>v.ResourceGroupName.toLowerCase()===rg.toLowerCase());
+  if (name) list = list.filter(v=>v.Name.toLowerCase()===name.toLowerCase());
+  println(padR('Name',20)+padR('ResourceGroupName',22)+padR('Location',14)+padR('PowerState',20)+'Size','out-dim');
+  println(padR('----',20)+padR('-----------------',22)+padR('--------',14)+padR('----------',20)+'----','out-dim');
+  list.forEach(v=>{const cls=v.PowerState==='VM running'?'out-ok':'out-warn';println(padR(v.Name,20)+padR(v.ResourceGroupName,22)+padR(v.Location,14)+padR(v.PowerState,20)+v.Size,cls);});
+  return list;
+}
+
+function cmdStartAzVM(rest) {
+  if (!requireAz()) return null;
+  const p = parsePS(rest);
+  const name = p.params['name'] || p.positional[0] || '';
+  const rg = p.params['resourcegroupname'] || '';
+  const vm = AZ_VMS.find(v=>v.Name===name);
+  if (!vm){println(`VM '${escHtml(name)}' not found.`,'out-err');return null;}
+  vm.PowerState = 'VM running';
+  println(`RequestId : ${Math.random().toString(36).slice(2)}`);
+  println(`StatusCode: OK`,'out-ok');
+  println(`VM '${name}' started.`,'out-ok');
+  return {StatusCode:'OK'};
+}
+
+function cmdStopAzVM(rest) {
+  if (!requireAz()) return null;
+  const p = parsePS(rest);
+  const name = p.params['name'] || p.positional[0] || '';
+  const vm = AZ_VMS.find(v=>v.Name===name);
+  if (!vm){println(`VM '${escHtml(name)}' not found.`,'out-err');return null;}
+  vm.PowerState = 'VM deallocated';
+  println(`VM '${name}' stopped (deallocated).`,'out-ok');
+  return {StatusCode:'OK'};
+}
+
+function cmdGetAzStorage(rest) {
+  if (!requireAz()) return null;
+  const sa=[{StorageAccountName:'stdevapp01',ResourceGroupName:'rg-dev',Location:'eastus',Kind:'StorageV2',Sku:'Standard_LRS'},{StorageAccountName:'stproddata02',ResourceGroupName:'rg-prod',Location:'westeurope',Kind:'StorageV2',Sku:'Standard_GRS'}];
+  printTable(sa,['StorageAccountName','ResourceGroupName','Location','Kind','Sku']);
+  return sa;
+}
+
+function cmdGetAzKVSecret(rest) {
+  if (!requireAz()) return null;
+  println(`Name     : db-password`,'out-ok');
+  println(`Value    : (hidden — use -AsPlainText in real PS)`,'out-warn');
+  println(`Enabled  : True`);
+  return {Name:'db-password',Enabled:true};
+}
+
+// ── Run command (handle pipe) ─────────────────────────────────────────────────
+function runCommand(input) {
+  const raw = input.trim();
+  if (!raw) return;
+  cmdHistory.unshift(raw); histIndex = -1;
+
+  const lp = document.createElement('div'); lp.className = 'line';
+  lp.innerHTML = `<span class="prompt">PS ${escHtml(cwd)}&gt;&nbsp;</span><span class="cmd-echo">${escHtml(raw)}</span>`;
+  outEl.appendChild(lp);
+
+  // Check task
+  checkTask(raw);
+
+  // Split on pipe, but not inside quotes or script blocks {}
+  const segments = splitPipe(raw);
+  let result = null;
+  for (let i = 0; i < segments.length; i++) {
+    const toks = tokenize(segments[i].trim());
+    if (!toks.length) continue;
+    result = runSegment(toks, result, i === segments.length - 1);
+    // If result is array and not last segment, pass to next; if last, print if not already printed
+    if (Array.isArray(result) && i < segments.length - 1) continue;
+    if (Array.isArray(result) && i === segments.length - 1 && result.length) {
+      // auto-format if objects and not already printed
+      const firstCmd = tokenize(segments[segments.length-1].trim())[0]||'';
+      const autoFmt = !['format-table','format-list','format-wide','ft','fl','fw','where-object','where','select-object','select','sort-object','sort','group-object','group','measure-object','measure','export-csv','out-file','convertto-json'].includes(firstCmd.toLowerCase().replace(/^(where|select|sort|group|measure)$/,'$1-object'));
+      if (autoFmt && result.length && typeof result[0] === 'object') printTable(result, null);
+    }
+  }
+  lastOutput = Array.isArray(result) ? result : [];
+  updateStatePanel();
+  scrollBottom();
+}
+
+function splitPipe(input) {
+  const segments = []; let cur = '', depth = 0, inQ = false, qc = '';
+  for (const ch of input) {
+    if (inQ) { cur += ch; if (ch === qc) inQ = false; }
+    else if (ch === '"' || ch === "'") { inQ = true; qc = ch; cur += ch; }
+    else if (ch === '{') { depth++; cur += ch; }
+    else if (ch === '}') { depth--; cur += ch; }
+    else if (ch === '|' && depth === 0) { segments.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  segments.push(cur);
+  return segments.filter(s=>s.trim());
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+function focusInput() { document.getElementById('cmd-input').focus(); }
+function handleKey(e) {
+  const inp = e.target;
+  if (e.key === 'Enter') { const v = inp.value; inp.value = ''; runCommand(v); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (histIndex < cmdHistory.length-1){histIndex++;inp.value=cmdHistory[histIndex];} }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); if (histIndex>0){histIndex--;inp.value=cmdHistory[histIndex];}else{histIndex=-1;inp.value='';} }
+  else if (e.key === 'Tab') { e.preventDefault(); tabComplete(inp); }
+}
+
+function tabComplete(inp) {
+  const val = inp.value;
+  const toks = tokenize(val);
+  if (!toks.length) return;
+  if (toks.length === 1 && !val.endsWith(' ')) {
+    const cmds = ['Get-ChildItem','Get-Content','Get-Location','Set-Location','New-Item','Remove-Item','Copy-Item','Move-Item','Test-Path','Get-Process','Stop-Process','Get-Service','Start-Service','Stop-Service','Where-Object','Select-Object','Sort-Object','Group-Object','Measure-Object','Format-Table','Format-List','Import-Csv','Export-Csv','ConvertTo-Json','ConvertFrom-Json','Select-String','Write-Host','Get-Variable','Get-Date','Get-ComputerInfo','Test-NetConnection','Connect-AzAccount','Get-AzSubscription','Get-AzResourceGroup','Get-AzVM','Start-AzVM','Stop-AzVM'];
+    const m = cmds.filter(c=>c.toLowerCase().startsWith(val.toLowerCase()));
+    if (m.length===1) inp.value = m[0] + ' ';
+    else if (m.length > 1) { println(m.join('  '),'out-dim'); }
+  }
+}
+
+// ── Exercises ─────────────────────────────────────────────────────────────────
+const EXERCISES = [
+  {id:'e1',title:'Getting Started',badge:'easy',desc:'Explore help, discover commands and check PS version.',tasks:[
+    {id:'t1',text:'Check PowerShell version: <code>$PSVersionTable</code>',hint:'$PSVersionTable',check:c=>/^\$PSVersionTable/.test(c)},
+    {id:'t2',text:'List all cmdlets: <code>Get-Command</code>',hint:'Get-Command',check:c=>/^get-command/i.test(c)},
+    {id:'t3',text:'Get help for Get-Process: <code>Get-Help Get-Process</code>',hint:'Get-Help Get-Process',check:c=>/^(get-help|help|man)\s+get-process/i.test(c)},
+    {id:'t4',text:'List loaded modules: <code>Get-Module</code>',hint:'Get-Module',check:c=>/^get-module/i.test(c)},
+  ]},
+  {id:'e2',title:'File System Navigation',badge:'easy',desc:'Navigate paths and list files using PS cmdlets.',tasks:[
+    {id:'t1',text:'Show current path: <code>Get-Location</code>',hint:'Get-Location',check:c=>/^(get-location|pwd|gl)\s*$/i.test(c)},
+    {id:'t2',text:'List files: <code>Get-ChildItem</code>',hint:'Get-ChildItem',check:c=>/^(get-childitem|ls|dir|gci)/i.test(c)},
+    {id:'t3',text:'Change directory: <code>Set-Location Documents</code>',hint:'Set-Location Documents',check:c=>/^(set-location|cd|sl|chdir)\s+\S+/i.test(c)},
+    {id:'t4',text:'Test if a path exists: <code>Test-Path C:\\Temp</code>',hint:'Test-Path C:\\Temp',check:c=>/^test-path/i.test(c)},
+  ]},
+  {id:'e3',title:'Reading Files',badge:'easy',desc:'Read file contents and work with text files.',tasks:[
+    {id:'t1',text:'Read a file: <code>Get-Content C:\\Users\\PSUser\\Documents\\notes.txt</code>',hint:'Get-Content C:\\Users\\PSUser\\Documents\\notes.txt',check:c=>/^(get-content|cat|gc|type)\s+\S+/i.test(c)},
+    {id:'t2',text:'Read only first 3 lines: <code>Get-Content notes.txt -TotalCount 3</code>',hint:'Get-Content notes.txt -TotalCount 3',check:c=>/^(get-content|cat|gc).*-totalcount/i.test(c)},
+    {id:'t3',text:'Import CSV data: <code>Import-Csv C:\\Users\\PSUser\\Documents\\report.csv</code>',hint:'Import-Csv C:\\Users\\PSUser\\Documents\\report.csv',check:c=>/^import-csv/i.test(c)},
+    {id:'t4',text:'Search file content: <code>Select-String -Pattern "Error" -Path C:\\Temp\\setup.log</code>',hint:'Select-String -Pattern "Error" -Path C:\\Temp\\setup.log',check:c=>/^(select-string|sls)/i.test(c)},
+  ]},
+  {id:'e4',title:'Pipeline & Objects',badge:'medium',desc:'Filter, select and sort objects through the pipeline.',tasks:[
+    {id:'t1',text:'Get all processes: <code>Get-Process</code>',hint:'Get-Process',check:c=>/^(get-process|gps)\s*$/i.test(c)},
+    {id:'t2',text:'Filter high-CPU processes: <code>Get-Process | Where-Object { $_.CPU -gt 1 }</code>',hint:'Get-Process | Where-Object { $_.CPU -gt 1 }',check:c=>/get-process.*where-object.*cpu/i.test(c)||/gps.*\?.*cpu/i.test(c)},
+    {id:'t3',text:'Select specific properties: <code>Get-Process | Select-Object Name,Id,CPU</code>',hint:'Get-Process | Select-Object Name,Id,CPU',check:c=>/get-process.*select-object/i.test(c)},
+    {id:'t4',text:'Sort processes by CPU: <code>Get-Process | Sort-Object CPU -Descending</code>',hint:'Get-Process | Sort-Object CPU -Descending',check:c=>/sort-object.*cpu/i.test(c)},
+    {id:'t5',text:'Group services by status: <code>Get-Service | Group-Object Status</code>',hint:'Get-Service | Group-Object Status',check:c=>/group-object.*status/i.test(c)},
+  ]},
+  {id:'e5',title:'Working with CSV Data',badge:'medium',desc:'Import, filter and analyse CSV data with the pipeline.',tasks:[
+    {id:'t1',text:'Import CSV: <code>Import-Csv C:\\Users\\PSUser\\Documents\\report.csv</code>',hint:'Import-Csv C:\\Users\\PSUser\\Documents\\report.csv',check:c=>/^import-csv/i.test(c)},
+    {id:'t2',text:'Filter Engineering dept: <code>Import-Csv C:\\Users\\PSUser\\Documents\\report.csv | Where-Object { $_.Department -eq "Engineering" }</code>',hint:'Import-Csv ...report.csv | Where-Object { $_.Department -eq "Engineering" }',check:c=>/import-csv.*where-object.*department/i.test(c)},
+    {id:'t3',text:'Sum all salaries: <code>Import-Csv report.csv | Measure-Object Salary -Sum</code>',hint:'Import-Csv ...report.csv | Measure-Object Salary -Sum',check:c=>/measure-object.*salary/i.test(c)},
+    {id:'t4',text:'Export filtered data: <code>Import-Csv report.csv | Where-Object { $_.Status -eq "Active" } | Export-Csv C:\\Temp\\active.csv</code>',hint:'...| Export-Csv C:\\Temp\\active.csv',check:c=>/export-csv/i.test(c)},
+  ]},
+  {id:'e6',title:'Processes & Services',badge:'medium',desc:'Manage running processes and Windows services.',tasks:[
+    {id:'t1',text:'List all services: <code>Get-Service</code>',hint:'Get-Service',check:c=>/^(get-service|gsv)\s*$/i.test(c)},
+    {id:'t2',text:'Find stopped services: <code>Get-Service | Where-Object { $_.Status -eq "Stopped" }</code>',hint:'Get-Service | Where-Object { $_.Status -eq "Stopped" }',check:c=>/get-service.*where-object.*stopped/i.test(c)},
+    {id:'t3',text:'Start the Print Spooler: <code>Start-Service spooler</code>',hint:'Start-Service spooler',check:c=>/^start-service\s+\S+/i.test(c)},
+    {id:'t4',text:'Stop the notepad process: <code>Stop-Process -Name notepad</code>',hint:'Stop-Process -Name notepad',check:c=>/^stop-process.*notepad/i.test(c)},
+  ]},
+  {id:'e7',title:'Variables & Expressions',badge:'medium',desc:'Create variables, arrays and use string operations.',tasks:[
+    {id:'t1',text:'Create a variable: <code>$name = "PowerShell"</code>',hint:'$name = "PowerShell"',check:c=>/^\$\w+\s*=/.test(c)},
+    {id:'t2',text:'Display a variable: <code>$name</code>',hint:'$name',check:c=>/^\$\w+\s*$/.test(c)},
+    {id:'t3',text:'List all variables: <code>Get-Variable</code>',hint:'Get-Variable',check:c=>/^get-variable/i.test(c)},
+    {id:'t4',text:'Get current date: <code>Get-Date</code>',hint:'Get-Date',check:c=>/^get-date/i.test(c)},
+    {id:'t5',text:'Format date: <code>Get-Date -Format "yyyy-MM-dd"</code>',hint:'Get-Date -Format "yyyy-MM-dd"',check:c=>/get-date.*-format/i.test(c)},
+  ]},
+  {id:'e8',title:'JSON & Conversions',badge:'medium',desc:'Convert objects to JSON and parse JSON data.',tasks:[
+    {id:'t1',text:'Convert process to JSON: <code>Get-Process | Select-Object -First 2 | ConvertTo-Json</code>',hint:'Get-Process | Select-Object -First 2 | ConvertTo-Json',check:c=>/convertto-json/i.test(c)},
+    {id:'t2',text:'Read JSON config: <code>Get-Content C:\\Users\\PSUser\\Documents\\config.json | ConvertFrom-Json</code>',hint:'Get-Content config.json | ConvertFrom-Json',check:c=>/convertfrom-json/i.test(c)},
+    {id:'t3',text:'Test network: <code>Test-NetConnection google.com</code>',hint:'Test-NetConnection google.com',check:c=>/^test-netconnection/i.test(c)},
+    {id:'t4',text:'Resolve DNS: <code>Resolve-DnsName google.com</code>',hint:'Resolve-DnsName google.com',check:c=>/^resolve-dnsname/i.test(c)},
+  ]},
+  {id:'e9',title:'File Operations',badge:'medium',desc:'Create, copy, move and archive files.',tasks:[
+    {id:'t1',text:'Create a directory: <code>New-Item -Path C:\\Temp\\MyFolder -ItemType Directory</code>',hint:'New-Item -Path C:\\Temp\\MyFolder -ItemType Directory',check:c=>/^(new-item|mkdir)/i.test(c)},
+    {id:'t2',text:'Create a file: <code>New-Item -Path C:\\Temp\\test.txt -ItemType File -Value "Hello PS"</code>',hint:'New-Item -Path C:\\Temp\\test.txt -ItemType File',check:c=>/new-item.*file/i.test(c)},
+    {id:'t3',text:'Copy a file: <code>Copy-Item C:\\Temp\\test.txt C:\\Temp\\test-backup.txt</code>',hint:'Copy-Item C:\\Temp\\test.txt C:\\Temp\\test-backup.txt',check:c=>/^(copy-item|cp|copy)/i.test(c)},
+    {id:'t4',text:'Compress files: <code>Compress-Archive -Path C:\\Users\\PSUser\\Documents -DestinationPath C:\\Temp\\docs.zip</code>',hint:'Compress-Archive -Path ... -DestinationPath ...',check:c=>/^compress-archive/i.test(c)},
+  ]},
+  {id:'e10',title:'Azure PowerShell',badge:'hard',desc:'Connect to Azure and manage VMs and resource groups.',tasks:[
+    {id:'t1',text:'Connect to Azure: <code>Connect-AzAccount</code>',hint:'Connect-AzAccount',check:c=>/^connect-azaccount/i.test(c)},
+    {id:'t2',text:'List subscriptions: <code>Get-AzSubscription</code>',hint:'Get-AzSubscription',check:c=>/^get-azsubscription/i.test(c)},
+    {id:'t3',text:'List resource groups: <code>Get-AzResourceGroup</code>',hint:'Get-AzResourceGroup',check:c=>/^get-azresourcegroup/i.test(c)},
+    {id:'t4',text:'List VMs: <code>Get-AzVM</code>',hint:'Get-AzVM',check:c=>/^get-azvm/i.test(c)},
+    {id:'t5',text:'Start a VM: <code>Start-AzVM -Name vm-db-01 -ResourceGroupName rg-prod</code>',hint:'Start-AzVM -Name vm-db-01 -ResourceGroupName rg-prod',check:c=>/^start-azvm/i.test(c)},
+  ]},
+];
+
+// ── Cheatsheet ────────────────────────────────────────────────────────────────
+const CHEATSHEET = [
+  {title:'Navigation',cmds:[
+    {name:'Get-Location (pwd)',desc:'Show current directory'},
+    {name:'Set-Location path (cd)',desc:'Change directory'},
+    {name:'Get-ChildItem (ls)',desc:'List files and folders'},
+    {name:'Get-ChildItem -Recurse',desc:'Recursive listing'},
+    {name:'Test-Path path',desc:'Check if path exists'},
+  ]},
+  {title:'Files',cmds:[
+    {name:'Get-Content file',desc:'Read file contents'},
+    {name:'Set-Content file -Value x',desc:'Write to file (overwrite)'},
+    {name:'Add-Content file -Value x',desc:'Append to file'},
+    {name:'New-Item path -ItemType File',desc:'Create new file'},
+    {name:'New-Item path -ItemType Directory',desc:'Create folder'},
+    {name:'Remove-Item path',desc:'Delete file/folder'},
+    {name:'Copy-Item src dst',desc:'Copy file'},
+    {name:'Move-Item src dst',desc:'Move/rename file'},
+    {name:'Compress-Archive -Path x -Dest y',desc:'Create ZIP archive'},
+  ]},
+  {title:'Pipeline & Filter',cmds:[
+    {name:'... | Where-Object { $_.Prop -eq "val" }',desc:'Filter objects'},
+    {name:'... | Select-Object Name,Id',desc:'Choose properties'},
+    {name:'... | Sort-Object Prop',desc:'Sort objects'},
+    {name:'... | Sort-Object Prop -Desc',desc:'Sort descending'},
+    {name:'... | Group-Object Prop',desc:'Group by property'},
+    {name:'... | Measure-Object Prop -Sum',desc:'Aggregate values'},
+    {name:'... | Format-Table (ft)',desc:'Table output'},
+    {name:'... | Format-List (fl)',desc:'List output'},
+    {name:'... | Select-Object -First 5',desc:'Take first N items'},
+  ]},
+  {title:'Data',cmds:[
+    {name:'Import-Csv file.csv',desc:'Load CSV into objects'},
+    {name:'Export-Csv file.csv',desc:'Save objects to CSV'},
+    {name:'ConvertTo-Json',desc:'Serialize to JSON'},
+    {name:'ConvertFrom-Json',desc:'Parse JSON string'},
+    {name:'Select-String -Pattern rx',desc:'Regex search in file'},
+  ]},
+  {title:'Processes & Services',cmds:[
+    {name:'Get-Process (gps)',desc:'List running processes'},
+    {name:'Stop-Process -Name name',desc:'Kill a process'},
+    {name:'Get-Service (gsv)',desc:'List services'},
+    {name:'Start-Service name',desc:'Start a service'},
+    {name:'Stop-Service name',desc:'Stop a service'},
+  ]},
+  {title:'Variables & Misc',cmds:[
+    {name:'$name = "value"',desc:'Assign variable'},
+    {name:'Get-Variable',desc:'List all variables'},
+    {name:'Get-Date -Format "yyyy-MM-dd"',desc:'Formatted date'},
+    {name:'$PSVersionTable',desc:'PS version info'},
+    {name:'Get-ComputerInfo',desc:'System information'},
+    {name:'Test-NetConnection host',desc:'Ping/port test'},
+    {name:'Resolve-DnsName host',desc:'DNS lookup'},
+  ]},
+  {title:'Azure (Az module)',cmds:[
+    {name:'Connect-AzAccount',desc:'Sign in to Azure'},
+    {name:'Get-AzSubscription',desc:'List subscriptions'},
+    {name:'Set-AzContext -Subscription x',desc:'Switch subscription'},
+    {name:'Get-AzResourceGroup',desc:'List resource groups'},
+    {name:'New-AzResourceGroup -Name -Location',desc:'Create resource group'},
+    {name:'Get-AzVM',desc:'List virtual machines'},
+    {name:'Start-AzVM -Name -ResourceGroupName',desc:'Start a VM'},
+    {name:'Stop-AzVM -Name -ResourceGroupName',desc:'Stop/deallocate VM'},
+    {name:'Get-AzStorageAccount',desc:'List storage accounts'},
+  ]},
+];
+
+// ── Sidebar UI ────────────────────────────────────────────────────────────────
+function showTab(name, el) {
+  ['exercises','cheatsheet','state'].forEach(t => { document.getElementById('tab-'+t).style.display = t===name?'':'none'; });
+  document.querySelectorAll('.stab').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (name === 'state') updateStatePanel();
+}
+
+function updateStatePanel() {
+  document.getElementById('state-pwd').textContent = cwd;
+  const vc = document.getElementById('state-vars');
+  const uvEntries = Object.entries(userVars);
+  vc.innerHTML = uvEntries.length ? uvEntries.map(([k,v])=>`<div class="state-item">$${k} = ${String(v).slice(0,30)}</div>`).join('') : '<span style="color:var(--gray);font-size:11px;">No user variables</span>';
+  const pc = document.getElementById('state-procs');
+  pc.innerHTML = procs.slice(0,5).map(p=>`<div class="state-item">${p.Name} <span style="color:var(--gray)">[${p.Id}] CPU:${p.CPU}</span></div>`).join('');
+  const sc = document.getElementById('state-svcs');
+  sc.innerHTML = services.map(s=>`<div class="state-item">${s.Name} <span style="color:${s.Status==='Running'?'var(--green)':'var(--orange)'}">${s.Status}</span></div>`).join('');
+}
+
+function buildExerciseList() {
+  const el = document.getElementById('ex-list');
+  el.innerHTML = EXERCISES.map(ex=>`
+    <div class="ex-item ${doneMap[ex.id]?'done':''}" id="ex-${ex.id}" onclick="selectExercise('${ex.id}')">
+      <div class="ex-title">${doneMap[ex.id]?'&#x2705;':''} ${ex.title} <span class="ex-badge badge-${ex.badge}">${ex.badge}</span></div>
+      <div class="ex-desc">${ex.desc}</div>
+    </div>`).join('');
+  const total = EXERCISES.reduce((a,e)=>a+e.tasks.length,0);
+  const done = EXERCISES.reduce((a,e)=>a+(doneMap[e.id]?e.tasks.length:0),0);
+  document.getElementById('prog-text').textContent = done+' / '+total+' done';
+  document.getElementById('prog-fill').style.width = (total?done/total*100:0)+'%';
+}
+
+function selectExercise(id) {
+  document.querySelectorAll('.ex-item').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById('ex-'+id);
+  if (el) el.classList.add('active');
+  currentExercise = EXERCISES.find(e=>e.id===id);
+  currentTaskIdx = 0;
+  showCurrentTask();
+}
+
+function showCurrentTask() {
+  const bar = document.getElementById('challenge-bar');
+  if (!currentExercise) { bar.style.display='none'; return; }
+  bar.style.display = 'block';
+  if (currentTaskIdx >= currentExercise.tasks.length) {
+    document.getElementById('challenge-text').innerHTML = `&#x1F389; Exercise complete! All ${currentExercise.tasks.length} tasks done.`;
+    document.getElementById('challenge-hint').classList.remove('visible');
+    doneMap[currentExercise.id] = true;
+    buildExerciseList();
+    return;
+  }
+  const task = currentExercise.tasks[currentTaskIdx];
+  document.getElementById('challenge-text').innerHTML = `Task ${currentTaskIdx+1}/${currentExercise.tasks.length}: ${task.text}`;
+  document.getElementById('challenge-hint').classList.remove('visible');
+}
+
+function checkTask(cmd) {
+  if (!currentExercise || currentTaskIdx >= currentExercise.tasks.length) return;
+  const task = currentExercise.tasks[currentTaskIdx];
+  if (task.check(cmd)) {
+    currentTaskIdx++;
+    if (currentTaskIdx < currentExercise.tasks.length) println('&#x2705; Task complete! Next task loaded.','out-ok');
+    showCurrentTask();
+  }
+}
+
+function showHint() {
+  if (!currentExercise || currentTaskIdx >= currentExercise.tasks.length) return;
+  const h = document.getElementById('challenge-hint');
+  h.textContent = 'Hint: ' + currentExercise.tasks[currentTaskIdx].hint;
+  h.classList.add('visible');
+}
+
+function skipChallenge() {
+  if (!currentExercise || currentTaskIdx >= currentExercise.tasks.length) return;
+  currentTaskIdx++;
+  println('&#x23ED; Task skipped.','out-warn');
+  showCurrentTask();
+}
+
+function resetExercise() {
+  if (!currentExercise) return;
+  currentTaskIdx = 0;
+  showCurrentTask();
+  println('&#x1F504; Exercise reset.','out-warn');
+}
+
+function buildCheatsheet() {
+  const el = document.getElementById('cheatsheet-content');
+  el.innerHTML = CHEATSHEET.map(sec=>`
+    <div class="cs-section">
+      <div class="cs-title">${sec.title}</div>
+      ${sec.cmds.map(c=>`<div class="cs-cmd" onclick="insertCmd('${c.name.replace(/'/g,"\\'")}')"><span class="cs-cmd-name">${escHtml(c.name)}</span><span class="cs-cmd-desc">${c.desc}</span></div>`).join('')}
+    </div>`).join('');
+}
+
+function insertCmd(cmd) {
+  const inp = document.getElementById('cmd-input');
+  inp.value = cmd;
+  inp.focus();
+  showTab('exercises', document.querySelectorAll('.stab')[0]);
+  document.querySelectorAll('.stab')[0].classList.add('active');
+}
+
+// ── Welcome ───────────────────────────────────────────────────────────────────
+function welcome() {
+  println(`Windows PowerShell`,'out-yellow');
+  println(`Copyright (C) Microsoft Corporation. All rights reserved.`,'out-dim');
+  println('');
+  println(`PowerShell 7.4.0`,'out-info');
+  println(`  Cluster: PSLAB-PC &nbsp;&bull;&nbsp; User: PSUser &nbsp;&bull;&nbsp; Simulated environment`,'out-dim');
+  println('');
+  println(`  Type <span class="out-yellow">Get-Help</span>             to list all commands`,'');
+  println(`  Type <span class="out-yellow">Get-Process</span>          to list running processes`,'');
+  println(`  Type <span class="out-yellow">Import-Csv</span>           to work with CSV data`,'');
+  println(`  Type <span class="out-yellow">Connect-AzAccount</span>    to simulate Azure sign-in`,'');
+  println('');
+  println(`  &#x2500;&#x2500;&#x2500;&#x2500; 10 exercises in the sidebar &#x2500;&#x2500;&#x2500;&#x2500;`,'out-dim');
+  println('');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildExerciseList();
+buildCheatsheet();
+updateStatePanel();
+welcome();
+focusInput();
+</script>
+</body>
+</html>

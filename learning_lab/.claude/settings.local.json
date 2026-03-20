@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ipconfig getifaddr:*)",
+      "Bash(export PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\")",
+      "Bash(git --version)",
+      "Bash(sudo xcodebuild:*)",
+      "Bash(/usr/bin/git --version)",
+      "Bash(/opt/homebrew/bin/git --version)",
+      "Read(//usr/local/bin/**)",
+      "Read(//usr/local/Cellar/**)",
+      "Read(//usr/local/**)",
+      "Bash(/opt/homebrew/Library/Homebrew/shims/shared/git --version)",
+      "Bash(brew install:*)"
+    ]
+  }
+}
