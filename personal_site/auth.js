@@ -8,21 +8,26 @@
  *   <script src="auth.js"></script>
  */
 
-const MK_AUTH_CONFIG_KEY = 'mk_site_fb_config';
-const MK_AUTH_APP_NAME   = 'mk-site';
+const MK_AUTH_APP_NAME = 'mk-site';
+
+// ── Firebase config (hardcoded) ───────────────────────────────────────────────
+const MK_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAoDWn6VF2qvLoHUFURdIxdqJJN_XnojEQ",
+  authDomain: "cloudiaas-14c01.firebaseapp.com",
+  databaseURL: "https://cloudiaas-14c01-default-rtdb.firebaseio.com",
+  projectId: "cloudiaas-14c01",
+  storageBucket: "cloudiaas-14c01.firebasestorage.app",
+  messagingSenderId: "846824147799",
+  appId: "1:846824147799:web:78f31588eb6abe1d6b4c12",
+  measurementId: "G-WLR8DVRNCB"
+};
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
-function _getConfig() {
-  return JSON.parse(localStorage.getItem(MK_AUTH_CONFIG_KEY) || 'null');
-}
-
 function _getApp() {
-  const cfg = _getConfig();
-  if (!cfg) return null;
   try {
     const existing = firebase.apps.find(a => a.name === MK_AUTH_APP_NAME);
-    return existing || firebase.initializeApp(cfg, MK_AUTH_APP_NAME);
+    return existing || firebase.initializeApp(MK_FIREBASE_CONFIG, MK_AUTH_APP_NAME);
   } catch (e) {
     console.warn('[auth.js] Firebase init error:', e);
     return null;
@@ -34,36 +39,28 @@ function _getAuth() {
   return app ? firebase.auth(app) : null;
 }
 
-function _noConfig() {
-  alert('Firebase is not configured yet.\nPlease open Admin → Connect Firebase first.');
-}
-
 // ── Sign-in methods ───────────────────────────────────────────────────────────
 
 function signInWithGoogle() {
   const auth = _getAuth();
-  if (!auth) return _noConfig();
   const provider = new firebase.auth.GoogleAuthProvider();
   return auth.signInWithPopup(provider).catch(_handleError);
 }
 
 function signInWithGitHub() {
   const auth = _getAuth();
-  if (!auth) return _noConfig();
   const provider = new firebase.auth.GithubAuthProvider();
   return auth.signInWithPopup(provider).catch(_handleError);
 }
 
 function signInWithMicrosoft() {
   const auth = _getAuth();
-  if (!auth) return _noConfig();
   const provider = new firebase.auth.OAuthProvider('microsoft.com');
   return auth.signInWithPopup(provider).catch(_handleError);
 }
 
 function signInWithYahoo() {
   const auth = _getAuth();
-  if (!auth) return _noConfig();
   const provider = new firebase.auth.OAuthProvider('yahoo.com');
   return auth.signInWithPopup(provider).catch(_handleError);
 }
