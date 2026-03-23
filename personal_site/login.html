@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Manikandan K</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<style>
+:root{
+  --navy:#0F172A; --purple:#7C3AED; --purple-light:#F5F3FF;
+  --gray:#6B7280; --light:#F3F4F6; --dark:#1F2937;
+  --shadow:0 8px 40px rgba(0,0,0,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+     background:linear-gradient(135deg,var(--navy) 0%,#1a1040 50%,#1E3A5F 100%);
+     min-height:100vh;display:flex;flex-direction:column;}
+
+/* NAV */
+nav{background:rgba(15,23,42,.6);backdrop-filter:blur(12px);
+    border-bottom:1px solid rgba(255,255,255,.08);padding:0 24px;height:54px;
+    display:flex;align-items:center;}
+.nav-logo{font-size:16px;font-weight:800;color:white;text-decoration:none;}
+.nav-logo span{color:#818CF8;}
+
+/* CARD */
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:32px 16px;}
+.card{background:white;border-radius:20px;box-shadow:var(--shadow);
+      padding:44px 48px;max-width:440px;width:100%;text-align:center;}
+
+.card-icon{font-size:48px;margin-bottom:16px;}
+.card h1{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:6px;}
+.card .subtitle{font-size:13px;color:var(--gray);line-height:1.6;margin-bottom:32px;}
+
+/* PROVIDER BUTTONS */
+.provider-btn{
+  display:flex;align-items:center;gap:12px;width:100%;
+  padding:12px 16px;border-radius:10px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:all .2s;margin-bottom:10px;text-align:left;
+  border:2px solid #E5E7EB;background:white;color:var(--dark);}
+.provider-btn:hover{border-color:#C4B5FD;background:#FAFAFE;transform:translateY(-1px);}
+.provider-btn:last-of-type{margin-bottom:0;}
+.provider-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;
+               justify-content:center;font-size:15px;flex-shrink:0;}
+
+/* Google */
+.btn-google .provider-icon{background:#FFF3F3;}
+/* GitHub */
+.btn-github .provider-icon{background:#1a1a2e;color:white;}
+.btn-github{border-color:#D1D5DB;}
+.btn-github:hover{border-color:#818CF8;}
+/* Microsoft */
+.btn-microsoft .provider-icon{background:#EFF6FF;}
+/* Yahoo */
+.btn-yahoo .provider-icon{background:#F5F3FF;}
+
+.divider{display:flex;align-items:center;gap:10px;margin:20px 0;color:var(--gray);font-size:12px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#E5E7EB;}
+
+/* Status messages */
+.status-msg{font-size:12px;padding:10px 14px;border-radius:8px;margin-top:16px;display:none;}
+.status-msg.err{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;display:block;}
+.status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+
+/* Loading spinner */
+.spinner{display:none;width:20px;height:20px;border:2px solid #E5E7EB;
+         border-top-color:var(--purple);border-radius:50%;animation:spin .6s linear infinite;margin:16px auto 0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spinner.show{display:block;}
+
+/* Back link */
+.back-link{display:inline-block;margin-top:24px;font-size:12px;color:var(--gray);text-decoration:none;}
+.back-link:hover{color:var(--purple);}
+
+/* Already signed in state */
+.signed-in-box{display:none;text-align:center;}
+.user-avatar-lg{width:64px;height:64px;border-radius:50%;background:var(--purple);
+                display:flex;align-items:center;justify-content:center;
+                font-size:24px;font-weight:700;color:white;margin:0 auto 12px;overflow:hidden;}
+.user-avatar-lg img{width:100%;height:100%;border-radius:50%;object-fit:cover;}
+.user-name{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px;}
+.user-email{font-size:13px;color:var(--gray);margin-bottom:24px;}
+.btn-continue{display:block;width:100%;padding:12px;background:var(--purple);color:white;
+              border:none;border-radius:10px;font-size:14px;font-weight:700;
+              cursor:pointer;text-decoration:none;transition:all .2s;margin-bottom:10px;}
+.btn-continue:hover{filter:brightness(1.1);}
+.btn-signout{display:block;width:100%;padding:11px;background:var(--light);color:var(--dark);
+             border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-signout:hover{background:#E5E7EB;}
+
+@media(max-width:480px){.card{padding:32px 24px;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">MK<span>.</span></a>
+</nav>
+
+<div class="page">
+  <div class="card">
+
+    <!-- Not signed in view -->
+    <div id="signin-view">
+      <div class="card-icon">🔐</div>
+      <h1>Welcome Back</h1>
+      <p class="subtitle">Sign in to access your account. Choose your preferred provider below.</p>
+
+      <button class="provider-btn btn-google" onclick="doSignIn('google')">
+        <span class="provider-icon">G</span>
+        Continue with Google
+      </button>
+
+      <button class="provider-btn btn-github" onclick="doSignIn('github')">
+        <span class="provider-icon">⌥</span>
+        Continue with GitHub
+      </button>
+
+      <button class="provider-btn btn-microsoft" onclick="doSignIn('microsoft')">
+        <span class="provider-icon">⊞</span>
+        Continue with Microsoft
+      </button>
+
+      <button class="provider-btn btn-yahoo" onclick="doSignIn('yahoo')">
+        <span class="provider-icon">Y!</span>
+        Continue with Yahoo
+      </button>
+
+      <div class="spinner" id="spinner"></div>
+      <div class="status-msg" id="status-msg"></div>
+
+      <a href="index.html" class="back-link">← Back to site</a>
+    </div>
+
+    <!-- Already signed in view -->
+    <div class="signed-in-box" id="signedin-view">
+      <div class="user-avatar-lg" id="av-lg"></div>
+      <div class="user-name" id="av-name"></div>
+      <div class="user-email" id="av-email"></div>
+      <a id="continue-btn" href="index.html" class="btn-continue">Continue to Site →</a>
+      <button class="btn-signout" onclick="signOut();location.reload()">Sign out</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+// Redirect destination (pass ?next=page.html in URL)
+const nextPage = new URLSearchParams(location.search).get('next') || 'index.html';
+document.getElementById('continue-btn').href = nextPage;
+
+// Check if already signed in
+onAuthReady(user => {
+  if (user) {
+    document.getElementById('signin-view').style.display = 'none';
+    const box = document.getElementById('signedin-view');
+    box.style.display = 'block';
+    const photo = user.photoURL;
+    const initial = (user.displayName || user.email || 'U')[0].toUpperCase();
+    document.getElementById('av-lg').innerHTML = photo
+      ? `<img src="${photo}" referrerpolicy="no-referrer">`
+      : initial;
+    document.getElementById('av-name').textContent = user.displayName || 'Welcome';
+    document.getElementById('av-email').textContent = user.email || '';
+  }
+});
+
+function showStatus(msg, type) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+}
+
+function setLoading(on) {
+  document.getElementById('spinner').classList.toggle('show', on);
+  document.querySelectorAll('.provider-btn').forEach(b => b.disabled = on);
+}
+
+async function doSignIn(provider) {
+  setLoading(true);
+  showStatus('', '');
+  try {
+    let result;
+    if (provider === 'google')    result = await signInWithGoogle();
+    if (provider === 'github')    result = await signInWithGitHub();
+    if (provider === 'microsoft') result = await signInWithMicrosoft();
+    if (provider === 'yahoo')     result = await signInWithYahoo();
+
+    if (result && result.user) {
+      showStatus('Signed in! Redirecting…', 'ok');
+      setTimeout(() => { location.href = nextPage; }, 800);
+    }
+  } catch (e) {
+    // errors already handled in auth.js; just re-enable buttons
+  } finally {
+    setLoading(false);
+  }
+}
+</script>
+</body>
+</html>

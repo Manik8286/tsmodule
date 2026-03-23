@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PowerShell Terminal — Hands-On Lab</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
 <style>
 :root{--bg:#012456;--bg2:#0D2137;--bg3:#1a3a5c;--border:#1e4d7b;--blue:#00ADEF;--blue-light:#0d2a4a;--cyan:#79C0FF;--green:#4EC94E;--yellow:#FFFF54;--orange:#F0883E;--red:#FF6B6B;--purple:#C792EA;--white:#EEEDF0;--gray:#8B9DB8;--header-bg:#001a3d;--radius:8px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -1646,6 +1650,12 @@ buildCheatsheet();
 updateStatePanel();
 welcome();
 focusInput();
+</script>
+<script>
+onAuthReady(function(user){
+  if(!user){ window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href)); }
+  else { document.body.style.visibility=''; }
+});
 </script>
 </body>
 </html>

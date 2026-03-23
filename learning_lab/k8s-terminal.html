@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kubernetes Terminal — Hands-On Lab</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
 <style>
 :root{--bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--border:#30363D;--blue:#326CE5;--blue-light:#1a2848;--cyan:#79C0FF;--green:#3FB950;--yellow:#E3B341;--orange:#F0883E;--red:#FF7B72;--purple:#D2A8FF;--white:#C9D1D9;--gray:#8B949E;--header-bg:#0A1628;--radius:8px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -1677,6 +1681,12 @@ buildCheatsheet();
 updateState();
 welcome();
 focusInput();
+</script>
+<script>
+onAuthReady(function(user){
+  if(!user){ window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href)); }
+  else { document.body.style.visibility=''; }
+});
 </script>
 </body>
 </html>

@@ -34,9 +34,13 @@ nav{background:var(--navy);color:white;padding:0 24px;height:54px;display:flex;a
 .login-icon{font-size:48px;margin-bottom:16px;}
 .login-card h2{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:6px;}
 .login-card p{font-size:13px;color:var(--gray);margin-bottom:28px;line-height:1.6;}
-.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:2px solid #E5E7EB;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:700;color:var(--dark);transition:all .2s;}
-.google-btn:hover{border-color:#C4B5FD;background:#FAFAFE;}
-.google-icon{font-size:18px;}
+.provider-btn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:2px solid #E5E7EB;border-radius:10px;background:white;cursor:pointer;font-size:13px;font-weight:700;color:var(--dark);transition:all .2s;margin-bottom:8px;}
+.provider-btn:last-of-type{margin-bottom:0;}
+.provider-btn:hover{border-color:#C4B5FD;background:#FAFAFE;}
+.google-btn{} .github-btn{} .microsoft-btn{} .yahoo-btn{}
+.provider-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;background:var(--light);}
+/* legacy alias */
+.google-btn.provider-btn .google-icon{font-size:15px;}
 .login-divider{display:flex;align-items:center;gap:10px;margin:20px 0;color:var(--gray);font-size:12px;}
 .login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:#E5E7EB;}
 .fb-setup-section{text-align:left;}
@@ -172,7 +176,7 @@ tr:last-child td{border-bottom:none;}
   <div class="login-card">
     <div class="login-icon">&#x1F510;</div>
     <h2>Admin Panel</h2>
-    <p>Sign in with your Google account to manage the Learning Hub and Blog. Only the configured admin email can access this panel.</p>
+    <p>Sign in to manage the Learning Hub and Blog. Only the configured admin email can access this panel.</p>
 
     <div class="fb-setup-section" id="fb-setup">
       <h3>Step 1 — Connect Firebase</h3>
@@ -188,10 +192,21 @@ tr:last-child td{border-bottom:none;}
       <div id="cfg-msg" class="msg"></div>
     </div>
 
-    <div class="login-divider" id="google-divider" style="display:none">or</div>
-    <button class="google-btn" id="google-btn" onclick="signInWithGoogle()" style="display:none">
-      <span class="google-icon">&#x1F4E7;</span> Sign in with Google
-    </button>
+    <div class="login-divider" id="google-divider" style="display:none">Sign in with</div>
+    <div id="auth-btns" style="display:none">
+      <button class="provider-btn google-btn" onclick="signInWithGoogle()">
+        <span class="provider-icon">G</span> Continue with Google
+      </button>
+      <button class="provider-btn github-btn" onclick="signInWithGitHub()">
+        <span class="provider-icon" style="background:#1a1a2e;color:white;">&#9135;</span> Continue with GitHub
+      </button>
+      <button class="provider-btn microsoft-btn" onclick="signInWithMicrosoft()">
+        <span class="provider-icon" style="background:#EFF6FF;">&#x229E;</span> Continue with Microsoft
+      </button>
+      <button class="provider-btn yahoo-btn" onclick="signInWithYahoo()">
+        <span class="provider-icon" style="background:#F5F3FF;color:#7C3AED;">Y!</span> Continue with Yahoo
+      </button>
+    </div>
     <div id="login-msg" class="msg"></div>
   </div>
 </div>
@@ -490,7 +505,7 @@ function initFirebase(){
     document.getElementById('fb-authDomain').value  = cfg.authDomain || '';
     document.getElementById('admin-email-cfg').value = localStorage.getItem(ADMIN_KEY) || '';
     document.getElementById('google-divider').style.display = 'flex';
-    document.getElementById('google-btn').style.display = 'flex';
+    document.getElementById('auth-btns').style.display = 'block';
     auth.onAuthStateChanged(user => {
       if(user){
         const adminEmail = (localStorage.getItem(ADMIN_KEY) || '').toLowerCase();
@@ -505,11 +520,16 @@ function initFirebase(){
   } catch(e){ showMsg('cfg-msg','err','Firebase init error: ' + e.message); }
 }
 
-function signInWithGoogle(){
+function _adminSignIn(provider) {
   if(!auth){ showMsg('login-msg','err','Please save the Firebase config first.'); return; }
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e => showMsg('login-msg','err', e.message));
+  auth.signInWithPopup(provider).catch(e => {
+    if(e.code !== 'auth/popup-closed-by-user') showMsg('login-msg','err', e.message);
+  });
 }
+function signInWithGoogle()    { _adminSignIn(new firebase.auth.GoogleAuthProvider()); }
+function signInWithGitHub()    { _adminSignIn(new firebase.auth.GithubAuthProvider()); }
+function signInWithMicrosoft() { _adminSignIn(new firebase.auth.OAuthProvider('microsoft.com')); }
+function signInWithYahoo()     { _adminSignIn(new firebase.auth.OAuthProvider('yahoo.com')); }
 
 function signOut(){ auth && auth.signOut(); }
 
