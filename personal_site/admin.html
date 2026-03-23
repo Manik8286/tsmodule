@@ -179,14 +179,8 @@ tr:last-child td{border-bottom:none;}
     <p>Sign in to manage the Learning Hub and Blog. Only the configured admin email can access this panel.</p>
 
     <div class="fb-setup-section" id="fb-setup">
-      <h3>Step 1 — Connect Firebase</h3>
-      <p>Paste your Firebase project config. This is stored locally in your browser.</p>
-      <input class="fb-input" id="fb-apiKey" placeholder="apiKey  (e.g. AIzaSy...)" />
-      <input class="fb-input" id="fb-databaseURL" placeholder="databaseURL  (e.g. https://project-rtdb.firebaseio.com)" />
-      <input class="fb-input" id="fb-projectId" placeholder="projectId  (e.g. my-project-12345)" />
-      <input class="fb-input" id="fb-authDomain" placeholder="authDomain  (e.g. my-project.firebaseapp.com)" />
-      <h3 style="margin-top:14px">Step 2 — Admin Email</h3>
-      <p style="margin-top:4px">Enter the Google email that is allowed to access this admin panel.</p>
+      <h3>Admin Email</h3>
+      <p style="margin-top:4px">Enter the email address that is allowed to access this admin panel.</p>
       <input class="admin-email-input" id="admin-email-cfg" placeholder="your-email@gmail.com" />
       <button class="connect-btn" onclick="saveConfig()">&#x2714; Save &amp; Connect</button>
       <div id="cfg-msg" class="msg"></div>
@@ -475,41 +469,42 @@ function switchTab(tab){
 }
 
 // ── Firebase Init ────────────────────────────────────────────────────────────
+const ADMIN_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAoDWn6VF2qvLoHUFURdIxdqJJN_XnojEQ",
+  authDomain: "cloudiaas-14c01.firebaseapp.com",
+  databaseURL: "https://cloudiaas-14c01-default-rtdb.firebaseio.com",
+  projectId: "cloudiaas-14c01",
+  storageBucket: "cloudiaas-14c01.firebasestorage.app",
+  messagingSenderId: "846824147799",
+  appId: "1:846824147799:web:78f31588eb6abe1d6b4c12"
+};
+
 function saveConfig(){
-  const apiKey      = document.getElementById('fb-apiKey').value.trim();
-  const databaseURL = document.getElementById('fb-databaseURL').value.trim();
-  const projectId   = document.getElementById('fb-projectId').value.trim();
-  const authDomain  = document.getElementById('fb-authDomain').value.trim();
-  const adminEmail  = document.getElementById('admin-email-cfg').value.trim().toLowerCase();
-  if(!apiKey || !databaseURL || !projectId || !authDomain)
-    return showMsg('cfg-msg','err','Please fill in all Firebase fields.');
+  const adminEmail = document.getElementById('admin-email-cfg').value.trim().toLowerCase();
   if(!adminEmail || !adminEmail.includes('@'))
     return showMsg('cfg-msg','err','Please enter a valid admin email address.');
-  localStorage.setItem(CONFIG_KEY, JSON.stringify({apiKey, databaseURL, projectId, authDomain}));
   localStorage.setItem(ADMIN_KEY, adminEmail);
-  showMsg('cfg-msg','ok','Saved! Initialising Firebase...');
+  showMsg('cfg-msg','ok','Saved! Connecting...');
   setTimeout(() => initFirebase(), 600);
 }
 
 function initFirebase(){
-  const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null');
-  if(!cfg){ return; }
   try{
     const existing = firebase.apps.find(a => a.name === 'mk-site');
-    const app = existing || firebase.initializeApp(cfg, 'mk-site');
+    const app = existing || firebase.initializeApp(ADMIN_FIREBASE_CONFIG, 'mk-site');
     db   = firebase.database(app);
     auth = firebase.auth(app);
-    document.getElementById('fb-apiKey').value      = cfg.apiKey || '';
-    document.getElementById('fb-databaseURL').value = cfg.databaseURL || '';
-    document.getElementById('fb-projectId').value   = cfg.projectId || '';
-    document.getElementById('fb-authDomain').value  = cfg.authDomain || '';
-    document.getElementById('admin-email-cfg').value = localStorage.getItem(ADMIN_KEY) || '';
-    document.getElementById('google-divider').style.display = 'flex';
-    document.getElementById('auth-btns').style.display = 'block';
+    const savedEmail = localStorage.getItem(ADMIN_KEY) || '';
+    document.getElementById('admin-email-cfg').value = savedEmail;
+    if(savedEmail){
+      document.getElementById('fb-setup').style.display = 'none';
+      document.getElementById('google-divider').style.display = 'flex';
+      document.getElementById('auth-btns').style.display = 'block';
+    }
     auth.onAuthStateChanged(user => {
       if(user){
         const adminEmail = (localStorage.getItem(ADMIN_KEY) || '').toLowerCase();
-        if(user.email.toLowerCase() !== adminEmail){
+        if(adminEmail && user.email.toLowerCase() !== adminEmail){
           auth.signOut();
           showMsg('login-msg','err','Access denied. Only the configured admin email can sign in.');
           return;
