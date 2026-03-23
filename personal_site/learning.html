@@ -518,13 +518,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Auth guard — redirect to login if not signed in
-onAuthReady(user => {
-  if (!user) {
+try {
+  onAuthReady(user => {
+    if (!user) {
+      window.location.replace('login.html?next=learning.html');
+    } else {
+      document.body.style.visibility = '';
+    }
+  });
+} catch(e) {
+  window.location.replace('login.html?next=learning.html');
+}
+// Fallback: if auth doesn't resolve in 4s, redirect anyway
+setTimeout(() => {
+  if (document.body.style.visibility === 'hidden' || getComputedStyle(document.body).visibility === 'hidden') {
     window.location.replace('login.html?next=learning.html');
-  } else {
-    document.body.style.visibility = '';
   }
-});
+}, 4000);
 </script>
 </body>
 </html>
