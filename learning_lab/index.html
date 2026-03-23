@@ -589,24 +589,8 @@ function saveState(){
 /* ── Username management ── */
 function showUserModal(){document.getElementById('user-overlay').classList.add('open');}
 function hideUserModal(){document.getElementById('user-overlay').classList.remove('open');}
-function confirmUser(){
-  const val=document.getElementById('user-name-input').value.trim();
-  if(!val){alert('Please enter your name.');return;}
-  currentUser=val;
-  localStorage.setItem(USER_KEY,currentUser);
-  document.getElementById('user-name-display').textContent=currentUser;
-  hideUserModal();
-  loadState();
-}
-function changeUser(){
-  if(confirm('Switch to a different user? Your progress for "'+currentUser+'" stays saved.')){
-    currentUser='';
-    localStorage.removeItem(USER_KEY);
-    state={};expandedSteps={};
-    document.getElementById('user-name-input').value='';
-    showUserModal();
-  }
-}
+function confirmUser(){}
+function changeUser(){}
 
 /* ── Leaderboard ── */
 function openLeaderboard(){
@@ -1299,15 +1283,14 @@ function flashCopy(idx){
 
 /* ── Boot ── */
 initFirebase();
-if(currentUser){
-  document.getElementById('user-name-display').textContent=currentUser;
+onAuthReady(function(user){
+  if(!user) return;
+  currentUser = user.displayName || user.email.split('@')[0];
+  localStorage.setItem(USER_KEY, currentUser);
+  document.getElementById('user-name-display').textContent = currentUser;
   loadState();
-  if(!fbDb)renderAll();
-}else{
-  document.getElementById('user-name-display').textContent='Guest';
-  showUserModal();
-  renderAll();
-}
+  if(!fbDb) renderAll();
+});
 </script>
 <script>
 var _authTimer = setTimeout(function() {

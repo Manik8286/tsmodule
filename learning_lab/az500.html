@@ -478,20 +478,16 @@ function showFbMsg(type,msg){ const el=document.getElementById('fb-msg'); el.cla
 
 // ─── User ─────────────────────────────────────────────────────────────────────
 function initUser(){
-  currentUser = localStorage.getItem('az500_current_user');
-  if(!currentUser){ document.getElementById('user-overlay').classList.add('open'); return; }
-  document.getElementById('user-name-display').textContent=currentUser;
-  loadState(); build(); updateStats(); initFirebase();
+  onAuthReady(function(user){
+    if(!user) return;
+    currentUser = user.displayName || user.email.split('@')[0];
+    localStorage.setItem('az500_current_user', currentUser);
+    document.getElementById('user-name-display').textContent = currentUser;
+    loadState(); build(); updateStats(); initFirebase();
+  });
 }
-function confirmUser(){
-  const v=document.getElementById('user-name-input').value.trim();
-  if(!v) return;
-  currentUser=v; localStorage.setItem('az500_current_user',v);
-  document.getElementById('user-name-display').textContent=v;
-  document.getElementById('user-overlay').classList.remove('open');
-  loadState(); build(); updateStats(); initFirebase();
-}
-function changeUser(){ document.getElementById('user-overlay').classList.add('open'); }
+function confirmUser(){}
+function changeUser(){}
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 function countAll(){
