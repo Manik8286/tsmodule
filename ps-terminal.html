@@ -6,7 +6,7 @@
 <title>PowerShell Terminal — Hands-On Lab</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="../personal_site/auth.js"></script>
+<script src="auth.js"></script>
 <style>body{visibility:hidden;}</style>
 <style>
 :root{--bg:#012456;--bg2:#0D2137;--bg3:#1a3a5c;--border:#1e4d7b;--blue:#00ADEF;--blue-light:#0d2a4a;--cyan:#79C0FF;--green:#4EC94E;--yellow:#FFFF54;--orange:#F0883E;--red:#FF6B6B;--purple:#C792EA;--white:#EEEDF0;--gray:#8B9DB8;--header-bg:#001a3d;--radius:8px;}
@@ -115,8 +115,8 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
   </div>
   <button class="mob-toggle" onclick="document.querySelector('.sidebar').classList.toggle('mob-open')" style="display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:white;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;cursor:pointer;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">&#x2630; Labs</button>
   <div class="nav-links">
-    <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
-    <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+    <a href="index.html" class="nav-link">&#x1F3E0; Home</a>
+    <a href="learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
     <a href="linux-terminal.html" class="nav-link">&#x1F427; Linux Lab</a>
     <a href="docker-terminal.html" class="nav-link">&#x1F433; Docker Lab</a>
     <a href="k8s-terminal.html" class="nav-link">&#x2388; K8s Lab</a>
@@ -1676,7 +1676,7 @@ focusInput();
 </script>
 <script>
 var _authTimer = setTimeout(function() {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }, 3000);
 try {
   onAuthReady(function(user) {
@@ -1686,7 +1686,7 @@ try {
     }
   });
 } catch(e) {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }
 </script>
 </body>

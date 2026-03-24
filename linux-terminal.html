@@ -6,7 +6,7 @@
 <title>Linux Terminal — Hands-On Lab</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="../personal_site/auth.js"></script>
+<script src="auth.js"></script>
 <style>body{visibility:hidden;}</style>
 <style>
 :root{--bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--border:#30363D;--green:#3FB950;--green2:#2EA043;--cyan:#79C0FF;--yellow:#E3B341;--orange:#F0883E;--red:#FF7B72;--purple:#D2A8FF;--white:#C9D1D9;--gray:#8B949E;--prompt-color:#3FB950;--header-bg:#0C4A6E;--radius:8px;}
@@ -135,8 +135,8 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
   </div>
   <button class="mob-toggle" onclick="document.querySelector('.sidebar').classList.toggle('mob-open')" style="display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:white;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;cursor:pointer;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">&#x2630; Labs</button>
   <div class="nav-links">
-    <a href="../personal_site/index.html" class="nav-link">🏠 Home</a>
-    <a href="../personal_site/learning.html" class="nav-link">📚 Learning Hub</a>
+    <a href="index.html" class="nav-link">🏠 Home</a>
+    <a href="learning.html" class="nav-link">📚 Learning Hub</a>
     <a href="index.html" class="nav-link">☁️ IaaS Labs</a>
     <a href="iam.html" class="nav-link">🔒 IAM</a>
     <a href="az700.html" class="nav-link">🌐 AZ-700</a>
@@ -1427,7 +1427,7 @@ focusInput();
 </script>
 <script>
 var _authTimer = setTimeout(function() {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }, 3000);
 try {
   onAuthReady(function(user) {
@@ -1437,7 +1437,7 @@ try {
     }
   });
 } catch(e) {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }
 </script>
 </body>

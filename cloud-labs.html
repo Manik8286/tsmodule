@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="../personal_site/auth.js"></script>
+<script src="auth.js"></script>
 <style>body{visibility:hidden;}</style>
 <style>
 :root{--azure:#0078D4;--azure-light:#EFF6FF;--aws:#FF9900;--aws-light:#FFF7ED;--aws-dark:#B45309;--gcp:#4285F4;--gcp-light:#EEF4FF;--gcp-dark:#1A73E8;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#1E3A5F;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
@@ -402,7 +402,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
   <div class="header-row">
     <div><h1>&#x2601;&#xFE0F; Cloud IaaS Lab Tracker</h1><p>Azure &amp; AWS &amp; GCP &middot; 12-Week Intensive &middot; Team Progress</p></div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <a href="../personal_site/index.html" style="font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#A0C4FF;text-decoration:none;font-weight:600;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.22)';this.style.color='white'" onmouseout="this.style.background='rgba(255,255,255,.12)';this.style.color='#A0C4FF'">&#x1F3E0; Home</a>
+      <a href="index.html" style="font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#A0C4FF;text-decoration:none;font-weight:600;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.22)';this.style.color='white'" onmouseout="this.style.background='rgba(255,255,255,.12)';this.style.color='#A0C4FF'">&#x1F3E0; Home</a>
       <a href="iam.html" style="font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#A0C4FF;text-decoration:none;font-weight:600;" onmouseover="this.style.background='rgba(255,255,255,.22)';this.style.color='white'" onmouseout="this.style.background='rgba(255,255,255,.12)';this.style.color='#A0C4FF'">&#x1F512; IAM</a>
       <a href="az700.html" style="font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#A0C4FF;text-decoration:none;font-weight:600;" onmouseover="this.style.background='rgba(255,255,255,.22)';this.style.color='white'" onmouseout="this.style.background='rgba(255,255,255,.12)';this.style.color='#A0C4FF'">&#x1F310; AZ-700</a>
       <a href="az500.html" style="font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#A0C4FF;text-decoration:none;font-weight:600;" onmouseover="this.style.background='rgba(255,255,255,.22)';this.style.color='white'" onmouseout="this.style.background='rgba(255,255,255,.12)';this.style.color='#A0C4FF'">&#x1F6E1;&#xFE0F; AZ-500</a>
@@ -1294,7 +1294,7 @@ onAuthReady(function(user){
 </script>
 <script>
 var _authTimer = setTimeout(function() {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }, 3000);
 try {
   onAuthReady(function(user) {
@@ -1304,7 +1304,7 @@ try {
     }
   });
 } catch(e) {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }
 </script>
 </body>

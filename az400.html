@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="../personal_site/auth.js"></script>
+<script src="auth.js"></script>
 <style>body{visibility:hidden;}</style>
 <style>
 :root{--azure:#0078D4;--azure-light:#EFF6FF;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#0F3460;--accent:#1e6abf;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
@@ -260,7 +260,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
       <p>Azure DevOps Engineer Expert &middot; 6-Phase Deep Dive &middot; Source Control, CI/CD, IaC, Security &amp; Observability</p>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="index.html" class="nav-link">&#x1F3E0; Home</a>
       <a href="index.html" class="nav-link">&#x2601;&#xFE0F; IaaS Labs</a>
       <a href="az700.html" class="nav-link">&#x1F310; AZ-700</a>
       <a href="az500.html" class="nav-link">&#x1F6E1;&#xFE0F; AZ-500</a>
@@ -1012,7 +1012,7 @@ window.onload=initUser;
 </script>
 <script>
 var _authTimer = setTimeout(function() {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }, 3000);
 try {
   onAuthReady(function(user) {
@@ -1022,7 +1022,7 @@ try {
     }
   });
 } catch(e) {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }
 </script>
 </body>

@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AZ-500 Lab Tracker — Azure Security Technologies</title>
+<title>AZ-700 Lab Tracker — Azure Network Engineer</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="../personal_site/auth.js"></script>
+<script src="auth.js"></script>
 <style>body{visibility:hidden;}</style>
 <style>
-:root{--azure:#0078D4;--azure-light:#EFF6FF;--aws:#FF9900;--aws-light:#FFF7ED;--aws-dark:#B45309;--gcp:#4285F4;--gcp-light:#EEF4FF;--gcp-dark:#1A73E8;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#7F1D1D;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
+:root{--azure:#0078D4;--azure-light:#EFF6FF;--aws:#FF9900;--aws-light:#FFF7ED;--aws-dark:#B45309;--gcp:#4285F4;--gcp-light:#EEF4FF;--gcp-dark:#1A73E8;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#0C4A6E;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:var(--dark);min-height:100vh;}
 .site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
 .site-header h1{font-size:20px;font-weight:700;}
-.site-header p{font-size:12px;color:#FECACA;margin-top:2px;}
+.site-header p{font-size:12px;color:#BAE6FD;margin-top:2px;}
 .header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#FECACA;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#BAE6FD;text-decoration:none;font-weight:600;transition:all .2s;}
 .nav-link:hover{background:rgba(255,255,255,.22);color:white;}
 .overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
 .stat-block{text-align:center;min-width:64px;}
@@ -25,12 +25,12 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 .stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
 .stat-block.total .num{color:var(--header-bg);}
 .stat-block.done .num{color:var(--green);}
-.stat-block.p1 .num{color:#B91C1C;}
-.stat-block.p2 .num{color:#991B1B;}
+.stat-block.p1 .num{color:var(--azure);}
+.stat-block.p2 .num{color:#0369A1;}
 .big-bar-wrap{flex:1;min-width:200px;}
 .big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
 .big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
-.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#991B1B,#B91C1C);transition:width .5s ease;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#0369A1,#0078D4);transition:width .5s ease;}
 .tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
 .tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
 .tab:hover{background:var(--light);}
@@ -42,7 +42,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 .phase-header-left{display:flex;align-items:center;gap:10px;}
 .phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
 .phase-title{font-size:15px;font-weight:700;}
-.phase-week{font-size:11px;color:#FECACA;margin-top:1px;}
+.phase-week{font-size:11px;color:#BAE6FD;margin-top:1px;}
 .phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
 .phase-progress-fill{height:100%;border-radius:99px;background:#4ADE80;transition:width .4s ease;}
 .chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
@@ -106,7 +106,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 .sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
 .sync-btn:hover{background:rgba(255,255,255,.25);}
 .sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
-.sync-none{background:rgba(255,255,255,.12);color:#FECACA;}
+.sync-none{background:rgba(255,255,255,.12);color:#BAE6FD;}
 .sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
 .sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
 .sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
@@ -213,7 +213,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 .quiz-close:hover{background:rgba(255,255,255,.28);}.quiz-body{padding:24px;}
 .phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
 .phase-tile{background:#F8FAFC;border:2px solid #E5E7EB;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .2s;}
-.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#FFF1F2;}.phase-tile.all-tile{border-style:dashed;}
+.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#EFF6FF;}.phase-tile.all-tile{border-style:dashed;}
 .pt-num{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
 .pt-name{font-size:12px;font-weight:700;color:var(--header-bg);margin-top:3px;line-height:1.3;}
 .pt-score{font-size:10px;color:#16A34A;margin-top:4px;font-weight:700;}
@@ -226,14 +226,14 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 .quiz-question{font-size:15px;font-weight:700;color:var(--dark);line-height:1.5;margin-bottom:18px;}
 .quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
 .quiz-option{padding:12px 16px;border-radius:10px;border:2px solid #E5E7EB;background:#FAFAFA;cursor:pointer;font-size:13px;line-height:1.4;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px;}
-.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#FFF1F2;}.quiz-option:disabled{cursor:default;}
+.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#EFF6FF;}.quiz-option:disabled{cursor:default;}
 .quiz-option.correct{border-color:#16A34A;background:#F0FDF4;color:#16A34A;}
 .quiz-option.wrong{border-color:#EF4444;background:#FFF1F2;color:#DC2626;}
 .quiz-option.reveal{border-color:#16A34A;background:#F0FDF4;opacity:.7;}
 .quiz-option.correct .opt-letter,.quiz-option.reveal .opt-letter{background:#16A34A;color:white;}
 .quiz-option.wrong .opt-letter{background:#EF4444;color:white;}
 .opt-letter{width:22px;height:22px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
-.quiz-explanation{background:#FFF5F5;border-left:3px solid var(--header-bg);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}
+.quiz-explanation{background:#F0F8FF;border-left:3px solid var(--header-bg);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}
 .quiz-explanation.show{display:block;}
 .quiz-next-btn{width:100%;padding:10px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}
 .quiz-next-btn.show{display:block;}
@@ -257,14 +257,14 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 <header class="site-header">
   <div class="header-row">
     <div>
-      <h1>&#x1F6E1;&#xFE0F; AZ-500 Lab Tracker</h1>
-      <p>Azure Security Technologies &middot; 4-Phase Deep Dive &middot; Identity, Networking, Compute, Storage &amp; Security Operations</p>
+      <h1>&#x1F310; AZ-700 Lab Tracker</h1>
+      <p>Azure Network Engineer Associate &middot; 6-Phase Deep Dive &middot; Virtual Networks, Security, Load Balancing, Hybrid &amp; DNS</p>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="index.html" class="nav-link">&#x1F3E0; Home</a>
       <a href="index.html" class="nav-link">&#x2601;&#xFE0F; IaaS Labs</a>
       <a href="iam.html" class="nav-link">&#x1F512; IAM Labs</a>
-      <a href="az700.html" class="nav-link">&#x1F310; AZ-700</a>
+      <a href="az500.html" class="nav-link">&#x1F6E1;&#xFE0F; AZ-500</a>
       <a href="sc300.html" class="nav-link">&#x1F510; SC-300</a>
       <a href="soa-c02.html" class="nav-link">&#x1F527; SOA-C02</a>
       <a href="az400.html" class="nav-link">&#x1F504; AZ-400</a>
@@ -281,18 +281,18 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 <!-- Username modal -->
 <div class="user-overlay" id="user-overlay">
   <div class="user-card">
-    <div class="u-icon">&#x1F6E1;&#xFE0F;</div>
-    <h3>Welcome to AZ-500 Lab Tracker</h3>
-    <p>Enter your name to save your progress. Track your journey through Azure Security Technologies labs for the AZ-500 exam.</p>
+    <div class="u-icon">&#x1F310;</div>
+    <h3>Welcome to AZ-700 Lab Tracker</h3>
+    <p>Enter your name to save your progress. Track your journey through Azure Networking labs for the AZ-700 exam.</p>
     <input type="text" id="user-name-input" placeholder="Your name (e.g. Manikandan)" maxlength="30" onkeydown="if(event.key==='Enter')confirmUser()" />
-    <button onclick="confirmUser()">&#x1F680; Start AZ-500 Labs</button>
+    <button onclick="confirmUser()">&#x1F680; Start AZ-700 Labs</button>
   </div>
 </div>
 <!-- Leaderboard -->
 <div class="lb-overlay" id="lb-overlay" onclick="if(event.target===this)closeLb()">
   <div class="lb-card">
     <h3>&#x1F3C6; Team Leaderboard</h3>
-    <p class="lb-sub">Live AZ-500 progress across all teammates &mdash; auto-refreshes on open</p>
+    <p class="lb-sub">Live AZ-700 progress across all teammates &mdash; auto-refreshes on open</p>
     <div id="lb-body"><div class="lb-loading">&#x21BB; Loading&hellip;</div></div>
     <button class="lb-close" onclick="closeLb()">Close</button>
   </div>
@@ -301,7 +301,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 <div class="quiz-overlay" id="quiz-overlay" onclick="if(event.target===this)closeQuiz()">
   <div class="quiz-modal">
     <div class="quiz-header">
-      <div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your AZ-500 Azure Security knowledge</p></div>
+      <div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your AZ-700 Azure Networking knowledge</p></div>
       <button class="quiz-close" onclick="closeQuiz()">&#x2715; Close</button>
     </div>
     <div class="quiz-body" id="quiz-body"></div>
@@ -312,7 +312,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 <div class="fb-overlay" id="fb-overlay">
   <div class="fb-card">
     <h3>&#x2601; Firebase Cross-Device Sync</h3>
-    <p class="fb-desc">Connect your Firebase Realtime Database to sync AZ-500 lab progress across all your devices.</p>
+    <p class="fb-desc">Connect your Firebase Realtime Database to sync AZ-700 lab progress across all your devices.</p>
     <div class="fb-steps">
       <b>Quick setup:</b><br>
       1. Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> &rarr; Create project<br>
@@ -336,8 +336,8 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 <div id="congrats">
   <div class="card">
     <span class="emoji">&#x1F3C6;</span>
-    <h2>AZ-500 Ready!</h2>
-    <p>You've mastered Azure Security Technologies!</p>
+    <h2>AZ-700 Ready!</h2>
+    <p>You've completed all Azure Networking labs!</p>
     <button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button>
   </div>
 </div>
@@ -345,165 +345,223 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
 <div class="overall-card">
   <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
   <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
-  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-2 Done</div></div>
-  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 3-4 Done</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
   <div class="big-bar-wrap">
-    <div class="big-bar-label"><span>Overall AZ-500 Progress</span><span id="stat-pct">0%</span></div>
+    <div class="big-bar-label"><span>Overall AZ-700 Progress</span><span id="stat-pct">0%</span></div>
     <div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div>
   </div>
 </div>
 
 <div class="tabs">
   <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
-  <button class="tab azure-tab" onclick="filterTab('azure',this)">&#x1F535; Azure Security</button>
+  <button class="tab azure-tab" onclick="filterTab('azure',this)">&#x1F535; Azure Networking</button>
 </div>
 
 <div id="content"></div>
 
 <script>
-// ─── AZ-500 Lab Data ──────────────────────────────────────────────────────────
+// ─── AZ-700 Lab Data ──────────────────────────────────────────────────────────
 const PHASES = [
   {
-    id:'p1', badge:'PHASE 1', title:'Manage Identity & Access Security', week:'Week 1',
+    id:'p1', badge:'PHASE 1', title:'Virtual Networks & Subnets', week:'Week 1',
     labs:[
       {
-        id:'p1-entra', cloud:'azure', title:'Entra ID Security & Privileged Identity Management',
-        meta:'Configure security defaults, Conditional Access, PIM, and Identity Protection',
+        id:'p1-vnet', cloud:'azure', title:'VNet Design & Subnets',
+        meta:'Create VNets, subnets, address spaces and VNet peering',
         steps:[
-          {id:'p1-entra-s1', text:'Configure Microsoft Entra ID security defaults and review sign-in risk policies', details:['Entra ID > Properties > Manage security defaults', 'Review what security defaults enforce (MFA, legacy auth block)', 'Disable security defaults to use Conditional Access instead', 'Identity Protection > Sign-in risk policy: enable for High risk', 'User risk policy: enable for High risk → require password change']},
-          {id:'p1-entra-s2', text:'Create and test a Conditional Access policy requiring MFA for all admins', details:['Entra ID > Security > Conditional Access > New policy', 'Name: Require MFA - Admins', 'Users: select Directory Roles: Global Admin, Security Admin', 'Cloud apps: All cloud apps', 'Grant: Require MFA; Enable: On', 'Test by signing in as admin — should prompt for MFA']},
-          {id:'p1-entra-s3', text:'Configure PIM for the Global Administrator role (eligible assignment)', details:['PIM > Azure AD roles > Global Administrator > Assignments', 'Add eligible: select a test user', 'Activation maximum: 1 hour; Require justification: Yes; Require MFA on activation: Yes', 'Test activation as the user', 'Review activation request in PIM audit log']},
-          {id:'p1-entra-s4', text:'Enable and review Microsoft Entra ID Identity Protection reports', details:['Identity Protection > Risky users', 'Identity Protection > Risky sign-ins', 'Identity Protection > Risk detections', 'Review: Anonymous IP usage, Impossible travel, Leaked credentials', 'Set up weekly digest email for identity protection']},
-          {id:'p1-entra-s5', text:'Configure Self-Service Password Reset (SSPR) and test it', details:['Entra ID > Password reset; Enable for: All', 'Authentication methods: 2 required (email + phone)', 'Registration: require at registration', 'Notifications: notify users on reset', 'Test: go to aka.ms/sspr as a test user', 'Complete registration with email/phone']},
+          {id:'p1-vnet-s1', text:'Create a VNet named vnet-hub with address space 10.0.0.0/16 in East US', details:['Portal > Create a resource > Virtual network', 'Name: vnet-hub; Address space: 10.0.0.0/16', 'Create subnets: AzureFirewallSubnet (10.0.0.0/26), GatewaySubnet (10.0.1.0/27), management-subnet (10.0.2.0/24)']},
+          {id:'p1-vnet-s2', text:'Create a spoke VNet named vnet-spoke1 with address space 10.1.0.0/16', details:['Add subnets: web-subnet (10.1.1.0/24), app-subnet (10.1.2.0/24), db-subnet (10.1.3.0/24)', 'Region: same as hub']},
+          {id:'p1-vnet-s3', text:'Configure Global VNet Peering from vnet-hub to vnet-spoke1', details:['Go to vnet-hub > Peerings > Add', 'Peering link name: hub-to-spoke1', 'Allow virtual network access: Enabled', 'Allow gateway transit: Enabled (from hub)', 'Add remote peering simultaneously', 'Verify Status: Connected']},
+          {id:'p1-vnet-s4', text:'Deploy a test VM in each VNet and test ping connectivity', details:['Create VM in management-subnet and one in web-subnet', 'Ensure NSG allows ICMP (or use curl with a test service)', 'Run: ping 10.1.1.x from hub VM', 'Verify bidirectional connectivity']},
+          {id:'p1-vnet-s5', text:'Review effective routes on each VM NIC', details:['Go to VM NIC > Effective routes', 'Note the system routes added by VNet peering', 'Understand the address prefix and next hop type for each route']},
         ],
         validation:[
-          {id:'p1-entra-v1', text:'Conditional Access policy requiring MFA for admins is active'},
-          {id:'p1-entra-v2', text:'PIM makes Global Admin eligible (not permanent)'},
-          {id:'p1-entra-v3', text:'SSPR enabled and test user can reset password without admin'},
-          {id:'p1-entra-v4', text:'Identity Protection risk policies enabled for High risk users/sign-ins'},
-        ]
-      },
-      {
-        id:'p1-rbac', cloud:'azure', title:'Azure RBAC & Custom Role Security',
-        meta:'Audit privileged assignments, create custom roles, configure access reviews and break-glass accounts',
-        steps:[
-          {id:'p1-rbac-s1', text:'Audit all permanent Global Administrator assignments and remediate', details:['PIM > Azure AD roles > Global Administrator > Assignments > Permanent', 'Best practice: NO permanent Global Admins except break-glass accounts', 'Convert all to eligible except 2 break-glass accounts', 'Document break-glass account names and store credentials securely (physical vault)']},
-          {id:'p1-rbac-s2', text:'Create a custom Azure RBAC role with minimum permissions for a security analyst', details:['az role definition create --role-definition \'{"Name":"Security Analyst Custom","Description":"Read security resources only","Actions":["Microsoft.Security/*/read","Microsoft.Insights/*/read","Microsoft.OperationalInsights/*/read"],"NotActions":[],"AssignableScopes":["/subscriptions/<id>"]}\'', 'Assign to a test security user at subscription scope']},
-          {id:'p1-rbac-s3', text:'Review and clean up over-privileged role assignments using Access Reviews', details:['Identity Governance > Access reviews > New', 'Scope: Azure resource roles; Resource: Subscription', 'Review: Owner, Contributor assignments; Reviewers: each user reviews their own access', 'Duration: 7 days; Upon completion: remove access for denied', 'Start and simulate a review']},
-          {id:'p1-rbac-s4', text:'Configure break-glass emergency access accounts', details:['Create 2 accounts: breakglass1@domain.onmicrosoft.com, breakglass2@domain.onmicrosoft.com', 'Assign permanent Global Admin role', 'Exclude from ALL Conditional Access policies', 'Use very long complex passwords stored offline', 'Enable alerting when these accounts sign in; Test login annually']},
-          {id:'p1-rbac-s5', text:'Use Microsoft Secure Score to identify and remediate identity weaknesses', details:['Defender for Cloud > Secure Score; Filter by: Identity', 'Review recommendations: Accounts with owner permissions on Azure resources should be MFA capable', 'Enable MFA for accounts with write permissions', 'Implement recommended actions and observe score change']},
-        ],
-        validation:[
-          {id:'p1-rbac-v1', text:'No permanent Global Admin except break-glass accounts'},
-          {id:'p1-rbac-v2', text:'Custom security analyst role created with read-only permissions'},
-          {id:'p1-rbac-v3', text:'Access review created for privileged Azure resource roles'},
-          {id:'p1-rbac-v4', text:'Break-glass accounts excluded from Conditional Access'},
-          {id:'p1-rbac-v5', text:'Secure Score identity recommendations reviewed'},
+          {id:'p1-vnet-v1', text:'VNet peering status shows Connected in both directions'},
+          {id:'p1-vnet-v2', text:'Ping test succeeds between hub and spoke VMs'},
+          {id:'p1-vnet-v3', text:'Effective routes show peered address space on both NICs'},
         ]
       }
     ]
   },
   {
-    id:'p2', badge:'PHASE 2', title:'Secure Networking', week:'Week 2',
+    id:'p2', badge:'PHASE 2', title:'Network Security — NSG & Azure Firewall', week:'Week 1-2',
     labs:[
       {
-        id:'p2-netsec', cloud:'azure', title:'Azure Firewall Premium, DDoS & Bastion',
-        meta:'Deploy Firewall Premium with IDPS, configure DDoS Protection, Bastion, and JIT VM access',
+        id:'p2-nsg', cloud:'azure', title:'Network Security Groups & ASG',
+        meta:'Create NSGs with inbound/outbound rules, use Application Security Groups',
         steps:[
-          {id:'p2-netsec-s1', text:'Upgrade Azure Firewall to Premium SKU and enable TLS inspection', details:['Azure Firewall Premium adds: IDPS (Intrusion Detection & Prevention), TLS inspection, URL filtering, Web categories', 'Create Firewall Policy (Premium)', 'Enable TLS inspection: requires intermediate CA cert in Key Vault', 'IDPS mode: Alert and Deny', 'Test by attempting to browse to a known malicious FQDN']},
-          {id:'p2-netsec-s2', text:'Configure Azure DDoS Protection Standard on vnet-hub', details:['Portal > DDoS protection plans > Create; Name: ddos-plan-hub', 'Associate with vnet-hub (DDoS > Enable)', 'DDoS Standard costs ~$2944/month — use for lab understanding', 'Review mitigation policies: TCP SYN, TCP, UDP, ESP, Other floods', 'Configure alerts: Attack under DDoS mitigation, DDoS attack stopped']},
-          {id:'p2-netsec-s3', text:'Deploy Azure Bastion in vnet-hub for secure VM access without public IPs', details:['Create subnet AzureBastionSubnet (/27 minimum) in vnet-hub', 'Deploy Bastion: Name: bastion-hub; SKU: Standard; VNet: vnet-hub; Public IP: pip-bastion', 'Connect to a VM using Bastion: VM > Connect > Bastion', 'No public IP needed on target VM', 'Review connection logs in Log Analytics']},
-          {id:'p2-netsec-s4', text:'Configure Just-In-Time (JIT) VM access in Defender for Cloud', details:['Defender for Cloud > Workload protections > Just-in-time VM access', 'Enable JIT on vm-web1 and vm-web2', 'Configure ports: 22 (SSH), 3389 (RDP), source IP: my IP only', 'Request JIT access: portal, PowerShell, or REST', 'Review NSG shows temporary allow rule added during JIT session']},
-          {id:'p2-netsec-s5', text:'Implement network micro-segmentation using NSG and ASG best practices', details:['Review all NSGs and ensure default deny on inbound from internet except required ports', 'Enable service tags instead of IP ranges where possible (e.g. AzureMonitor, Storage)', 'Enable Defender for Cloud recommendation: All network ports should be restricted', 'Review Adaptive Network Hardening recommendations in Defender for Cloud']},
+          {id:'p2-nsg-s1', text:'Create an NSG named nsg-web-tier and associate it with web-subnet', details:['Portal > NSGs > Create; Name: nsg-web-tier', 'Inbound: Allow HTTP(80) from Any priority 100, Allow HTTPS(443) from Any priority 110, Deny All priority 4096', 'Outbound: Allow to app-subnet (10.1.2.0/24) on port 8080 priority 100', 'Associate with web-subnet']},
+          {id:'p2-nsg-s2', text:'Create Application Security Groups (ASG) for web and app tiers', details:['Create ASG: asg-web-servers and asg-app-servers', 'Assign the VM NICs to respective ASGs', 'Update NSG rules to reference ASGs instead of IP ranges (source: asg-web-servers, dest: asg-app-servers)']},
+          {id:'p2-nsg-s3', text:'Test NSG rules using Network Watcher IP Flow Verify', details:['Go to Network Watcher > IP flow verify', 'Source: web-VM IP; Destination: app-VM IP; Port: 8080; Protocol: TCP', 'Expected result: Allowed', 'Test port 22 to internet — Expected: Denied']},
+          {id:'p2-nsg-s4', text:'Create an NSG flow log and configure diagnostic settings', details:['Go to nsg-web-tier > NSG flow logs > Create', 'Storage account: select/create one; Retention: 30 days', 'Enable Traffic Analytics with Log Analytics workspace', 'Wait 10 min and review traffic in Traffic Analytics']},
+          {id:'p2-nsg-s5', text:'Review NSG effective security rules on a VM NIC', details:['Go to VM > Networking > Effective security rules', 'Review all inbound and outbound rules including subnet-level and NIC-level NSGs', 'Note the priority order and how rules are evaluated']},
         ],
         validation:[
-          {id:'p2-netsec-v1', text:'Azure Firewall Premium with IDPS in Alert mode'},
-          {id:'p2-netsec-v2', text:'Bastion deployed — VMs accessible without public IPs'},
-          {id:'p2-netsec-v3', text:'JIT VM access configured and working on test VMs'},
-          {id:'p2-netsec-v4', text:'DDoS Protection plan associated with hub VNet'},
-          {id:'p2-netsec-v5', text:'NSG micro-segmentation implemented per Defender recommendations'},
+          {id:'p2-nsg-v1', text:'HTTP/HTTPS allowed to web VM from internet via NSG'},
+          {id:'p2-nsg-v2', text:'Traffic between web and app tiers works on port 8080'},
+          {id:'p2-nsg-v3', text:'IP Flow Verify confirms NSG rules are applied correctly'},
+          {id:'p2-nsg-v4', text:'NSG flow logs visible in storage/Traffic Analytics'},
+        ]
+      },
+      {
+        id:'p2-fw', cloud:'azure', title:'Azure Firewall & Route Tables',
+        meta:'Deploy Azure Firewall, configure rules, force traffic via UDR',
+        steps:[
+          {id:'p2-fw-s1', text:'Deploy Azure Firewall (Standard SKU) in AzureFirewallSubnet of vnet-hub', details:['Portal > Firewalls > Create; Name: azfw-hub; SKU: Standard', 'VNet: vnet-hub; Subnet: AzureFirewallSubnet (must be /26 or larger)', 'Public IP: create new azfw-pip', 'Enable DNS proxy: Yes']},
+          {id:'p2-fw-s2', text:'Create a Route Table and add a UDR to force spoke traffic through the firewall', details:['Create Route Table: rt-spoke1', 'Add route: Name: to-internet; Address prefix: 0.0.0.0/0; Next hop: Virtual appliance; Next hop IP: Azure Firewall private IP', 'Associate route table with web-subnet and app-subnet in vnet-spoke1']},
+          {id:'p2-fw-s3', text:'Configure Azure Firewall Network Rules to allow spoke VMs to reach internet', details:['Go to azfw-hub > Rules > Network rule collection > Add', 'Name: allow-outbound-web; Priority: 100; Action: Allow', 'Rules: Protocol TCP, Source: 10.1.0.0/16, Destination: *, Ports: 80,443']},
+          {id:'p2-fw-s4', text:'Configure Azure Firewall Application Rules for specific FQDNs', details:['Application rule collection > Add; Name: allow-specific-sites; Priority: 200; Action: Allow', 'Rules: Source: 10.1.0.0/16; Protocol: Http/Https', 'Target FQDNs: *.microsoft.com, *.azure.com', 'Test by browsing from spoke VM']},
+          {id:'p2-fw-s5', text:'Review Azure Firewall logs and metrics', details:['Go to azfw-hub > Diagnostic settings > Send to Log Analytics', 'Query in Log Analytics: AzureDiagnostics | where Category == "AzureFirewallNetworkRule" | limit 50', 'Review allowed vs denied traffic']},
+        ],
+        validation:[
+          {id:'p2-fw-v1', text:'Firewall deployed in AzureFirewallSubnet'},
+          {id:'p2-fw-v2', text:'UDR forces all 0.0.0.0/0 traffic via firewall private IP'},
+          {id:'p2-fw-v3', text:'Network rules allow web ports from spoke'},
+          {id:'p2-fw-v4', text:'Application rules restrict to specific FQDNs'},
+          {id:'p2-fw-v5', text:'Firewall logs show traffic'},
         ]
       }
     ]
   },
   {
-    id:'p3', badge:'PHASE 3', title:'Secure Compute, Storage & Data', week:'Week 3',
+    id:'p3', badge:'PHASE 3', title:'Load Balancing & Application Delivery', week:'Week 2',
     labs:[
       {
-        id:'p3-kv', cloud:'azure', title:'Azure Key Vault — Secrets, Keys & Certificates',
-        meta:'Create Key Vault with RBAC, manage secrets/keys/certs, configure managed identity access',
+        id:'p3-lb', cloud:'azure', title:'Azure Load Balancer (Standard)',
+        meta:'Deploy public and internal standard load balancers with health probes',
         steps:[
-          {id:'p3-kv-s1', text:'Create an Azure Key Vault with RBAC authorization (not access policies)', details:['Portal > Key Vaults > Create; Name: kv-az500-lab; Pricing: Standard', 'Access configuration: Azure role-based access control (RBAC)', 'Soft delete: 7 days; Purge protection: Enabled (irreversible for lab, use carefully)', 'Assign yourself: Key Vault Administrator role on the KV']},
-          {id:'p3-kv-s2', text:'Create secrets, keys, and a certificate in Key Vault', details:['Secrets: Add > Name: db-connection-string; Value: Server=sqlserver;Database=mydb;...', 'Keys: Generate RSA 2048-bit key: app-encryption-key', 'Certificates: Generate self-signed cert: app-cert', 'Download .cer for testing', 'View all three asset types in the portal']},
-          {id:'p3-kv-s3', text:'Enable Key Vault diagnostic logging and set up expiry alerts', details:['KV > Diagnostic settings > Add; Log: AuditEvent; Metric: AllMetrics; Send to Log Analytics', 'Alert: go to Key Vault > Alerts > Create', 'Condition: Secret Near Expiry (Days to expiry < 30); Action: email notification', 'Review audit logs: who accessed what secret and when']},
-          {id:'p3-kv-s4', text:'Configure a Managed Identity to access Key Vault secrets (no credentials in code)', details:['Create a Web App or VM with System-assigned managed identity', 'In KV: Assign role: Key Vault Secrets User to the managed identity', 'From the web app/VM: GET https://kv-az500-lab.vault.azure.net/secrets/db-connection-string?api-version=7.0 (with managed identity token)', 'This proves app gets secrets without any stored credentials']},
-          {id:'p3-kv-s5', text:'Enable Key Vault firewall and restrict access to specific VNets', details:['KV > Networking > Firewalls and virtual networks', 'Allow: Selected networks', 'Add VNet: vnet-spoke1, app-subnet (enable Microsoft.KeyVault service endpoint first)', 'Allow trusted Microsoft services', 'Verify: access from approved VNet works; Access from public internet returns 403 Forbidden']},
+          {id:'p3-lb-s1', text:'Deploy two identical web VMs (vm-web1, vm-web2) in an Availability Set in web-subnet', details:['Create Availability Set: as-web', 'Create 2 VMs using the same availability set', 'Install IIS/nginx on both: az vm extension set --publisher Microsoft.Compute --name CustomScriptExtension', 'Verify both VMs serve the same test page']},
+          {id:'p3-lb-s2', text:'Create a Public Standard Load Balancer with a frontend IP', details:['Create LB: lb-web-public; SKU: Standard; Type: Public', 'Frontend IP: create new public IP pip-lb-web', 'No zones for simplicity']},
+          {id:'p3-lb-s3', text:'Create a backend pool and add both web VMs', details:['In lb-web-public > Backend pools > Add; Name: bp-web-vms', 'Add vm-web1 and vm-web2 NICs', 'Verify both VMs show as backend instances']},
+          {id:'p3-lb-s4', text:'Create a health probe and load balancing rule', details:['Health probe: hp-http; Protocol: HTTP; Port: 80; Path: /; Interval: 5s; Unhealthy threshold: 2', 'Load balancing rule: lbr-http; Protocol: TCP; Frontend port: 80; Backend port: 80', 'Backend pool: bp-web-vms; Health probe: hp-http; Session persistence: None']},
+          {id:'p3-lb-s5', text:'Test load balancing by accessing the public IP and stopping one VM', details:['Browse to load balancer public IP — should show web page', 'Stop vm-web1; Refresh page — should still work (served by vm-web2)', 'Check health probe status in portal', 'Re-start vm-web1 and verify both serve traffic again']},
         ],
         validation:[
-          {id:'p3-kv-v1', text:'Key Vault uses RBAC (not legacy access policies)'},
-          {id:'p3-kv-v2', text:'Soft delete and purge protection enabled'},
-          {id:'p3-kv-v3', text:'Managed identity retrieves secrets without stored credentials'},
-          {id:'p3-kv-v4', text:'Diagnostic logs capture all secret access in Log Analytics'},
-          {id:'p3-kv-v5', text:'KV network firewall restricts access to specific VNet subnets'},
+          {id:'p3-lb-v1', text:'Load balancer routes traffic to both VMs'},
+          {id:'p3-lb-v2', text:'Health probe correctly detects unhealthy backend when VM is stopped'},
+          {id:'p3-lb-v3', text:'Traffic continues when one VM is down'},
+          {id:'p3-lb-v4', text:'Both VMs show as healthy in backend pool status'},
         ]
       },
       {
-        id:'p3-storage', cloud:'azure', title:'Storage Security — Encryption, SAS & Access Policies',
-        meta:'Configure CMK encryption, generate scoped SAS tokens, enable Defender for Storage and immutable blobs',
+        id:'p3-agw', cloud:'azure', title:'Azure Application Gateway + WAF',
+        meta:'Deploy Application Gateway v2 with WAF, path-based routing',
         steps:[
-          {id:'p3-storage-s1', text:'Configure Storage Account with infrastructure encryption (double encryption)', details:['Create Storage Account: staz500secure', 'Encryption: Customer-managed keys (CMK); Key source: Azure Key Vault', 'Select key: app-encryption-key from kv-az500-lab', 'Enable infrastructure encryption (double encryption) — enable at creation time only', 'Review: data encrypted at rest with both Microsoft-managed and customer-managed keys']},
-          {id:'p3-storage-s2', text:'Generate Shared Access Signatures (SAS) with minimum required permissions', details:['Go to storage container > Generate SAS', 'Set: expiry 1 hour from now; Permissions: Read only (not write, delete)', 'Allowed IP: your current IP only; Protocol: HTTPS only', 'Signed key: your storage account key', 'Test the SAS URL — should work for read', 'Test delete via SAS — should fail (403)']},
-          {id:'p3-storage-s3', text:'Create and enforce a Storage Access Policy on a container', details:['Container > Access policy > Add policy; Policy name: lab-read-policy', 'Permissions: Read, List; Expiry: 30 days', 'Generate SAS referencing this stored policy: use PowerShell: New-AzStorageContainerSASToken -Policy lab-read-policy', 'Revoke: change the stored policy expiry to past — SAS is instantly revoked']},
-          {id:'p3-storage-s4', text:'Enable Defender for Storage and review threat detections', details:['Defender for Cloud > Environment settings > Subscription > Storage > Enable', 'Defender for Storage now monitors: Unusual access patterns, Access from Tor exit nodes, Access from suspicious IPs, Hash reputation analysis (malware upload detection)', 'Upload an EICAR test file to a blob — Defender should alert', 'Review alert in Defender for Cloud > Security alerts']},
-          {id:'p3-storage-s5', text:'Configure immutable blob storage for compliance (WORM)', details:['Storage account > Data management > Versioning: Enable', 'Containers > Create container: compliance-archive', 'Container > Access policy > Immutability policy; Type: Time-based retention; Retention: 365 days', 'Lock the policy (makes it irreversible!)', 'Test: try to delete a blob — should fail with ImmutablePolicy error']},
+          {id:'p3-agw-s1', text:'Create an Application Gateway v2 with WAF in a dedicated subnet (appgw-subnet 10.1.4.0/24)', details:['Portal > Application gateways > Create; Tier: WAF V2', 'VNet: vnet-spoke1; Subnet: appgw-subnet (new)', 'Frontend: Public IP pip-appgw; Min instances: 2']},
+          {id:'p3-agw-s2', text:'Configure the backend pool pointing to the web VMs', details:['Backend pool: bp-appgw; Add VMs: vm-web1, vm-web2 (by IP or FQDN)', 'HTTP settings: port 80, protocol HTTP', 'Enable cookie-based affinity if needed']},
+          {id:'p3-agw-s3', text:'Configure listener and routing rule', details:['Listener: listener-http; Protocol: HTTP; Port: 80', 'Routing rule: rule-http; Associate listener with backend pool and HTTP settings', 'Leave as basic routing (not path-based yet)']},
+          {id:'p3-agw-s4', text:'Enable WAF and set to Detection mode, then Prevention mode', details:['Go to WAF policy > Create new; Mode: Detection first; OWASP CRS: 3.2', 'Associate with Application Gateway', 'Switch to Prevention mode after testing', 'Review WAF logs under Diagnostic settings']},
+          {id:'p3-agw-s5', text:'Configure path-based routing (/api/* to a different backend)', details:['Create second backend pool: bp-api; HTTP settings: port 8080', 'Add URL path map to routing rule: /api/* → bp-api; /* → bp-web-vms', 'Test: curl http://<agw-ip>/api/test vs http://<agw-ip>/']},
         ],
         validation:[
-          {id:'p3-storage-v1', text:'CMK encryption configured with Key Vault key'},
-          {id:'p3-storage-v2', text:'SAS token limited to HTTPS + IP + expiry + min permissions'},
-          {id:'p3-storage-v3', text:'Stored Access Policy created and SAS references it'},
-          {id:'p3-storage-v4', text:'Defender for Storage enabled and detects EICAR test file'},
-          {id:'p3-storage-v5', text:'Immutable blob storage configured for compliance container'},
+          {id:'p3-agw-v1', text:'Application Gateway v2 deployed with WAF enabled'},
+          {id:'p3-agw-v2', text:'Traffic reaches web VMs via AGW'},
+          {id:'p3-agw-v3', text:'WAF in Prevention mode and blocking test attacks'},
+          {id:'p3-agw-v4', text:'Path-based routing sends /api/* to different backend'},
         ]
       }
     ]
   },
   {
-    id:'p4', badge:'PHASE 4', title:'Manage Security Operations', week:'Week 4',
+    id:'p4', badge:'PHASE 4', title:'Hybrid Connectivity — VPN & ExpressRoute', week:'Week 3',
     labs:[
       {
-        id:'p4-mdc', cloud:'azure', title:'Microsoft Defender for Cloud',
-        meta:'Enable Defender plans, review Secure Score, remediate recommendations, configure workflow automation',
+        id:'p4-vpn', cloud:'azure', title:'Azure VPN Gateway — Site-to-Site',
+        meta:'Deploy VPN Gateway, configure S2S and P2S VPN connections',
         steps:[
-          {id:'p4-mdc-s1', text:'Enable Defender for Cloud on your subscription and review Secure Score', details:['Portal > Defender for Cloud > Getting started > Enable all plans (trial available)', 'Review Secure Score: baseline score without any remediation', 'Explore recommendations grouped by: Compute, Data, Identity, Network', 'Note the potential score increase for each recommendation group', 'Download secure score report as CSV']},
-          {id:'p4-mdc-s2', text:'Enable Defender plans for key services and review alerts', details:['Defender for Cloud > Environment settings > Subscription', 'Enable: Defender for Servers (Plan 2), Defender for Storage, Defender for Key Vault, Defender for SQL, Defender for Containers', 'Each plan adds specific threat detections', 'Total cost shown per resource — review before enabling in production']},
-          {id:'p4-mdc-s3', text:'Remediate a high-priority recommendation', details:['Recommendations > Filter by severity: High', 'Select: Machines should have secrets findings resolved (or similar high-priority)', 'Review affected resources; Click Fix or follow remediation steps', 'Observe Secure Score increase after remediation', 'Check that resource no longer appears in the recommendation']},
-          {id:'p4-mdc-s4', text:'Set up email notifications and configure workflow automation', details:['Defender for Cloud > Environment settings > Email notifications', 'Add security contacts: your email; Alert severity: High and Medium', 'Workflow automation > Add: Trigger: Security alert (High); Action: Logic App → send Teams notification or email', 'Test by creating a test alert', 'Review the automated response firing']},
-          {id:'p4-mdc-s5', text:'Review Defender for Cloud attack path analysis', details:['Defender for Cloud > Attack path analysis (if available in region)', 'Review discovered attack paths in your environment', 'Example path: Internet → VM with JIT disabled → credential access → lateral movement', 'Click on attack path > Remediation steps', 'Understand how Defender maps the kill chain']},
+          {id:'p4-vpn-s1', text:'Create a VPN Gateway (VpnGw1 SKU) in the GatewaySubnet of vnet-hub', details:['Portal > Virtual Network Gateways > Create', 'Gateway type: VPN; VPN type: Route-based; SKU: VpnGw1', 'VNet: vnet-hub; Subnet: GatewaySubnet', 'Public IP: create pip-vpngw; Active-active: No', 'Note: Creation takes 25-45 mins']},
+          {id:'p4-vpn-s2', text:'Create a Local Network Gateway representing the on-premises network', details:['Portal > Local Network Gateways > Create; Name: lgw-onprem', 'IP address: your simulated on-prem public IP (use any public IP for lab)', 'Address space: 192.168.0.0/24 (simulated on-prem)', 'BGP: disable for basic lab']},
+          {id:'p4-vpn-s3', text:'Create a VPN Connection (Site-to-Site IKEv2)', details:['Go to VPN Gateway > Connections > Add', 'Connection type: Site-to-site (IPsec)', 'Local network gateway: lgw-onprem', 'Shared key (PSK): use a strong key like Lab@2024Secure!', 'Protocol: IKEv2; Review + Create']},
+          {id:'p4-vpn-s4', text:'Review connection status and understand tunnel diagnostics', details:['Go to Connections > connection > Overview', 'Status will show "Not Connected" without actual on-prem device', 'Go to Network Watcher > VPN Troubleshoot', 'Understand IKE Phase 1 vs Phase 2 negotiation', 'Review VPN gateway diagnostics logs']},
+          {id:'p4-vpn-s5', text:'Configure Point-to-Site VPN with certificate authentication', details:['On VPN Gateway > Point-to-site configuration', 'Address pool: 172.16.0.0/24; Tunnel type: OpenVPN (SSL)', 'Authentication: Azure certificate', 'Generate root cert: $cert = New-SelfSignedCertificate...', 'Export and upload root cert public key', 'Download VPN client config']},
         ],
         validation:[
-          {id:'p4-mdc-v1', text:'All key Defender plans enabled (Servers, Storage, KV, SQL)'},
-          {id:'p4-mdc-v2', text:'Secure Score reviewed with high-priority remediation completed'},
-          {id:'p4-mdc-v3', text:'Email notifications configured for High and Medium alerts'},
-          {id:'p4-mdc-v4', text:'Workflow automation created and tested'},
-          {id:'p4-mdc-v5', text:'Attack path analysis reviewed'},
+          {id:'p4-vpn-v1', text:'VPN Gateway deployed in GatewaySubnet'},
+          {id:'p4-vpn-v2', text:'S2S connection created with correct PSK and LNG settings'},
+          {id:'p4-vpn-v3', text:'P2S configured with certificate auth and address pool'},
+          {id:'p4-vpn-v4', text:'VPN client package downloadable'},
         ]
       },
       {
-        id:'p4-sentinel', cloud:'azure', title:'Microsoft Sentinel — SIEM & SOAR',
-        meta:'Deploy Sentinel, connect data sources, enable analytics rules, investigate incidents, build playbooks',
+        id:'p4-er', cloud:'azure', title:'ExpressRoute Concepts & Circuit',
+        meta:'Understand ExpressRoute circuit, peering types, and gateway configuration',
         steps:[
-          {id:'p4-sentinel-s1', text:'Create a Log Analytics Workspace and enable Microsoft Sentinel', details:['Create Log Analytics workspace: law-sentinel-lab', 'Portal > Microsoft Sentinel > Create > select workspace', 'Sentinel is free for the first 31 days', 'Review the Sentinel overview: Incidents, Alerts, Bookmarks, Hunting', 'Connect first data connector: Azure Activity (logs all ARM operations)']},
-          {id:'p4-sentinel-s2', text:'Connect key data connectors to ingest security logs', details:['Sentinel > Data connectors', 'Connect: Azure Active Directory (sign-in logs, audit logs), Microsoft Entra ID Protection, Azure Security Center (Defender for Cloud), Microsoft 365 Defender (if available)', 'Review connector status: verify logs flowing via query: SigninLogs | take 10']},
-          {id:'p4-sentinel-s3', text:'Enable built-in analytics rules to detect threats', details:['Sentinel > Analytics > Rule templates', 'Enable: Multiple failed authentication attempts (Brute force), Sign-in from unknown location, Privileged account signin outside expected range', 'Set alert threshold and frequency', 'Run: Generate failed logins to see if incidents are created']},
-          {id:'p4-sentinel-s4', text:'Investigate a Sentinel incident from start to close', details:['Incidents > select an active or test incident', 'Review: Alert details, MITRE ATT&CK tactic, Affected entities (users, IPs, hosts)', 'Add investigation notes; Go to Investigation graph > view entity relationships', 'Assign incident to yourself', 'Change status: Active → In Progress → Closed (False positive / True positive)']},
-          {id:'p4-sentinel-s5', text:'Create a basic Playbook (SOAR) to auto-respond to incidents', details:['Sentinel > Automation > Create playbook (Logic App)', 'Trigger: When Sentinel incident is created', 'Actions: Send email with incident details (use Office 365 or SendGrid connector)', 'Add condition: if Severity == High → add Azure AD user to watch list', 'Attach playbook to an analytics rule', 'Test end-to-end']},
+          {id:'p4-er-s1', text:'Create an ExpressRoute circuit in the Azure Portal (do not provision yet)', details:['Portal > ExpressRoute circuits > Create', 'Provider: Equinix; Peering location: Silicon Valley (or nearest)', 'Bandwidth: 50 Mbps; SKU: Standard; Billing: Metered', 'Note the service key after creation — this is given to the provider']},
+          {id:'p4-er-s2', text:'Understand the two BGP peering types for ExpressRoute', details:['Azure Private Peering: connects to your VNet private address space over BGP', 'Microsoft Peering: connects to Microsoft public services (O365, Azure PaaS) over BGP', 'Each peering has primary and secondary circuits for redundancy', 'Review the peering configuration tab in the circuit']},
+          {id:'p4-er-s3', text:'Create an ExpressRoute Gateway in GatewaySubnet', details:['Portal > Virtual Network Gateways > Create', 'Gateway type: ExpressRoute; SKU: Standard; VNet: vnet-hub', 'Note: VPN and ExpressRoute can coexist using different gateway subnets', 'Understand FastPath for bypassing gateway for data path']},
+          {id:'p4-er-s4', text:'Simulate ExpressRoute failover design', details:['Understand Active-Active gateway configuration', 'Site-to-Site VPN as backup to ExpressRoute (coexistence)', 'BGP local preference to prefer ExpressRoute route over VPN', 'Draw the hybrid connectivity architecture with both paths']},
+          {id:'p4-er-s5', text:'Review ExpressRoute monitoring and SLA', details:['Go to ExpressRoute circuit > Metrics', 'Review: BitsInPerSecond, BitsOutPerSecond, ArpAvailability, BgpAvailability', 'Set up alert for BgpAvailability < 100%', 'Note: ExpressRoute SLA is 99.95% for Standard, 99.99% with Global Reach']},
         ],
         validation:[
-          {id:'p4-sentinel-v1', text:'Sentinel enabled with Log Analytics workspace'},
-          {id:'p4-sentinel-v2', text:'At least 3 data connectors active and flowing data'},
-          {id:'p4-sentinel-v3', text:'3+ analytics rules enabled with incidents generated'},
-          {id:'p4-sentinel-v4', text:'Incident investigated with evidence collected and closed'},
-          {id:'p4-sentinel-v5', text:'Automation playbook triggers on new incidents'},
+          {id:'p4-er-v1', text:'ExpressRoute circuit created with service key visible'},
+          {id:'p4-er-v2', text:'Both peering types understood with BGP AS numbers'},
+          {id:'p4-er-v3', text:'ExpressRoute Gateway deployed in GatewaySubnet'},
+          {id:'p4-er-v4', text:'Coexistence with VPN conceptually understood'},
+          {id:'p4-er-v5', text:'Monitoring alerts configured for BGP availability'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p5', badge:'PHASE 5', title:'DNS & Private Link', week:'Week 4',
+    labs:[
+      {
+        id:'p5-dns', cloud:'azure', title:'Azure DNS — Public & Private Zones',
+        meta:'Create public DNS zones, private DNS zones, and configure auto-registration',
+        steps:[
+          {id:'p5-dns-s1', text:'Create a Public DNS Zone for a custom domain', details:['Portal > DNS zones > Create; Zone name: yourdomain.com (use a test domain)', 'Note the name servers (NS records) shown — these would be set at your registrar', 'Create records: A record: www → your web VM public IP; CNAME: app → www.yourdomain.com; MX record: mail priority 10 → mail.yourdomain.com']},
+          {id:'p5-dns-s2', text:'Create a Private DNS Zone and link it to VNets', details:['Portal > Private DNS zones > Create; Name: internal.corp (private suffix)', 'VNet links > Add: link to vnet-hub (enable auto-registration)', 'Link to vnet-spoke1 (enable auto-registration)', 'VMs will auto-register their private IPs with FQDN: vmname.internal.corp']},
+          {id:'p5-dns-s3', text:'Test private DNS resolution from a VM in the VNet', details:['SSH into a spoke VM', 'Run: nslookup vm-web1.internal.corp — should return 10.1.1.x', 'Run: nslookup vm-web2.internal.corp — should return 10.1.1.y', 'These work because the VM uses Azure DNS (168.63.129.16) which resolves private zones']},
+          {id:'p5-dns-s4', text:'Configure DNS forwarding for hybrid scenarios', details:['Create a DNS Resolver in vnet-hub (if available in region)', 'Or deploy a custom DNS server VM with forwarder', 'Configure: on-prem DNS → Azure private zone resolution', 'Azure DNS → on-prem DNS for corporate domains', 'This is needed for ExpressRoute/VPN hybrid setups']},
+          {id:'p5-dns-s5', text:'Verify split-horizon DNS (same name resolves differently internally vs externally)', details:['Create public DNS zone record: www.yourdomain.com → public IP', 'Create private DNS zone record: www.yourdomain.com → private IP 10.1.1.x', 'From internet: nslookup www.yourdomain.com → public IP', 'From VNet VM: nslookup www.yourdomain.com → private IP']},
+        ],
+        validation:[
+          {id:'p5-dns-v1', text:'Public DNS zone created with A, CNAME, MX records'},
+          {id:'p5-dns-v2', text:'Private DNS zone auto-registers VM FQDNs'},
+          {id:'p5-dns-v3', text:'nslookup resolves private FQDNs from inside VNet'},
+          {id:'p5-dns-v4', text:'Split-horizon DNS working correctly'},
+        ]
+      },
+      {
+        id:'p5-pl', cloud:'azure', title:'Private Endpoints & Private Link',
+        meta:'Create private endpoints for Azure PaaS services, disable public access',
+        steps:[
+          {id:'p5-pl-s1', text:'Create a Storage Account and disable public network access', details:['Create storage account: staz700lab001', 'Networking tab: Disable public access (Selected networks)', 'This means the storage account is NOT accessible from internet', 'Verify: try accessing the storage account from browser/portal — should fail with 403']},
+          {id:'p5-pl-s2', text:'Create a Private Endpoint for the storage account', details:['Storage account > Networking > Private endpoint connections > Add', 'Name: pe-storage-blob; Resource type: Microsoft.Storage/storageAccounts', 'Target sub-resource: blob; VNet: vnet-spoke1; Subnet: app-subnet', 'Integrate with private DNS zone: Yes (privatelink.blob.core.windows.net)']},
+          {id:'p5-pl-s3', text:'Verify private DNS resolution for the storage private endpoint', details:['From an app-subnet VM: nslookup staz700lab001.blob.core.windows.net', 'Should resolve to 10.1.2.x (private IP from app-subnet)', 'From outside the VNet: should resolve to original public IP but access will fail (403)']},
+          {id:'p5-pl-s4', text:'Test storage access via private endpoint from within VNet', details:['From app-subnet VM, install AzCopy or Azure CLI', 'Run: az storage blob list --account-name staz700lab001 --container-name test', 'Should succeed using managed identity or key', 'Run same command from outside VNet — should return authorization error']},
+          {id:'p5-pl-s5', text:'Create a Private Link Service (expose your own service via Private Link)', details:['Concept: expose an internal load balancer as a Private Link service', 'Create Standard Internal LB with frontend IP in app-subnet', 'Create Private Link service: pls-myapp; Source: Internal LB frontend', 'NAT subnet: separate /29 subnet', 'This allows other tenants/subscriptions to connect via private endpoint']},
+        ],
+        validation:[
+          {id:'p5-pl-v1', text:'Storage account public access disabled'},
+          {id:'p5-pl-v2', text:'Private endpoint deployed with private IP in VNet subnet'},
+          {id:'p5-pl-v3', text:'nslookup returns private IP for storage FQDN from inside VNet'},
+          {id:'p5-pl-v4', text:'AzCopy/CLI can access storage from VM in VNet'},
+          {id:'p5-pl-v5', text:'Private Link service conceptually configured'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p6', badge:'PHASE 6', title:'Network Monitoring & Troubleshooting', week:'Week 5-6',
+    labs:[
+      {
+        id:'p6-nw', cloud:'azure', title:'Network Watcher & Diagnostics',
+        meta:'Use Network Watcher tools: IP flow verify, next hop, connection monitor, packet capture',
+        steps:[
+          {id:'p6-nw-s1', text:'Enable Network Watcher in all regions used in the lab', details:['Portal > Network Watcher > Overview', 'Enable for East US and any other regions used', 'Note: Network Watcher is automatically enabled when you create the first VNet in a region', 'Verify under Network Watcher > Overview all regions show Enabled']},
+          {id:'p6-nw-s2', text:'Use IP Flow Verify to test NSG rules', details:['Network Watcher > IP flow verify', 'Source VM: select vm-web1; Direction: Inbound; Protocol: TCP; Local port: 80; Remote port: 12345; Remote IP: 52.x.x.x (simulate internet)', 'Expected: Allowed (by NSG rule)', 'Test port 22 from internet — Expected: Denied', 'Review which NSG rule is matched']},
+          {id:'p6-nw-s3', text:'Use Next Hop to verify routing decisions', details:['Network Watcher > Next hop; Source VM: vm-web1', 'Destination IP: 8.8.8.8 (internet); Expected next hop: Virtual Appliance (Azure Firewall IP) — because of UDR', 'Destination IP: 10.1.2.4 (app VM); Expected next hop: VirtualNetworkPeering', 'Verify your UDR and peering routing is correct']},
+          {id:'p6-nw-s4', text:'Create a Connection Monitor between spoke VMs and an external endpoint', details:['Network Watcher > Connection monitor > Create', 'Source: vm-web1; Destination: vm-web2 (10.1.1.y) on port 80', 'Also add destination: google.com port 443; Test frequency: 30 seconds', 'View topology and latency/packet loss metrics', 'Set alert if packet loss > 5%']},
+          {id:'p6-nw-s5', text:'Capture and analyze network traffic with Packet Capture', details:['Network Watcher > Packet capture > Add; Target VM: vm-web1', 'Storage: storage account; Filter: LocalIPAddress = your VM IP; Duration: 60 seconds', 'Generate some HTTP traffic to the VM', 'Download the .cap file and open in Wireshark', 'Review TCP 3-way handshake and HTTP requests']},
+        ],
+        validation:[
+          {id:'p6-nw-v1', text:'Network Watcher enabled in all regions'},
+          {id:'p6-nw-v2', text:'IP Flow Verify correctly identifies NSG rule allowing/blocking traffic'},
+          {id:'p6-nw-v3', text:'Next Hop shows firewall as next hop for internet traffic'},
+          {id:'p6-nw-v4', text:'Connection Monitor shows latency and packet loss metrics'},
+          {id:'p6-nw-v5', text:'Packet capture file downloadable and readable in Wireshark'},
         ]
       }
     ]
@@ -511,7 +569,7 @@ const PHASES = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────────
-const APP_KEY = 'az500_lab_tracker';
+const APP_KEY = 'az700_lab_tracker';
 let state = {};
 let currentUser = null;
 let db = null;
@@ -535,13 +593,13 @@ function saveState(){
 
 // ─── Firebase ─────────────────────────────────────────────────────────────────
 function initFirebase(){
-  const cfg = JSON.parse(localStorage.getItem('az500_fb_config')||'null');
+  const cfg = JSON.parse(localStorage.getItem('az700_fb_config')||'null');
   if(!cfg) return;
   try{
-    const existing = firebase.apps.find(a=>a.name==='az500-tracker');
-    const app = existing || firebase.initializeApp(cfg,'az500-tracker');
+    const existing = firebase.apps.find(a=>a.name==='az700-tracker');
+    const app = existing || firebase.initializeApp(cfg,'az700-tracker');
     db = firebase.database(app);
-    syncRef = db.ref('az500_progress');
+    syncRef = db.ref('az700_progress');
     listenFirebase();
     setSyncStatus('ok','&#x2714; Synced');
   } catch(e){ setSyncStatus('err','&#x26A0; Sync Error'); }
@@ -574,7 +632,7 @@ function setSyncStatus(type, html){
   el.innerHTML=html;
 }
 function openFbPanel(){
-  const cfg = JSON.parse(localStorage.getItem('az500_fb_config')||'null');
+  const cfg = JSON.parse(localStorage.getItem('az700_fb_config')||'null');
   if(cfg){ document.getElementById('fb-apiKey').value=cfg.apiKey||''; document.getElementById('fb-databaseURL').value=cfg.databaseURL||''; document.getElementById('fb-projectId').value=cfg.projectId||''; }
   document.getElementById('fb-overlay').classList.add('open');
 }
@@ -582,12 +640,12 @@ function closeFbPanel(){ document.getElementById('fb-overlay').classList.remove(
 function saveFbConfig(){
   const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};
   if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){ showFbMsg('err','Please fill in all 3 fields.'); return; }
-  localStorage.setItem('az500_fb_config',JSON.stringify(cfg));
+  localStorage.setItem('az700_fb_config',JSON.stringify(cfg));
   showFbMsg('ok','Connecting...');
   initFirebase();
   setTimeout(closeFbPanel,1000);
 }
-function clearFbConfig(){ localStorage.removeItem('az500_fb_config'); db=null; syncRef=null; setSyncStatus('none','&#x1F4BE; Local Only'); closeFbPanel(); }
+function clearFbConfig(){ localStorage.removeItem('az700_fb_config'); db=null; syncRef=null; setSyncStatus('none','&#x1F4BE; Local Only'); closeFbPanel(); }
 function showFbMsg(type,msg){ const el=document.getElementById('fb-msg'); el.className='fb-status-msg '+type; el.innerHTML=msg; }
 
 // ─── Leaderboard & Quiz ───────────────────────────────────────────────────────
@@ -597,7 +655,7 @@ function openLeaderboard(){
   document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x21BB; Loading&hellip;</div>';
   var lbDb=_lbDb();
   if(!lbDb){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x26A0; Firebase not connected.</div>';return;}
-  lbDb.ref('az500_progress').once('value').then(function(snap){
+  lbDb.ref('az700_progress').once('value').then(function(snap){
     var all=snap.val();
     if(!all||!Object.keys(all).length){document.getElementById('lb-body').innerHTML='<div class="lb-loading">No data yet.</div>';return;}
     var rows=Object.entries(all).map(function(e){
@@ -618,17 +676,21 @@ function openLeaderboard(){
 function closeLb(){document.getElementById('lb-overlay').classList.remove('open');}
 
 var ALL_QUIZ=[
-  {id:'q1',phase:1,question:'Which Azure service provides Privileged Identity Management (PIM) for just-in-time role activation?',options:['Azure Key Vault','Microsoft Entra ID','Azure Security Center','Azure Policy'],answer:1,explanation:'PIM is a feature of Microsoft Entra ID (formerly Azure AD) that provides just-in-time privileged access to Azure and Entra resources.'},
-  {id:'q2',phase:1,question:'What does a Conditional Access policy enforce?',options:['Network firewall rules for inbound traffic','Access controls based on signals like user, location, and device','Storage account encryption policies','VM patch compliance requirements'],answer:1,explanation:'Conditional Access evaluates signals (identity, location, device state, app) and enforces policies such as requiring MFA or blocking access.'},
-  {id:'q3',phase:2,question:'Which Azure service acts as a managed, stateful cloud firewall with threat intelligence?',options:['Network Security Group','Azure DDoS Protection','Azure Firewall','Application Gateway WAF'],answer:2,explanation:'Azure Firewall is a managed, stateful network security service with built-in high availability and threat-intelligence-based filtering.'},
-  {id:'q4',phase:2,question:'What is the purpose of a Service Endpoint on an Azure subnet?',options:['Expose a private IP to the internet','Extend the VNet identity to Azure services over the Microsoft backbone','Create a VPN tunnel to on-premises','Enable DDoS protection on a public IP'],answer:1,explanation:'Service Endpoints extend your VNet private address space to Azure services (Storage, SQL, etc.) over the backbone, removing public internet exposure.'},
-  {id:'q5',phase:3,question:'Which Azure feature encrypts data at rest using customer-managed keys stored in Key Vault?',options:['Azure Disk Encryption using BitLocker','Customer-Managed Keys (CMK) with Server-Side Encryption','Azure Confidential Computing','Transparent Data Encryption with service keys'],answer:1,explanation:'CMK with Server-Side Encryption lets you bring your own keys to Key Vault for encrypting Azure Storage, SQL, and other services at rest.'},
-  {id:'q6',phase:3,question:'What does Microsoft Defender for Cloud provide for virtual machines?',options:['Only network traffic filtering','Vulnerability assessment, threat detection, and security recommendations','Automatic patching without downtime','Managed backup and disaster recovery'],answer:1,explanation:"Defender for Cloud provides vulnerability assessment (integrated Qualys), threat detection, JIT VM access, and security recommendations across your workloads."},
-  {id:'q7',phase:4,question:'Which service collects, analyses, and correlates security data across your Azure environment?',options:['Azure Monitor Metrics','Microsoft Sentinel','Azure Advisor','Log Analytics Workspace alone'],answer:1,explanation:'Microsoft Sentinel is a cloud-native SIEM and SOAR service that ingests data from multiple sources, detects threats using analytics, and automates responses.'},
-  {id:'q8',phase:4,question:'What is the purpose of Just-In-Time (JIT) VM access in Defender for Cloud?',options:['Permanently opens management ports for convenience','Locks down management ports and opens them only for approved requests with time limits','Creates VPN tunnels automatically to VMs','Disables public IPs on all VMs'],answer:1,explanation:'JIT VM access reduces attack surface by blocking management ports (RDP/SSH) by default and opening them only for specific IPs and time windows when requested.'}
+  {id:'q1',phase:1,question:'What is the minimum subnet size required for an Azure VPN Gateway subnet?',options:['/29 (8 addresses)','/28 (16 addresses)','/27 (32 addresses)','/26 (64 addresses)'],answer:0,explanation:'The GatewaySubnet requires at least a /29 subnet, but Microsoft recommends /27 or larger for future gateway SKUs and features.'},
+  {id:'q2',phase:1,question:'What must be set to "Enabled" on a VNet peering to allow a hub VPN gateway to route traffic for spoke VNets?',options:['Allow forwarded traffic','Use remote gateway / Allow gateway transit','Enable VNet-to-VNet encryption','Allow virtual network access'],answer:1,explanation:'"Allow gateway transit" on the hub side and "Use remote gateway" on the spoke side lets the hub VPN gateway serve all connected spokes.'},
+  {id:'q3',phase:2,question:'Which NSG rule property determines whether a rule allows or denies traffic?',options:['Priority','Direction','Access','Protocol'],answer:2,explanation:'The Access property is set to "Allow" or "Deny". Rules are evaluated in priority order (lower number = higher priority) and the first match wins.'},
+  {id:'q4',phase:2,question:'Which Azure Firewall feature filters traffic based on FQDNs in network rules?',options:['Service Tags','Application rules with FQDN filtering','Network rules with FQDN tags','DNS proxy with FQDN resolution'],answer:1,explanation:'Azure Firewall Application Rules use FQDNs and FQDN tags to filter outbound HTTP/HTTPS traffic, leveraging the built-in DNS proxy.'},
+  {id:'q5',phase:3,question:'Which Azure load balancer operates at Layer 7 and can make routing decisions based on URL paths?',options:['Azure Load Balancer (Standard)','Azure Traffic Manager','Azure Application Gateway','Azure Front Door'],answer:2,explanation:'Azure Application Gateway operates at Layer 7 (HTTP/HTTPS) and supports path-based and host-based routing, SSL termination, and WAF.'},
+  {id:'q6',phase:3,question:'What is the purpose of a health probe in Azure Load Balancer?',options:['Encrypts traffic between backend VMs','Determines which backend instances are healthy and should receive traffic','Monitors network latency across regions','Validates SSL certificates on backend servers'],answer:1,explanation:'Health probes periodically test backend instances. Unhealthy instances are automatically removed from the load balancing pool.'},
+  {id:'q7',phase:4,question:'What is required on both sides of a Site-to-Site VPN between Azure and on-premises?',options:['ExpressRoute circuit','Virtual Network Gateway in Azure and compatible VPN device on-premises','Azure Bastion on the on-premises side','Private DNS zone linked to both networks'],answer:1,explanation:'A Site-to-Site VPN needs a VPN Gateway in Azure and a compatible on-premises VPN device (hardware or software) with a public IP.'},
+  {id:'q8',phase:4,question:'Which ExpressRoute connectivity model uses a third-party exchange provider to connect to Microsoft?',options:['Point-to-point Ethernet','Any-to-any (IPVPN)','Cloud Exchange Co-location','Direct Model'],answer:2,explanation:'Cloud Exchange Co-location allows customers at a co-location facility to order virtual cross-connects to Microsoft through the exchange provider.'},
+  {id:'q9',phase:5,question:'What is Azure Private DNS used for?',options:['Resolving public internet domain names','Providing custom DNS name resolution within VNets without a custom DNS server','Routing DNS queries to on-premises resolvers','Exposing private IPs through public DNS'],answer:1,explanation:'Azure Private DNS zones provide DNS resolution for resources within a VNet using a Microsoft-managed DNS service — no custom DNS server needed.'},
+  {id:'q10',phase:5,question:'What does a Private Endpoint do in Azure?',options:['Assigns a public IP to an Azure service for internet access','Maps a private IP in your VNet to an Azure PaaS service, removing internet exposure','Creates a peering between two VNets','Enables forced tunneling for outbound traffic'],answer:1,explanation:'A Private Endpoint creates a network interface with a private IP in your VNet, connecting it privately to an Azure service (e.g. Storage, SQL, Key Vault).'},
+  {id:'q11',phase:6,question:'Which Azure tool captures and analyses network traffic between VMs in a VNet?',options:['Azure Monitor','Network Watcher Packet Capture','Azure Firewall Logs','NSG Flow Logs only'],answer:1,explanation:'Network Watcher Packet Capture records network packets to/from a VM to a storage account or locally, enabling deep traffic analysis.'},
+  {id:'q12',phase:6,question:'What do NSG Flow Logs record?',options:['CPU and memory usage of VMs','Allowed and denied IP traffic flows through NSGs with 5-tuple information','Azure Firewall rule match events','DNS query logs from VNet resources'],answer:1,explanation:'NSG Flow Logs capture IP traffic flows (source/destination IP, port, protocol, direction, and allow/deny) through Network Security Groups.'}
 ];
 var quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};
-var QUIZ_LS='az500_quiz_scores';
+var QUIZ_LS='az700_quiz_scores';
 function openQuiz(){document.getElementById('quiz-overlay').classList.add('open');quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};renderQuiz();}
 function closeQuiz(){document.getElementById('quiz-overlay').classList.remove('open');}
 function getQuizScores(){try{return JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');}catch(e){return{};}}
@@ -657,7 +719,7 @@ function startQuiz(){
   var ph=quizState.selectedPhase;
   var pool=ph==='all'?ALL_QUIZ.slice():ALL_QUIZ.filter(function(q){return q.phase===ph;});
   for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
-  pool=pool.slice(0,ph==='all'?8:Math.min(pool.length,4));
+  pool=pool.slice(0,ph==='all'?12:Math.min(pool.length,6));
   quizState=Object.assign({},quizState,{screen:'question',questions:pool,current:0,answered:false,score:0,wrongs:[]});
   renderQuiz();
 }
@@ -680,7 +742,7 @@ function initUser(){
   onAuthReady(function(user){
     if(!user) return;
     currentUser = user.displayName || user.email.split('@')[0];
-    localStorage.setItem('az500_current_user', currentUser);
+    localStorage.setItem('az700_current_user', currentUser);
     document.getElementById('user-name-display').textContent = currentUser;
     loadState(); build(); updateStats(); initFirebase();
   });
@@ -690,17 +752,17 @@ function changeUser(){}
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 function countAll(){
-  let total=0, done=0, p1to2=0, p1to2Done=0, p3to4=0, p3to4Done=0;
+  let total=0, done=0, p1to3=0, p1to3Done=0, p4to6=0, p4to6Done=0;
   PHASES.forEach((ph,idx)=>{
     ph.labs.forEach(lab=>{
       total++;
       const labDone = lab.steps.every(s=>state.steps[s.id]) && lab.validation.every(v=>state.valChecks[v.id]);
-      if(idx < 2){ p1to2++; if(labDone) p1to2Done++; }
-      else { p3to4++; if(labDone) p3to4Done++; }
+      if(idx < 3){ p1to3++; if(labDone) p1to3Done++; }
+      else { p4to6++; if(labDone) p4to6Done++; }
       if(labDone) done++;
     });
   });
-  return {total,done,p1to2,p1to2Done,p3to4,p3to4Done};
+  return {total,done,p1to3,p1to3Done,p4to6,p4to6Done};
 }
 function countPhase(ph){
   let s=0,d=0;
@@ -711,8 +773,8 @@ function updateStats(){
   const c=countAll();
   document.getElementById('stat-total').textContent=c.total;
   document.getElementById('stat-done').textContent=c.done;
-  document.getElementById('stat-p1').textContent=c.p1to2Done+'/'+c.p1to2;
-  document.getElementById('stat-p2').textContent=c.p3to4Done+'/'+c.p3to4;
+  document.getElementById('stat-p1').textContent=c.p1to3Done+'/'+c.p1to3;
+  document.getElementById('stat-p2').textContent=c.p4to6Done+'/'+c.p4to6;
   const pct=c.total?Math.round(c.done/c.total*100):0;
   document.getElementById('stat-pct').textContent=pct+'%';
   document.getElementById('big-bar-fill').style.width=pct+'%';
@@ -815,7 +877,7 @@ function build(){
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div>
-          <span style="font-size:11px;color:#FECACA;min-width:32px;text-align:right">${pct}%</span>
+          <span style="font-size:11px;color:#BAE6FD;min-width:32px;text-align:right">${pct}%</span>
           <span class="chevron">&#x25BC;</span>
         </div>
       </div>
@@ -901,56 +963,69 @@ function toggleLab(id){
 
 // ─── Reset ────────────────────────────────────────────────────────────────────
 function resetProgress(){
-  if(!confirm('Reset all AZ-500 lab progress for '+currentUser+'? This cannot be undone.')) return;
+  if(!confirm('Reset all AZ-700 lab progress for '+currentUser+'? This cannot be undone.')) return;
   state={steps:{},notes:{},labNotes:{},valChecks:{}};
   saveState(); build(); updateStats();
 }
 
 // ─── Official References ──────────────────────────────────────────────────────
 const LAB_RESOURCES = {
-  'p1-entra':[
-    {title:'Microsoft Entra ID Identity Protection overview', url:'https://learn.microsoft.com/en-us/entra/id-protection/overview-identity-protection'},
-    {title:'What is Conditional Access?', url:'https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview'},
-    {title:'What is Microsoft Entra Privileged Identity Management?', url:'https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure'},
-    {title:'Self-service password reset overview', url:'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks'},
+  'p1-vnet':[
+    {title:'Design IP addressing for Azure', url:'https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses'},
+    {title:'Azure Virtual Network overview', url:'https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview'},
+    {title:'Virtual network peering', url:'https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview'},
   ],
-  'p1-rbac':[
-    {title:'Azure RBAC best practices', url:'https://learn.microsoft.com/en-us/azure/role-based-access-control/best-practices'},
-    {title:'What are access reviews?', url:'https://learn.microsoft.com/en-us/entra/id-governance/access-reviews-overview'},
-    {title:'Manage emergency access accounts in Microsoft Entra ID', url:'https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/security-emergency-access'},
-    {title:'Microsoft Secure Score', url:'https://learn.microsoft.com/en-us/defender-xdr/microsoft-secure-score'},
+  'p2-nsg':[
+    {title:'Network security groups overview', url:'https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview'},
+    {title:'Application security groups', url:'https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups'},
+    {title:'Azure Firewall overview', url:'https://learn.microsoft.com/en-us/azure/firewall/overview'},
+    {title:'Virtual network traffic routing (UDR)', url:'https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview'},
   ],
-  'p2-netsec':[
-    {title:'Azure Firewall Premium features', url:'https://learn.microsoft.com/en-us/azure/firewall/premium-features'},
-    {title:'Azure DDoS Protection overview', url:'https://learn.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview'},
-    {title:'What is Azure Bastion?', url:'https://learn.microsoft.com/en-us/azure/bastion/bastion-overview'},
-    {title:'Just-in-time VM access overview', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/just-in-time-access-overview'},
-    {title:'Adaptive network hardening', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/adaptive-network-hardening'},
+  'p2-fw':[
+    {title:'Azure Firewall overview', url:'https://learn.microsoft.com/en-us/azure/firewall/overview'},
+    {title:'Deploy and configure Azure Firewall', url:'https://learn.microsoft.com/en-us/azure/firewall/tutorial-firewall-deploy-portal'},
+    {title:'Virtual network traffic routing (UDR)', url:'https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview'},
+    {title:'Azure Firewall rule processing logic', url:'https://learn.microsoft.com/en-us/azure/firewall/rule-processing'},
   ],
-  'p3-kv':[
-    {title:'Azure Key Vault overview', url:'https://learn.microsoft.com/en-us/azure/key-vault/general/overview'},
-    {title:'Azure RBAC vs access policies for Key Vault', url:'https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide'},
-    {title:'Managed identities for Azure resources', url:'https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview'},
-    {title:'Configure Azure Key Vault firewalls and virtual networks', url:'https://learn.microsoft.com/en-us/azure/key-vault/general/network-security'},
+  'p3-lb':[
+    {title:'Azure Load Balancer overview', url:'https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview'},
+    {title:'Create a public load balancer', url:'https://learn.microsoft.com/en-us/azure/load-balancer/quickstart-load-balancer-standard-public-portal'},
+    {title:'Load Balancer health probes', url:'https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview'},
   ],
-  'p3-storage':[
-    {title:'Azure Storage security guide', url:'https://learn.microsoft.com/en-us/azure/storage/blobs/security-recommendations'},
-    {title:'Grant limited access to data with shared access signatures (SAS)', url:'https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview'},
-    {title:'Store business-critical blob data with immutable storage', url:'https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-storage-overview'},
-    {title:'Microsoft Defender for Storage overview', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-storage-introduction'},
+  'p3-agw':[
+    {title:'Azure Application Gateway overview', url:'https://learn.microsoft.com/en-us/azure/application-gateway/overview'},
+    {title:'Web Application Firewall overview', url:'https://learn.microsoft.com/en-us/azure/web-application-firewall/overview'},
+    {title:'Application Gateway URL-based routing', url:'https://learn.microsoft.com/en-us/azure/application-gateway/url-route-overview'},
+    {title:'WAF policy for Application Gateway', url:'https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/policy-overview'},
   ],
-  'p4-mdc':[
-    {title:'What is Microsoft Defender for Cloud?', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-cloud-introduction'},
-    {title:'Security posture in Defender for Cloud', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/secure-score-security-controls'},
-    {title:'Workflow automation in Defender for Cloud', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/workflow-automation'},
-    {title:'Attack path analysis', url:'https://learn.microsoft.com/en-us/azure/defender-for-cloud/how-to-manage-attack-path'},
+  'p4-vpn':[
+    {title:'VPN Gateway overview', url:'https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpngateways'},
+    {title:'Create a site-to-site VPN connection', url:'https://learn.microsoft.com/en-us/azure/vpn-gateway/tutorial-site-to-site-portal'},
+    {title:'Configure point-to-site VPN with Azure certificate authentication', url:'https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-howto-point-to-site-resource-manager-portal'},
   ],
-  'p4-sentinel':[
-    {title:'What is Microsoft Sentinel?', url:'https://learn.microsoft.com/en-us/azure/sentinel/overview'},
-    {title:'Connect data sources to Microsoft Sentinel', url:'https://learn.microsoft.com/en-us/azure/sentinel/connect-data-sources'},
-    {title:'Detect threats with built-in analytics rules', url:'https://learn.microsoft.com/en-us/azure/sentinel/detect-threats-built-in'},
-    {title:'Automate threat response in Microsoft Sentinel', url:'https://learn.microsoft.com/en-us/azure/sentinel/automate-responses-with-playbooks'},
-    {title:'Investigate incidents with Microsoft Sentinel', url:'https://learn.microsoft.com/en-us/azure/sentinel/investigate-cases'},
+  'p4-er':[
+    {title:'ExpressRoute overview', url:'https://learn.microsoft.com/en-us/azure/expressroute/expressroute-introduction'},
+    {title:'ExpressRoute peering types', url:'https://learn.microsoft.com/en-us/azure/expressroute/expressroute-circuit-peerings'},
+    {title:'ExpressRoute and VPN Gateway coexistence', url:'https://learn.microsoft.com/en-us/azure/expressroute/expressroute-howto-coexist-resource-manager'},
+    {title:'ExpressRoute monitoring, metrics, and alerts', url:'https://learn.microsoft.com/en-us/azure/expressroute/expressroute-monitoring-metrics-alerts'},
+  ],
+  'p5-dns':[
+    {title:'Azure DNS overview', url:'https://learn.microsoft.com/en-us/azure/dns/dns-overview'},
+    {title:'Azure Private DNS zones overview', url:'https://learn.microsoft.com/en-us/azure/dns/private-dns-overview'},
+    {title:'Azure DNS Private Resolver', url:'https://learn.microsoft.com/en-us/azure/dns/dns-private-resolver-overview'},
+  ],
+  'p5-pl':[
+    {title:'Azure Private Endpoint overview', url:'https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview'},
+    {title:'What is Azure Private Link?', url:'https://learn.microsoft.com/en-us/azure/private-link/private-link-overview'},
+    {title:'Azure Private Link Service overview', url:'https://learn.microsoft.com/en-us/azure/private-link/private-link-service-overview'},
+    {title:'Private endpoint DNS integration', url:'https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns'},
+  ],
+  'p6-nw':[
+    {title:'What is Azure Network Watcher?', url:'https://learn.microsoft.com/en-us/azure/network-watcher/network-watcher-overview'},
+    {title:'Connection Monitor overview', url:'https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview'},
+    {title:'Packet capture with Network Watcher', url:'https://learn.microsoft.com/en-us/azure/network-watcher/network-watcher-packet-capture-overview'},
+    {title:'IP flow verify overview', url:'https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview'},
+    {title:'Next hop overview', url:'https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview'},
   ],
 };
 
@@ -975,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', initUser);
 </script>
 <script>
 var _authTimer = setTimeout(function() {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }, 3000);
 try {
   onAuthReady(function(user) {
@@ -985,7 +1060,7 @@ try {
     }
   });
 } catch(e) {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }
 </script>
 </body>

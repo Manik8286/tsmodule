@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="../personal_site/auth.js"></script>
+<script src="auth.js"></script>
 <style>body{visibility:hidden;}</style>
 <style>
 :root{--accent:#7C2D12;--accent-light:#FFF7ED;--accent-mid:#C2410C;--dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;--green:#16A34A;--green-light:#F0FDF4;--header-bg:#7C2D12;--white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);}
@@ -146,7 +146,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0F4FA;color:va
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <div class="sync-bar"><span class="fb-dot off" id="fbDot"></span><span id="fbStatus">Local only</span></div>
       <div class="nav-links">
-        <a href="../personal_site/index.html" class="nav-link">🏠 Home</a>
+        <a href="index.html" class="nav-link">🏠 Home</a>
         <a href="index.html" class="nav-link">☁️ IaaS Labs</a>
         <a href="iam.html" class="nav-link">🔒 IAM Labs</a>
         <a href="az700.html" class="nav-link">🌐 AZ-700</a>
@@ -497,7 +497,7 @@ build();updateStats();initFirebase();
 </script>
 <script>
 var _authTimer = setTimeout(function() {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }, 3000);
 try {
   onAuthReady(function(user) {
@@ -507,7 +507,7 @@ try {
     }
   });
 } catch(e) {
-  window.location.replace('../personal_site/login.html?next='+encodeURIComponent(location.href));
+  window.location.replace('login.html?next='+encodeURIComponent(location.href));
 }
 </script>
 </body>

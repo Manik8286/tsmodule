@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="../personal_site/auth.js"></script>
+<script src="auth.js"></script>
 <style>body{visibility:hidden;}</style>
 <style>
 :root{
@@ -245,8 +245,8 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#EEF3FF;color:va
       <p>ConfigMgr Current Branch &middot; 6-Phase Deep Dive &middot; Endpoint Management, Co-management &amp; Security</p>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
-      <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+      <a href="index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
       <a href="az500.html" class="nav-link">&#x1F6E1;&#xFE0F; AZ-500</a>
       <a href="m365.html" class="nav-link">&#x1F4E7; M365</a>
       <a href="iam.html" class="nav-link">&#x1F512; IAM</a>
@@ -327,10 +327,10 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#EEF3FF;color:va
 
 <script>
 (function(){
-  var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);
+  var t=setTimeout(function(){window.location.href='login.html';},3000);
   onAuthReady(function(user){
     if(user){clearTimeout(t);document.body.style.visibility='visible';}
-    else{window.location.href='../personal_site/login.html';}
+    else{window.location.href='login.html';}
   });
 })();
 

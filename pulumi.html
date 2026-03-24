@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="../personal_site/auth.js"></script>
+<script src="auth.js"></script>
 <style>body{visibility:hidden;}</style>
 <style>
 :root{
@@ -242,8 +242,8 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F5F0FF;color:va
       <p>Pulumi IaC &middot; 6-Phase Deep Dive &middot; TypeScript/Python, Stacks, Automation API, CrossGuard &amp; CI/CD</p>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
-      <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+      <a href="index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
       <a href="terraform.html" class="nav-link">&#x1F7E3; Terraform</a>
       <a href="ansible.html" class="nav-link">&#x1F9F0; Ansible</a>
       <a href="arm-bicep.html" class="nav-link">&#x1F4D0; ARM/Bicep</a>
@@ -289,7 +289,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F5F0FF;color:va
 </div>
 <div id="content"></div>
 <script>
-(function(){var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);onAuthReady(function(user){if(user){clearTimeout(t);document.body.style.visibility='visible';}else{window.location.href='../personal_site/login.html';}});})();
+(function(){var t=setTimeout(function(){window.location.href='login.html';},3000);onAuthReady(function(user){if(user){clearTimeout(t);document.body.style.visibility='visible';}else{window.location.href='login.html';}});})();
 
 const PHASES=[
   {id:'p1',badge:'PHASE 1',title:'Pulumi Fundamentals — Programs, Stacks & Lifecycle',week:'Week 1',labs:[
@@ -749,7 +749,7 @@ onAuthReady(function(user){
     fbUser=user;
     const nameEl=document.getElementById('user-name-display');
     if(nameEl)nameEl.textContent=user.displayName||user.email||'User';
-    document.getElementById('user-chip').onclick=()=>{if(confirm('Sign out?'))firebase.auth().signOut().then(()=>window.location.href='../personal_site/login.html');};
+    document.getElementById('user-chip').onclick=()=>{if(confirm('Sign out?'))firebase.auth().signOut().then(()=>window.location.href='login.html');};
   }
 });
 
