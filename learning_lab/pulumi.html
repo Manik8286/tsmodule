@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulumi Lab Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --plm:#F7BF2A;--plm-dark:#c99600;--plm-light:#FFFBEB;
+  --dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;
+  --green:#16A34A;--green-light:#F0FDF4;
+  --header-bg:#0a1020;--header-accent:#512BC4;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F5F0FF;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#C4B5FD;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#C4B5FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.stat-block.p1 .num{color:#512BC4;}
+.stat-block.p2 .num{color:#7B42BC;}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--header-bg),#512BC4);transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#C4B5FD;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#F7BF2A;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.plm-lab{border-left:4px solid var(--plm);background:var(--plm-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.plm-badge{background:#512BC4;}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.plm-btn{color:#512BC4;}
+.lab-toggle.plm-btn:hover{background:#512BC4;color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:#512BC4;color:#512BC4;}
+.detail-btn.open{background:var(--plm-light);border-color:#512BC4;color:#512BC4;}
+.step-details{display:none;margin:6px 0 6px 26px;background:#EDE9FE;border-left:3px solid #512BC4;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:#512BC4;font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#DDD6FE;padding:1px 4px;border-radius:3px;color:#3730A3;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#EDE9FE;}
+.val-row:hover{background:#DDD6FE;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #A78BFA;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:#512BC4;background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#C4B5FD;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#EDE9FE;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:#512BC4;background:#EDE9FE;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:#512BC4;color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:#512BC4;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+.lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1500;align-items:center;justify-content:center;}
+.lb-overlay.open{display:flex;}
+.lb-card{background:white;border-radius:16px;padding:28px 32px;max-width:580px;width:95%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.lb-card h3{font-size:17px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.lb-sub{font-size:12px;color:var(--gray);margin-bottom:18px;}
+.lb-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.lb-table th{background:var(--header-bg);color:white;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:.4px;}
+.lb-table th:first-child{border-radius:8px 0 0 8px;}.lb-table th:last-child{border-radius:0 8px 8px 0;}
+.lb-table td{padding:9px 12px;border-bottom:1px solid var(--light);}
+.lb-table tr:hover td{background:#EDE9FE;}.lb-table tr.me td{background:#DDD6FE;font-weight:700;}
+.lb-rank{font-size:16px;text-align:center;}
+.lb-bar-wrap{background:var(--light);border-radius:99px;height:8px;width:80px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:99px;background:#512BC4;transition:width .4s;}
+.lb-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.lb-btn:hover{background:rgba(255,255,255,.25);}
+.lb-close{margin-top:18px;padding:8px 24px;border-radius:8px;border:none;background:var(--light);color:var(--dark);font-size:12px;font-weight:700;cursor:pointer;}
+.lb-close:hover{background:#E5E7EB;}.lb-loading{text-align:center;padding:24px;color:var(--gray);font-size:13px;}
+.quiz-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;}
+.quiz-overlay.open{display:flex;}
+.quiz-modal{background:white;border-radius:18px;max-width:660px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3);overflow:hidden;}
+.quiz-header{background:var(--header-bg);color:white;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.quiz-header h3{font-size:16px;font-weight:800;margin:0;}.quiz-header p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+.quiz-close{background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.quiz-close:hover{background:rgba(255,255,255,.28);}.quiz-body{padding:24px;}
+.phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.phase-tile{background:#F8FAFC;border:2px solid #E5E7EB;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .2s;}
+.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#EDE9FE;}.phase-tile.all-tile{border-style:dashed;}
+.pt-num{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
+.pt-name{font-size:12px;font-weight:700;color:var(--header-bg);margin-top:3px;line-height:1.3;}
+.pt-score{font-size:10px;color:#16A34A;margin-top:4px;font-weight:700;}
+.quiz-start-btn{width:100%;padding:12px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.quiz-start-btn:hover{filter:brightness(1.1);}.quiz-start-btn:disabled{opacity:.4;cursor:not-allowed;}
+.quiz-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.quiz-prog-bar{flex:1;background:var(--light);border-radius:99px;height:8px;overflow:hidden;}
+.quiz-prog-fill{height:100%;border-radius:99px;background:var(--header-bg);transition:width .4s;}
+.quiz-prog-txt{font-size:11px;font-weight:700;color:var(--gray);min-width:48px;text-align:right;}
+.quiz-question{font-size:15px;font-weight:700;color:var(--dark);line-height:1.5;margin-bottom:18px;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.quiz-option{padding:12px 16px;border-radius:10px;border:2px solid #E5E7EB;background:#FAFAFA;cursor:pointer;font-size:13px;line-height:1.4;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px;}
+.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#EDE9FE;}.quiz-option:disabled{cursor:default;}
+.quiz-option.correct{border-color:#16A34A;background:#F0FDF4;color:#16A34A;}
+.quiz-option.wrong{border-color:#EF4444;background:#FFF1F2;color:#DC2626;}
+.quiz-option.reveal{border-color:#16A34A;background:#F0FDF4;opacity:.7;}
+.quiz-option.correct .opt-letter,.quiz-option.reveal .opt-letter{background:#16A34A;color:white;}
+.quiz-option.wrong .opt-letter{background:#EF4444;color:white;}
+.opt-letter{width:22px;height:22px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.quiz-explanation{background:#EDE9FE;border-left:3px solid #512BC4;border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}
+.quiz-explanation.show{display:block;}
+.quiz-next-btn{width:100%;padding:10px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}
+.quiz-next-btn.show{display:block;}
+.quiz-score-screen{text-align:center;padding:10px 0;}
+.score-circle{width:90px;height:90px;border-radius:50%;background:var(--header-bg);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:14px;}
+.sc-num{font-size:22px;font-weight:800;color:white;line-height:1;}.sc-lbl{font-size:11px;color:rgba(255,255,255,.75);}
+.quiz-score-msg{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.quiz-score-sub{font-size:12px;color:var(--gray);margin-bottom:20px;}
+.quiz-review{text-align:left;margin-bottom:16px;max-height:200px;overflow-y:auto;}
+.review-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:12px;line-height:1.4;}
+.review-item.bad{color:#DC2626;}.review-item.ok{color:#16A34A;}.review-icon{flex-shrink:0;}
+.quiz-score-btns{display:flex;gap:10px;}
+.quiz-score-btns button{flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;}
+.qsb-retry{background:var(--header-bg);color:white;}.qsb-back{background:var(--light);color:var(--dark);}
+.quiz-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.quiz-btn:hover{background:rgba(255,255,255,.25);}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F7E1; Pulumi Lab Tracker</h1>
+      <p>Pulumi IaC &middot; 6-Phase Deep Dive &middot; TypeScript/Python, Stacks, Automation API, CrossGuard &amp; CI/CD</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+      <a href="terraform.html" class="nav-link">&#x1F7E3; Terraform</a>
+      <a href="ansible.html" class="nav-link">&#x1F9F0; Ansible</a>
+      <a href="arm-bicep.html" class="nav-link">&#x1F4D0; ARM/Bicep</a>
+      <span id="user-chip" class="user-chip">&#x1F464; <span id="user-name-display">...</span></span>
+      <button class="quiz-btn" onclick="openQuiz()">&#x1F9E0; Quiz</button>
+      <button class="lb-btn" onclick="openLeaderboard()">&#x1F3C6; Leaderboard</button>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+<div class="lb-overlay" id="lb-overlay" onclick="if(event.target===this)closeLb()">
+  <div class="lb-card"><h3>&#x1F3C6; Team Leaderboard</h3><p class="lb-sub">Live Pulumi progress across all teammates</p><div id="lb-body"><div class="lb-loading">&#x21BB; Loading&hellip;</div></div><button class="lb-close" onclick="closeLb()">Close</button></div>
+</div>
+<div class="quiz-overlay" id="quiz-overlay" onclick="if(event.target===this)closeQuiz()">
+  <div class="quiz-modal">
+    <div class="quiz-header"><div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your Pulumi knowledge</p></div><button class="quiz-close" onclick="closeQuiz()">&#x2715; Close</button></div>
+    <div class="quiz-body" id="quiz-body"></div>
+  </div>
+</div>
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Sync Pulumi lab progress across devices.</p>
+    <div class="fb-steps"><b>Quick setup:</b><br>1. console.firebase.google.com &rarr; Create project<br>2. Realtime Database &rarr; Create (test mode)<br>3. Project Settings &rarr; Web app &rarr; copy config</div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey" /><input class="fb-input" id="fb-databaseURL" placeholder="databaseURL" /><input class="fb-input" id="fb-projectId" placeholder="projectId" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions"><button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button><button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button><button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button></div>
+  </div>
+</div>
+<div id="congrats"><div class="card"><span class="emoji">&#x1F3C6;</span><h2>Pulumi Expert!</h2><p>You've completed all Pulumi labs!</p><button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button></div></div>
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
+  <div class="big-bar-wrap"><div class="big-bar-label"><span>Overall Pulumi Progress</span><span id="stat-pct">0%</span></div><div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div></div>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab" onclick="filterTab('plm',this)">&#x1F7E1; Pulumi Labs</button>
+</div>
+<div id="content"></div>
+<script>
+(function(){var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);onAuthReady(function(user){if(user){clearTimeout(t);document.body.style.visibility='visible';}else{window.location.href='../personal_site/login.html';}});})();
+
+const PHASES=[
+  {id:'p1',badge:'PHASE 1',title:'Pulumi Fundamentals — Programs, Stacks & Lifecycle',week:'Week 1',labs:[
+    {id:'p1-basics',cloud:'plm',title:'First Pulumi Program — Init, Preview, Up & Destroy',meta:'Install Pulumi, create a project, understand stacks, run the deploy/destroy lifecycle',
+     steps:[
+      {id:'p1-b-s1',text:'Install Pulumi CLI and configure cloud provider credentials',details:['Install: brew install pulumi/tap/pulumi | choco install pulumi | curl -fsSL https://get.pulumi.com | sh','Verify: pulumi version','AWS: configure via aws configure or AWS_ACCESS_KEY_ID/SECRET env vars; Azure: az login or AZURE_CLIENT_ID etc.','PULUMI_ACCESS_TOKEN: authenticate with Pulumi Cloud for state backend','pulumi login: log in to Pulumi Cloud (default); pulumi login --local: use local filesystem for state','VS Code extension: Pulumi provides IntelliSense for Pulumi programs']},
+      {id:'p1-b-s2',text:'Create a new Pulumi project with pulumi new',details:['pulumi new aws-typescript: creates project from AWS TypeScript template','Templates available: aws-python, azure-python, gcp-go, kubernetes-typescript, etc.','Project files: Pulumi.yaml (project metadata), index.ts (program), package.json, tsconfig.json','Pulumi.yaml: name, runtime (nodejs/python/go/dotnet), description','pulumi new --generate-only: generate files without running npm install or creating stack','Each project can have multiple stacks (dev, staging, prod) with separate configurations']},
+      {id:'p1-b-s3',text:'Understand stacks and run pulumi up',details:['Stack: an isolated instance of a Pulumi program (dev, prod, staging)','pulumi stack init dev: create dev stack; pulumi stack select dev: switch stacks','pulumi up: shows preview then prompts to confirm deployment; --yes skips prompt','pulumi preview: shows changes without deploying; --diff shows detailed property changes','pulumi up --target urn:...: deploy specific resource only','Pulumi state: stored in Pulumi Cloud, S3, Azure Blob, or local filesystem']},
+      {id:'p1-b-s4',text:'Inspect state and resource URNs',details:['pulumi stack: shows current stack info, resource count, and outputs','pulumi stack export: exports raw state JSON for inspection or migration','URN format: urn:pulumi:<stack>::<project>::<type>::<name>','pulumi state show <urn>: shows detailed state for specific resource','pulumi stack graph: generates dependency graph (requires graphviz)','Resource outputs: access in program via resource.propertyName; exposed via exports']},
+      {id:'p1-b-s5',text:'Destroy resources and manage stack lifecycle',details:['pulumi destroy: destroys all resources in current stack (prompts confirmation)','pulumi destroy --yes: skip confirmation (for CI)','pulumi stack rm: removes stack and its state (requires empty stack first)','pulumi stack rm --force: removes stack even with existing resources (dangerous)','Refresh: pulumi refresh syncs state with actual cloud resources (detects drift)','pulumi cancel: cancels an in-progress update']},
+     ],
+     validation:[
+      {id:'p1-b-v1',text:'pulumi version shows CLI installed; cloud credentials verified'},
+      {id:'p1-b-v2',text:'pulumi new creates project; Pulumi.yaml and index.ts present'},
+      {id:'p1-b-v3',text:'pulumi up deploys first resource successfully'},
+      {id:'p1-b-v4',text:'pulumi stack shows correct resource count and outputs'},
+      {id:'p1-b-v5',text:'pulumi destroy removes all resources cleanly'},
+     ]}
+  ]},
+  {id:'p2',badge:'PHASE 2',title:'Resources, Providers & Outputs',week:'Week 1-2',labs:[
+    {id:'p2-resources',cloud:'plm',title:'Defining Resources, Providers & Wiring Outputs',meta:'Create cloud resources, configure explicit providers, chain resource outputs as inputs',
+     steps:[
+      {id:'p2-r-s1',text:'Define resources using Pulumi SDK classes',details:['TypeScript: import * as aws from "@pulumi/aws"; const bucket = new aws.s3.BucketV2("my-bucket", { tags: { Environment: "dev" } });','Python: import pulumi_aws as aws; bucket = aws.s3.BucketV2("my-bucket")','Resource constructor: (name, args, opts) — name is logical name used in URN','Resource args are strongly typed — IDE autocomplete shows available properties','Outputs are automatically tracked; Pulumi builds implicit dependency graph','pulumi.export("bucketName", bucket.bucket): expose resource output to stack outputs']},
+      {id:'p2-r-s2',text:'Configure explicit provider instances with custom settings',details:['Default provider: Pulumi auto-creates from env vars/credentials','Explicit provider: const usEastProvider = new aws.Provider("us-east", { region: "us-east-1" });','Assign to resource: new aws.s3.BucketV2("bucket", {}, { provider: usEastProvider });','Multiple providers: deploy same resources to different regions/accounts','Azure: new azure.Provider("secondary", { subscriptionId: "...", clientId: "..." });','Provider versioning: in Pulumi.yaml or per-provider options; pin versions for reproducibility']},
+      {id:'p2-r-s3',text:'Chain resource outputs as inputs to other resources',details:['Outputs are async wrapped values: Output<T> in TypeScript, Output in Python','Use output directly as input: const sg = new aws.ec2.SecurityGroup("sg", { vpcId: vpc.id });','vpc.id is Output<string> — Pulumi resolves it before creating SecurityGroup','pulumi.interpolate: const url = pulumi.interpolate`https://${bucket.bucketRegionalDomainName}`;','apply(): output.apply(id => `arn:aws:s3:::${id}`) — transform output value','Never resolve outputs with await — let Pulumi handle the async dependency graph']},
+      {id:'p2-r-s4',text:'Use ResourceOptions to control resource behavior',details:['dependsOn: force explicit dependency when output wiring is insufficient','protect: true — prevents resource deletion (like prevent_destroy in Terraform)','ignoreChanges: ["tags"] — ignore drift for specific properties','aliases: handle resource renames without destroy/recreate','import: import existing cloud resource into Pulumi state (pulumi import or ResourceOptions)','parent: set parent for logical grouping and to inherit default provider/options']},
+      {id:'p2-r-s5',text:'Import existing cloud resources into Pulumi state',details:['pulumi import aws:s3/bucketV2:BucketV2 my-bucket existing-bucket-name: CLI import generates resource code','Alternatively use ResourceOptions { import: "existing-id" } in code then remove after first apply','Generated code may need cleanup — imports often produce verbose output with all properties','pulumi state unprotect <urn>: remove protection flag to allow deletion','Resource must exist and match the Pulumi resource type for import to succeed','After import, subsequent pulumi up shows no changes if properties match']},
+     ],
+     validation:[
+      {id:'p2-r-v1',text:'Resource created via Pulumi SDK; output exported via pulumi.export'},
+      {id:'p2-r-v2',text:'Explicit provider instance used to deploy to specific region/account'},
+      {id:'p2-r-v3',text:'Resource output chained as input; dependency resolved automatically'},
+      {id:'p2-r-v4',text:'protect:true prevents resource deletion in pulumi destroy'},
+      {id:'p2-r-v5',text:'Existing cloud resource imported into Pulumi state successfully'},
+     ]}
+  ]},
+  {id:'p3',badge:'PHASE 3',title:'Config, Secrets & Stack References',week:'Week 2',labs:[
+    {id:'p3-config',cloud:'plm',title:'Configuration, Encrypted Secrets & Stack References',meta:'Parameterize stacks with config, encrypt secrets, share outputs across stacks via StackReferences',
+     steps:[
+      {id:'p3-c-s1',text:'Set and read stack configuration values',details:['pulumi config set instanceType t3.micro: sets config for current stack in Pulumi.dev.yaml','pulumi config get instanceType: read config value','In code: const config = new pulumi.Config(); const instanceType = config.require("instanceType");','config.get("key"): returns undefined if not set; config.require("key"): throws if missing','config.requireInt(), config.requireObject(): typed accessors','Pulumi.dev.yaml stores non-secret config; can be committed to version control']},
+      {id:'p3-c-s2',text:'Encrypt and use secrets with pulumi config set --secret',details:['pulumi config set --secret dbPassword mySecretPassword: encrypts with stack encryption key','Stored as ciphertext in Pulumi.dev.yaml — safe to commit','In code: const dbPassword = config.requireSecret("dbPassword"); — returns Output<string>','Secrets remain encrypted in state; decrypted only in-memory during apply','pulumi config --show-secrets: reveals decrypted values (requires access)','Custom secrets provider: AWS KMS, Azure Key Vault, GCP KMS, HashiCorp Vault for encryption key']},
+      {id:'p3-c-s3',text:'Use StackReferences to share outputs between stacks',details:['StackReference: read outputs from another stack (cross-stack dependencies)','const networkStack = new pulumi.StackReference("org/network/dev");','const vpcId = networkStack.requireOutput("vpcId");','Use output as input: new aws.ec2.Instance("app", { subnetId: networkStack.requireOutput("subnetId") as pulumi.Output<string> });','StackReference requires the referenced stack to have run at least once','Useful for multi-stack architectures: network stack → compute stack → app stack']},
+      {id:'p3-c-s4',text:'Organize multi-stack projects with stack-specific configurations',details:['Pulumi.dev.yaml, Pulumi.staging.yaml, Pulumi.prod.yaml: per-stack config files','pulumi stack select prod; pulumi up: deploy to prod stack with prod config','Config inheritance: no built-in inheritance; must set values per stack or use config defaults in code','pulumi stack ls: list all stacks in project','Recommended pattern: shared base config in code defaults, overrides in stack config files','Config objects: pulumi config set --path vpc.cidr 10.0.0.0/16 for nested config']},
+      {id:'p3-c-s5',text:'Use environment variables and dynamic providers for external config',details:['process.env.MY_VAR (TypeScript) / os.environ["MY_VAR"] (Python): use env vars directly in program','Dynamic providers: implement CRUD in TypeScript/Python for unsupported resources','pulumi.runtime.isDryRun(): detect preview vs actual deployment','Pulumi ESC (Environments, Secrets, Configs): centralized secrets/config management (newer feature)','pulumi env init myapp/dev: create ESC environment; esc env set myapp/dev MY_SECRET --secret','pulumi config env add myapp/dev: attach ESC environment to stack — secrets injected at runtime']},
+     ],
+     validation:[
+      {id:'p3-c-v1',text:'Stack config values set and read correctly in program'},
+      {id:'p3-c-v2',text:'Secret encrypted in Pulumi.dev.yaml; decrypted value used in resource'},
+      {id:'p3-c-v3',text:'StackReference reads output from another stack (cross-stack wiring)'},
+      {id:'p3-c-v4',text:'Dev and prod stacks deploy different configurations from separate yaml files'},
+     ]}
+  ]},
+  {id:'p4',badge:'PHASE 4',title:'Component Resources & Automation API',week:'Week 2-3',labs:[
+    {id:'p4-components',cloud:'plm',title:'ComponentResource, Multi-Language & Automation API',meta:'Build reusable components, create multi-language packages, automate deployments via Automation API',
+     steps:[
+      {id:'p4-c-s1',text:'Create reusable ComponentResource classes',details:['ComponentResource: logical grouping of resources with shared defaults and outputs','class VpcComponent extends pulumi.ComponentResource { constructor(name: string, args: VpcArgs, opts?: pulumi.ComponentResourceOptions) { super("myapp:index:VpcComponent", name, {}, opts); } }','Register child resources with parent: { parent: this }','Expose outputs as class properties: public readonly vpcId: pulumi.Output<string>;','registerOutputs at end of constructor: this.registerOutputs({ vpcId: this.vpcId });','Components are instantiated like regular resources: const vpc = new VpcComponent("prod-vpc", {...})']},
+      {id:'p4-c-s2',text:'Publish Pulumi components as reusable packages (Multi-Language Components)',details:['Pulumi Packages: publish components usable from any Pulumi language (TypeScript, Python, Go, .NET)','Schema-driven: define schema.json describing inputs, outputs, and resource types','pulumi package gen-sdk: generate SDKs in all languages from schema','Published to npm, PyPI, NuGet, Go module registries','Pulumi Registry: publish packages for community or organization use','Multi-language components enable platform teams to provide guardrails in any language']},
+      {id:'p4-c-s3',text:'Use the Pulumi Automation API for programmatic deployments',details:['Automation API: embed Pulumi deployments in your own programs (Node.js, Python, Go, .NET)','import { LocalWorkspace } from "@pulumi/pulumi/automation";','const stack = await LocalWorkspace.createOrSelectStack({ stackName, projectName, program });','await stack.setConfig("region", { value: "us-east-1" });','const upResult = await stack.up({ onOutput: console.log });','Use cases: custom deployment portals, self-service infra, testing frameworks, GitOps controllers']},
+      {id:'p4-c-s4',text:'Build a self-service infrastructure portal with Automation API',details:['Pattern: REST API backend + Automation API = self-service infra portal','Each request creates/selects a stack, sets config, runs up/destroy','Stack per tenant: stackName = `customer-${customerId}` — isolated state per customer','Inline programs: define Pulumi program as a function (no project files needed)','const stack = await LocalWorkspace.createOrSelectStack({ stackName, projectName, program: inlineProgram });','State backend: use S3/Azure Blob per tenant for isolation and cost tracking']},
+      {id:'p4-c-s5',text:'Convert existing IaC (Terraform/CloudFormation/ARM) to Pulumi',details:['pulumi convert --from terraform --language typescript: converts .tf files to TypeScript Pulumi program','pulumi convert --from cloudformation --language python: converts CFN templates','pulumi convert --from arm --language typescript: converts ARM JSON templates','Conversion is best-effort — review generated code for accuracy','tf2pulumi (legacy): older Terraform converter; use pulumi convert instead','Use case: migrate existing IaC estate to Pulumi without rewriting from scratch']},
+     ],
+     validation:[
+      {id:'p4-c-v1',text:'ComponentResource creates multiple child resources; outputs exposed as class properties'},
+      {id:'p4-c-v2',text:'Automation API deploys stack programmatically; output captured from result'},
+      {id:'p4-c-v3',text:'Self-service pattern: different stacks deployed via Automation API with different configs'},
+      {id:'p4-c-v4',text:'pulumi convert produces valid Pulumi program from existing Terraform or CFN code'},
+     ]}
+  ]},
+  {id:'p5',badge:'PHASE 5',title:'Testing & CrossGuard Policies',week:'Week 3',labs:[
+    {id:'p5-testing',cloud:'plm',title:'Unit Testing, Integration Testing & CrossGuard',meta:'Write mocked unit tests, real integration tests, and enforce policies with CrossGuard policy packs',
+     steps:[
+      {id:'p5-t-s1',text:'Write unit tests with pulumi.runtime.setMocks()',details:['pulumi.runtime.setMocks(): intercepts resource creation — no real cloud calls','import { setMocks } from "@pulumi/pulumi/runtime";','setMocks({ newResource: (type, name, inputs) => ({ id: `${name}-id`, state: inputs }), call: (token, args, provider) => args });','Test framework: Mocha (TypeScript/JavaScript), pytest (Python)','assert(bucket.bucket.apply(name => name.startsWith("dev-")), "bucket prefix check");','Run: npm test (TypeScript) / pytest (Python) — tests run without deploying anything']},
+      {id:'p5-t-s2',text:'Write integration tests against real deployed resources',details:['Integration tests: deploy stack, run assertions against real resources, then clean up','Pattern: pulumi up → run tests → pulumi destroy (in test teardown)','Automation API in tests: programmatically deploy and interact with stack','Check deployed URL: fetch(url) → assert status 200','Verify resources exist via cloud SDK calls after Pulumi deploys them','GitHub Actions: run integration tests in CI on pull requests against ephemeral stacks']},
+      {id:'p5-t-s3',text:'Create and enforce CrossGuard policy packs',details:['CrossGuard: Pulumi Policy as Code — enforce rules during pulumi preview/up','Policy pack: TypeScript or Python project with policies','import { PolicyPack, validateResourceOfType } from "@pulumi/policy";','new PolicyPack("s3-policies", { policies: [{ name: "s3-no-public-read", description: "S3 buckets must not be public", enforcementLevel: "mandatory", validateResource: validateResourceOfType(aws.s3.BucketV2, (bucket, args, reportViolation) => { if (bucket.acl === "public-read") reportViolation("Bucket must not be public"); }) }] });','pulumi policy publish: publish pack to Pulumi Cloud for org-wide enforcement','pulumi up --policy-pack ./policy: apply local policy pack during deployment']},
+      {id:'p5-t-s4',text:'Enforce org-wide policies via Policy Groups in Pulumi Cloud',details:['Policy Groups: apply policy packs to all stacks in an organization or team','Pulumi Cloud console: Policies → Create Group → add packs → assign to projects/stacks','enforcementLevel: "advisory" (warns) vs "mandatory" (blocks) vs "disabled"','remediation: some policies can auto-remediate (modify resources to comply)','AuditManager: view policy violations across all stacks in Pulumi Cloud dashboard','Use case: enforce tagging, prevent public S3, require encryption, restrict instance types']},
+      {id:'p5-t-s5',text:'Snapshot testing and property testing with Pulumi',details:['Property testing: randomly generate inputs and verify outputs satisfy invariants (like Hypothesis in Python)','Snapshot testing: capture expected resource config and fail if it changes unexpectedly','Policy-as-code testing: test that your policy correctly identifies violations with mock resources','pulumi.runtime.MockResourceMonitor: lower-level mock interface for advanced test scenarios','Test coverage: aim to test ComponentResources, not just leaf resources','CI pipeline: run unit tests on every PR, integration tests on merge to main']},
+     ],
+     validation:[
+      {id:'p5-t-v1',text:'Unit test with setMocks() passes without cloud credentials'},
+      {id:'p5-t-v2',text:'CrossGuard policy pack catches public S3 bucket violation in pulumi preview'},
+      {id:'p5-t-v3',text:'Policy pack published to Pulumi Cloud and enforced across stacks in org'},
+      {id:'p5-t-v4',text:'Integration test deploys real resources and runs assertions successfully'},
+     ]}
+  ]},
+  {id:'p6',badge:'PHASE 6',title:'CI/CD, Pulumi Cloud & ESC',week:'Week 3-4',labs:[
+    {id:'p6-cicd',cloud:'plm',title:'GitHub Actions CI/CD, Pulumi Cloud & ESC',meta:'Automate deployments with GitHub Actions, use Pulumi Cloud features, manage secrets with ESC',
+     steps:[
+      {id:'p6-g-s1',text:'Set up Pulumi GitHub Actions CI/CD pipeline',details:['GitHub Actions workflow: trigger on push to main → pulumi up; on PR → pulumi preview','uses: pulumi/actions@v5: official Pulumi GitHub Action','env: PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }} — authenticate to Pulumi Cloud','OIDC: use cloud/pulumi OIDC integration instead of long-lived credentials','pulumi-comment: Action that posts preview output as PR comment for review','Branch-based stacks: push to main → prod stack; feature branches → ephemeral stacks']},
+      {id:'p6-g-s2',text:'Use Pulumi Cloud Deployments (managed CI/CD)',details:['Pulumi Cloud Deployments: run pulumi up/preview in Pulumi Cloud without your own CI','GitHub integration: connect repo, configure branch → stack mapping','Deployment settings: environment variables, secrets, pre/post run commands in Pulumi Cloud UI','Review stacks: Pulumi Cloud creates ephemeral review stacks for each PR automatically','Audit logs: all deployments logged in Pulumi Cloud with diff, timing, and actor','REST API: trigger deployments programmatically via Pulumi Cloud Deployments API']},
+      {id:'p6-g-s3',text:'Manage secrets centrally with Pulumi ESC (Environments, Secrets, Configs)',details:['ESC: pull secrets from AWS Secrets Manager, HashiCorp Vault, 1Password etc. at deployment time','esc env init myorg/dev: create ESC environment','Import from AWS: aws.secrets.get: name: "db-password" → automatically fetched at runtime','pulumi config env add myorg/dev: attach ESC env to Pulumi stack','ESC composability: one environment can import from another (layered config)','No secret stored in Pulumi state — fetched live at deployment; audit trail in Pulumi Cloud']},
+      {id:'p6-g-s4',text:'Use Pulumi Deployments REST API and webhooks',details:['POST /api/stacks/{org}/{project}/{stack}/deployments: trigger deployment via API','Payload: { operationContext: { operation: "update", preRunCommands: [...] } }','Webhooks: Pulumi Cloud sends webhook on deployment events (started, succeeded, failed)','Use case: custom deployment portal (web UI → API call → Pulumi deployment)','Stack tags: tag stacks with team, environment, cost-center for governance and filtering','pulumi cloud url: opens Pulumi Cloud console for current stack']},
+      {id:'p6-g-s5',text:'Implement drift detection and scheduled deployments',details:['Drift detection: schedule pulumi refresh in CI to detect out-of-band changes','GitHub Actions scheduled trigger: schedule: - cron: "0 * * * *" → hourly drift check','pulumi refresh --expect-no-changes: fails CI if drift detected (triggers alert)','Reconciliation: auto-run pulumi up after drift detected to restore desired state','Pulumi Cloud: built-in drift detection for stacks (Pulumi Business Critical feature)','runAs: configure Pulumi Deployments to run as specific IAM role/service principal for least privilege']},
+     ],
+     validation:[
+      {id:'p6-g-v1',text:'GitHub Actions runs pulumi preview on PR and pulumi up on merge to main'},
+      {id:'p6-g-v2',text:'OIDC authentication used (no long-lived credentials in GitHub secrets)'},
+      {id:'p6-g-v3',text:'ESC environment created; secrets pulled from AWS Secrets Manager at deploy time'},
+      {id:'p6-g-v4',text:'Drift detection pipeline flags out-of-band change with pulumi refresh --expect-no-changes'},
+     ]}
+  ]},
+];
+
+const ALL_QUIZ=[
+  {id:'q1',phase:'p1',question:'Which command creates a new Pulumi project from a template?',options:['pulumi init','pulumi new','pulumi create','pulumi bootstrap'],answer:1,explanation:'"pulumi new <template>" scaffolds a new Pulumi project, installs dependencies, and creates a default stack. Example: pulumi new aws-typescript.'},
+  {id:'q2',phase:'p1',question:'What is a Pulumi "stack"?',options:['A set of policies for the organization','An isolated deployment instance of a Pulumi program (e.g., dev, prod)','A collection of provider plugins','A module grouping related resources'],answer:1,explanation:'A stack is an isolated instance of a Pulumi program with its own configuration and state — typically one per environment (dev, staging, prod).'},
+  {id:'q3',phase:'p2',question:'In Pulumi TypeScript, when you pass a resource\'s Output<string> as an input to another resource, what happens?',options:['It throws a type error — you must resolve the Output first','Pulumi automatically tracks the dependency and resolves the value before creating the dependent resource','The dependent resource is created first, then the Output is resolved','You must use pulumi.all() to combine all outputs before use'],answer:1,explanation:'Pulumi\'s engine automatically builds a dependency graph from Output<T> relationships. When resource B uses resource A\'s Output as an input, Pulumi ensures A is created before B.'},
+  {id:'q4',phase:'p2',question:'Which ResourceOption prevents a Pulumi resource from being deleted?',options:['ignoreChanges','retainOnDelete','protect: true','aliases'],answer:2,explanation:'Setting "protect: true" in ResourceOptions prevents the resource from being deleted by Pulumi. pulumi destroy will fail with an error — similar to Terraform\'s prevent_destroy lifecycle.'},
+  {id:'q5',phase:'p3',question:'How do you store an encrypted secret in Pulumi stack configuration?',options:['pulumi config set --encrypt myKey myValue','pulumi config set --secret myKey myValue','pulumi secret set myKey myValue','pulumi config secure myKey myValue'],answer:1,explanation:'"pulumi config set --secret" encrypts the value with the stack\'s encryption key and stores the ciphertext in Pulumi.stack.yaml. It can be safely committed to version control.'},
+  {id:'q6',phase:'p3',question:'What is a Pulumi StackReference used for?',options:['Referencing a specific version of the Pulumi CLI','Reading outputs from another Pulumi stack (cross-stack dependencies)','Creating an alias for a resource across stacks','Synchronizing config between stacks automatically'],answer:1,explanation:'StackReference allows you to read outputs from another stack, enabling multi-stack architectures where, for example, a network stack\'s VPC ID is consumed by a compute stack.'},
+  {id:'q7',phase:'p4',question:'What is the primary purpose of a Pulumi ComponentResource?',options:['To run shell commands as part of Pulumi provisioning','To group related resources into a reusable abstraction with shared inputs and outputs','To import existing cloud resources into Pulumi state','To configure provider authentication'],answer:1,explanation:'ComponentResource creates a logical grouping of Pulumi resources. It allows platform teams to build reusable abstractions (like a "VPC component") that bundle multiple resources with standard configurations.'},
+  {id:'q8',phase:'p4',question:'What does the Pulumi Automation API enable?',options:['Enforcing compliance policies across all stacks','Embedding Pulumi deployments programmatically inside your own applications','Converting Terraform code to Pulumi','Sharing outputs between stacks'],answer:1,explanation:'The Automation API lets you embed Pulumi as a library in any program (Node.js, Python, Go, .NET), enabling self-service portals, custom CI/CD orchestration, and testing frameworks.'},
+  {id:'q9',phase:'p5',question:'What does pulumi.runtime.setMocks() do in Pulumi unit tests?',options:['Deploys resources to a sandbox cloud account','Intercepts resource creation calls so tests run without real cloud credentials','Records all API calls for replay in integration tests','Generates mock policy violations for CrossGuard testing'],answer:1,explanation:'setMocks() intercepts Pulumi resource registrations, returning synthetic IDs and state. This allows unit tests to run entirely locally without cloud credentials or API calls.'},
+  {id:'q10',phase:'p5',question:'What is a CrossGuard Policy Pack\'s "mandatory" enforcement level?',options:['Logs a warning but allows deployment to proceed','Blocks the deployment if any resource violates the policy','Sends an alert to Slack but does not block','Automatically remediates violations before deployment'],answer:1,explanation:'enforcementLevel: "mandatory" causes pulumi up/preview to fail if a resource violates the policy. "advisory" only warns. Mandatory enforcement is used to prevent non-compliant infrastructure.'},
+  {id:'q11',phase:'p6',question:'What is Pulumi ESC (Environments, Secrets, Configs)?',options:['A CLI tool for managing encryption keys','A centralized service to pull secrets from external vaults (AWS SM, Vault etc.) and inject them into Pulumi stacks at deployment time','A Pulumi Cloud feature for viewing deployment history','A policy engine for cross-stack governance'],answer:1,explanation:'Pulumi ESC centralizes secrets/config management. It integrates with AWS Secrets Manager, HashiCorp Vault, 1Password etc., fetching secrets at deploy time without storing them in Pulumi state.'},
+  {id:'q12',phase:'p6',question:'How can you detect infrastructure drift in Pulumi?',options:['pulumi diff --live','pulumi refresh --expect-no-changes (fails if drift detected)','pulumi verify','pulumi state check'],answer:1,explanation:'"pulumi refresh" syncs the state with actual cloud resources. "--expect-no-changes" causes the command to exit with a non-zero code if any drift is found, making it ideal for scheduled CI drift detection jobs.'},
+];
+
+const APP_KEY='pulumi_lab_tracker';
+const FB_CONFIG_KEY='pulumi_fb_config';
+const FB_APP_NAME='pulumi-tracker';
+const FB_REF_PATH='pulumi_progress';
+const QUIZ_LS='pulumi_quiz_scores';
+
+let state={};
+let fbApp=null,fbDb=null,fbUser=null;
+
+function loadState(){try{return JSON.parse(localStorage.getItem(APP_KEY)||'{}')}catch{return{}}}
+function saveState(){localStorage.setItem(APP_KEY,JSON.stringify(state));syncToFb();}
+
+function initFb(){
+  const cfg=localStorage.getItem(FB_CONFIG_KEY);
+  if(!cfg)return;
+  try{
+    const c=JSON.parse(cfg);
+    if(firebase.apps.find(a=>a.name===FB_APP_NAME)){fbApp=firebase.apps.find(a=>a.name===FB_APP_NAME);}
+    else{fbApp=firebase.initializeApp(c,FB_APP_NAME);}
+    fbDb=firebase.database(fbApp);
+    firebase.auth(fbApp).onAuthStateChanged(u=>{
+      fbUser=u;
+      if(u){setSyncStatus('ok','&#x2714; Synced');loadFromFb();}
+      else{firebase.auth(fbApp).signInAnonymously().catch(()=>setSyncStatus('err','&#x26A0; Auth Fail'));}
+    });
+  }catch(e){setSyncStatus('err','&#x26A0; FB Error');}
+}
+function setSyncStatus(cls,html){const el=document.getElementById('sync-status');if(!el)return;el.className='sync-status sync-'+cls;el.innerHTML=html;}
+function syncToFb(){
+  if(!fbDb||!fbUser)return;
+  setSyncStatus('ing','&#x21BB; Syncing&hellip;');
+  fbDb.ref(FB_REF_PATH+'/'+fbUser.uid).set({...state,_email:fbUser.email||'anon',_ts:Date.now()})
+    .then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Fail'));
+}
+function loadFromFb(){
+  if(!fbDb||!fbUser)return;
+  fbDb.ref(FB_REF_PATH+'/'+fbUser.uid).once('value').then(snap=>{
+    const d=snap.val();
+    if(d){Object.keys(d).filter(k=>!k.startsWith('_')).forEach(k=>state[k]=d[k]);renderAll();}
+  });
+}
+function openFbPanel(){
+  const cfg=localStorage.getItem(FB_CONFIG_KEY);
+  if(cfg){try{const c=JSON.parse(cfg);document.getElementById('fb-apiKey').value=c.apiKey||'';document.getElementById('fb-databaseURL').value=c.databaseURL||'';document.getElementById('fb-projectId').value=c.projectId||'';}catch{}}
+  document.getElementById('fb-overlay').classList.add('open');
+}
+function closeFbPanel(){document.getElementById('fb-overlay').classList.remove('open');}
+function saveFbConfig(){
+  const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};
+  if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){showFbMsg('err','All 3 fields required');return;}
+  localStorage.setItem(FB_CONFIG_KEY,JSON.stringify(cfg));
+  showFbMsg('ok','Config saved — connecting&hellip;');
+  setTimeout(()=>{closeFbPanel();initFb();},900);
+}
+function clearFbConfig(){localStorage.removeItem(FB_CONFIG_KEY);fbApp=null;fbDb=null;fbUser=null;setSyncStatus('none','&#x1F4BE; Local Only');closeFbPanel();}
+function showFbMsg(cls,msg){const el=document.getElementById('fb-msg');el.className='fb-status-msg '+cls;el.innerHTML=msg;}
+
+function getStep(id){return state['s_'+id]||0;}
+function setStep(id,val){state['s_'+id]=val;saveState();}
+function getNote(id){return state['n_'+id]||'';}
+function setNote(id,val){state['n_'+id]=val;saveState();}
+function getPhaseNote(id){return state['pn_'+id]||'';}
+function setPhaseNote(id,val){state['pn_'+id]=val;saveState();}
+function getVal(id){return state['v_'+id]||0;}
+function setVal(id,val){state['v_'+id]=val;saveState();}
+
+function toggleStep(id,el){
+  const done=!getStep(id);setStep(id,done?1:0);
+  const row=el.closest('.step-row');row.classList.toggle('done',done);
+  el.innerHTML=done?'&#x2714;':'';
+  updateStats();checkCongrats();
+}
+function toggleVal(id,el){
+  const done=!getVal(id);setVal(id,done?1:0);
+  const row=el.closest('.val-row');row.classList.toggle('done',done);
+  el.innerHTML=done?'&#x2714;':'';
+  updateStats();checkCongrats();
+}
+function toggleDetail(btn,id){
+  const panel=document.getElementById('dp-'+id);
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Hide':'Details';
+}
+function toggleNote(btn,id){
+  const panel=document.getElementById('np-'+id);
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+}
+function saveNote(id,ta){setNote(id,ta.value);}
+function savePhaseNote(id,ta){setPhaseNote(id,ta.value);}
+function toggleLab(el){el.closest('.lab-section').classList.toggle('open');}
+function togglePhase(el){el.closest('.phase-card').classList.toggle('open');}
+
+function filterTab(cloud,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.phase-card').forEach(pc=>{
+    if(cloud==='all'){pc.style.display='';return;}
+    const hasLab=[...pc.querySelectorAll('.lab-section')].some(ls=>ls.dataset.cloud===cloud);
+    pc.style.display=hasLab?'':'none';
+  });
+}
+
+function countLab(lab){
+  const tc=lab.steps.length+(lab.validation||[]).length;
+  const dc=lab.steps.filter(s=>getStep(s.id)).length+(lab.validation||[]).filter(v=>getVal(v.id)).length;
+  return{tc,dc};
+}
+function updateStats(){
+  let totalC=0,doneC=0,p1c=0,p1d=0,p2c=0,p2d=0;
+  PHASES.forEach((ph,i)=>{
+    ph.labs.forEach(lab=>{
+      const{tc,dc}=countLab(lab);
+      totalC+=tc;doneC+=dc;
+      if(i<3){p1c+=tc;p1d+=dc;}else{p2c+=tc;p2d+=dc;}
+    });
+    updatePhaseBar(ph);
+  });
+  document.getElementById('stat-total').textContent=totalC;
+  document.getElementById('stat-done').textContent=doneC;
+  document.getElementById('stat-p1').textContent=p1d+'/'+p1c;
+  document.getElementById('stat-p2').textContent=p2d+'/'+p2c;
+  const pct=totalC?Math.round(doneC/totalC*100):0;
+  document.getElementById('stat-pct').textContent=pct+'%';
+  document.getElementById('big-bar-fill').style.width=pct+'%';
+}
+function updatePhaseBar(ph){
+  let tc=0,dc=0;
+  ph.labs.forEach(lab=>{const r=countLab(lab);tc+=r.tc;dc+=r.dc;});
+  const bar=document.getElementById('pb-'+ph.id);
+  if(bar)bar.style.width=(tc?Math.round(dc/tc*100):0)+'%';
+}
+function checkCongrats(){
+  let tc=0,dc=0;
+  PHASES.forEach(ph=>ph.labs.forEach(lab=>{const r=countLab(lab);tc+=r.tc;dc+=r.dc;}));
+  if(tc&&dc===tc){const el=document.getElementById('congrats');el.style.display='flex';}
+}
+function resetProgress(){
+  if(!confirm('Reset all Pulumi lab progress?'))return;
+  Object.keys(state).forEach(k=>delete state[k]);
+  saveState();location.reload();
+}
+
+function renderAll(){
+  const wrap=document.getElementById('content');
+  wrap.innerHTML='';
+  PHASES.forEach(ph=>{
+    const card=document.createElement('div');
+    card.className='phase-card open';
+    let labsHtml='';
+    ph.labs.forEach(lab=>{
+      const{tc,dc}=countLab(lab);
+      let stepsHtml='';
+      lab.steps.forEach((s,si)=>{
+        const done=getStep(s.id);
+        const note=getNote(s.id);
+        const detailsHtml=s.details?s.details.map((d,di)=>`<div class="detail-item"><span class="di-num">${di+1}.</span><span class="di-text">${d.replace(/`([^`]+)`/g,'<code>$1</code>')}</span></div>`).join(''):'';
+        stepsHtml+=`<div class="step-row${done?' done':''}" id="sr-${s.id}">
+          <div class="step-check" onclick="toggleStep('${s.id}',this)">${done?'&#x2714;':''}</div>
+          <div class="step-main">
+            <div class="step-top">
+              <span class="step-num">${si+1}.</span>
+              <span class="step-text">${s.text}</span>
+              ${detailsHtml?`<button class="detail-btn" onclick="toggleDetail(this,'${s.id}')">Details</button>`:''}
+              <button class="note-btn${note?' has-note':''}" onclick="toggleNote(this,'${s.id}')">&#x1F4DD;</button>
+            </div>
+            ${detailsHtml?`<div class="step-details" id="dp-${s.id}"><div class="detail-item" style="font-size:11px;font-weight:700;color:#512BC4;margin-bottom:6px;">Step Details</div>${detailsHtml}</div>`:''}
+            <div class="step-note-panel" id="np-${s.id}">
+              <textarea class="note-textarea" placeholder="Your notes..." onchange="saveNote('${s.id}',this)" onblur="saveNote('${s.id}',this)">${note}</textarea>
+              <div class="note-hint">Notes saved locally in your browser.</div>
+            </div>
+          </div>
+        </div>`;
+      });
+      let valHtml='';
+      if(lab.validation&&lab.validation.length){
+        valHtml='<div class="section-lbl">&#x2705; Validation Checklist</div>';
+        lab.validation.forEach(v=>{
+          const done=getVal(v.id);
+          valHtml+=`<div class="val-row${done?' done':''}"><div class="val-check" onclick="toggleVal('${v.id}',this)">${done?'&#x2714;':''}</div><span class="step-text">${v.text}</span></div>`;
+        });
+      }
+      const phasNoteVal=getPhaseNote(lab.id);
+      labsHtml+=`<div class="lab-section" data-cloud="${lab.cloud}">
+        <div class="lab-header ${lab.cloud}-lab">
+          <span class="lab-cloud-badge ${lab.cloud}-badge">${lab.cloud.toUpperCase()}</span>
+          <div class="lab-title-area"><div class="lab-title">${lab.title}</div><div class="lab-meta">${lab.meta}</div></div>
+          <div class="lab-stats"><span style="font-size:11px;color:#6B7280;">${dc}/${tc}</span><button class="lab-toggle ${lab.cloud}-btn" onclick="toggleLab(this)">&#x25BC; Steps</button></div>
+        </div>
+        <div class="steps-list">
+          <div class="section-lbl">&#x1F4CB; Lab Steps</div>
+          ${stepsHtml}
+          ${valHtml}
+          <div class="section-lbl" style="margin-top:14px;">&#x1F4DD; Phase Notes</div>
+          <textarea class="notes-area" placeholder="Notes for this lab..." onchange="savePhaseNote('${lab.id}',this)" onblur="savePhaseNote('${lab.id}',this)">${phasNoteVal}</textarea>
+        </div>
+      </div>`;
+    });
+    card.innerHTML=`<div class="phase-header" onclick="togglePhase(this)">
+      <div class="phase-header-left">
+        <span class="phase-badge">${ph.badge}</span>
+        <div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="phase-progress-bar"><div class="phase-progress-fill" id="pb-${ph.id}" style="width:0%"></div></div>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+    </div>
+    <div class="phase-body">${labsHtml}</div>`;
+    wrap.appendChild(card);
+  });
+  updateStats();
+}
+
+/* ---- LEADERBOARD ---- */
+function openLeaderboard(){document.getElementById('lb-overlay').classList.add('open');loadLeaderboard();}
+function closeLb(){document.getElementById('lb-overlay').classList.remove('open');}
+function loadLeaderboard(){
+  const lbBody=document.getElementById('lb-body');
+  lbBody.innerHTML='<div class="lb-loading">&#x21BB; Loading&hellip;</div>';
+  const cfg=localStorage.getItem(FB_CONFIG_KEY);
+  if(!cfg){lbBody.innerHTML='<div class="lb-loading">Connect Firebase sync to see leaderboard.</div>';return;}
+  try{
+    const c=JSON.parse(cfg);
+    let lbApp=firebase.apps.find(a=>a.name==='mk-site')||firebase.initializeApp(c,'mk-site');
+    let lbDb=firebase.database(lbApp);
+    firebase.auth(lbApp).onAuthStateChanged(u=>{
+      if(!u){firebase.auth(lbApp).signInAnonymously();}
+    });
+    lbDb.ref(FB_REF_PATH).once('value').then(snap=>{
+      const data=snap.val()||{};
+      const rows=Object.entries(data).map(([uid,d])=>{
+        let tc=0,dc=0;
+        PHASES.forEach(ph=>ph.labs.forEach(lab=>{
+          lab.steps.forEach(s=>{tc++;if(d['s_'+s.id])dc++;});
+          (lab.validation||[]).forEach(v=>{tc++;if(d['v_'+v.id])dc++;});
+        }));
+        const pct=tc?Math.round(dc/tc*100):0;
+        return{uid,email:d._email||'Anonymous',dc,tc,pct};
+      }).sort((a,b)=>b.pct-a.pct);
+      if(!rows.length){lbBody.innerHTML='<div class="lb-loading">No data yet.</div>';return;}
+      const medals=['&#x1F947;','&#x1F948;','&#x1F949;'];
+      let html='<table class="lb-table"><thead><tr><th>Rank</th><th>User</th><th>Done</th><th>Progress</th></tr></thead><tbody>';
+      rows.forEach((r,i)=>{
+        const isMe=fbUser&&r.uid===fbUser.uid;
+        html+=`<tr${isMe?' class="me"':''}><td class="lb-rank">${medals[i]||'#'+(i+1)}</td><td>${r.email}</td><td>${r.dc}/${r.tc}</td><td><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:${r.pct}%"></div></div><span style="font-size:11px;margin-left:6px;">${r.pct}%</span></td></tr>`;
+      });
+      html+='</tbody></table>';
+      lbBody.innerHTML=html;
+    }).catch(()=>{lbBody.innerHTML='<div class="lb-loading">&#x26A0; Failed to load.</div>';});
+  }catch(e){lbBody.innerHTML='<div class="lb-loading">&#x26A0; Firebase error.</div>';}
+}
+
+/* ---- QUIZ ---- */
+let quizState={};
+function openQuiz(){document.getElementById('quiz-overlay').classList.add('open');showQuizPhaseSelect();}
+function closeQuiz(){document.getElementById('quiz-overlay').classList.remove('open');}
+function getBestScore(phaseId){try{const s=JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');return s[phaseId]||null;}catch{return null;}}
+function setBestScore(phaseId,score,total){try{const s=JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');if(!s[phaseId]||score>s[phaseId].score){s[phaseId]={score,total,pct:Math.round(score/total*100)};}localStorage.setItem(QUIZ_LS,JSON.stringify(s));}catch{}}
+function showQuizPhaseSelect(){
+  const body=document.getElementById('quiz-body');
+  let html='<div style="margin-bottom:12px;font-size:13px;font-weight:700;color:#1F2937;">Select phase to quiz:</div><div class="phase-grid">';
+  html+=`<div class="phase-tile all-tile" onclick="startQuiz('all',this)"><div class="pt-num">ALL</div><div class="pt-name">All Phases</div><div class="pt-score">${ALL_QUIZ.length} questions</div></div>`;
+  PHASES.forEach(ph=>{
+    const best=getBestScore(ph.id);
+    const qCount=ALL_QUIZ.filter(q=>q.phase===ph.id).length;
+    html+=`<div class="phase-tile" onclick="startQuiz('${ph.id}',this)"><div class="pt-num">${ph.badge}</div><div class="pt-name">${ph.title}</div><div class="pt-score">${best?best.pct+'% best':qCount+' questions'}</div></div>`;
+  });
+  html+='</div><button class="quiz-start-btn" id="quiz-start-btn" onclick="beginQuiz()" disabled>Select a Phase</button>';
+  body.innerHTML=html;
+  quizState={selectedPhase:null};
+}
+function startQuiz(phaseId,tile){
+  document.querySelectorAll('.phase-tile').forEach(t=>t.classList.remove('selected'));
+  tile.classList.add('selected');
+  quizState.selectedPhase=phaseId;
+  const btn=document.getElementById('quiz-start-btn');
+  btn.disabled=false;
+  btn.textContent='Start Quiz \u2192';
+}
+function beginQuiz(){
+  const ph=quizState.selectedPhase;
+  if(!ph)return;
+  const questions=ph==='all'?[...ALL_QUIZ]:ALL_QUIZ.filter(q=>q.phase===ph);
+  quizState={selectedPhase:ph,questions,current:0,score:0,answers:[]};
+  renderQuizQuestion();
+}
+function renderQuizQuestion(){
+  const{questions,current}=quizState;
+  if(current>=questions.length){showQuizScore();return;}
+  const q=questions[current];
+  const pct=Math.round(current/questions.length*100);
+  const letters=['A','B','C','D'];
+  let html=`<div class="quiz-progress"><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:${pct}%"></div></div><span class="quiz-prog-txt">${current+1}/${questions.length}</span></div>`;
+  html+=`<div class="quiz-question">${q.question}</div><div class="quiz-options">`;
+  q.options.forEach((opt,i)=>{
+    html+=`<button class="quiz-option" onclick="answerQuiz(${i})" data-idx="${i}"><span class="opt-letter">${letters[i]}</span>${opt}</button>`;
+  });
+  html+=`</div><div class="quiz-explanation" id="quiz-exp">${q.explanation}</div><button class="quiz-next-btn" id="quiz-next" onclick="nextQuestion()">${current+1<questions.length?'Next Question \u2192':'See Results'}</button>`;
+  document.getElementById('quiz-body').innerHTML=html;
+}
+function answerQuiz(idx){
+  const q=quizState.questions[quizState.current];
+  const opts=document.querySelectorAll('.quiz-option');
+  opts.forEach(o=>o.disabled=true);
+  const correct=idx===q.answer;
+  if(correct)quizState.score++;
+  quizState.answers.push({q,chosen:idx,correct});
+  opts[idx].classList.add(correct?'correct':'wrong');
+  if(!correct)opts[q.answer].classList.add('reveal');
+  document.getElementById('quiz-exp').classList.add('show');
+  document.getElementById('quiz-next').classList.add('show');
+}
+function nextQuestion(){quizState.current++;renderQuizQuestion();}
+function showQuizScore(){
+  const{score,questions,selectedPhase,answers}=quizState;
+  const total=questions.length;
+  const pct=Math.round(score/total*100);
+  setBestScore(selectedPhase,score,total);
+  const msgs=pct===100?'Perfect Score!':pct>=80?'Excellent!':pct>=60?'Good Progress!':'Keep Practicing!';
+  let reviewHtml='';
+  answers.forEach(a=>{
+    reviewHtml+=`<div class="review-item ${a.correct?'ok':'bad'}"><span class="review-icon">${a.correct?'&#x2714;':'&#x2718;'}</span><span>${a.q.question}</span></div>`;
+  });
+  document.getElementById('quiz-body').innerHTML=`<div class="quiz-score-screen">
+    <div class="score-circle"><span class="sc-num">${score}/${total}</span><span class="sc-lbl">${pct}%</span></div>
+    <div class="quiz-score-msg">${msgs}</div>
+    <div class="quiz-score-sub">Phase: ${selectedPhase==='all'?'All Phases':PHASES.find(p=>p.id===selectedPhase)?.title}</div>
+    <div class="quiz-review">${reviewHtml}</div>
+    <div class="quiz-score-btns">
+      <button class="qsb-retry" onclick="beginQuiz()">&#x1F504; Retry</button>
+      <button class="qsb-back" onclick="showQuizPhaseSelect()">&#x2190; Phase Select</button>
+    </div>
+  </div>`;
+}
+
+onAuthReady(function(user){
+  if(user){
+    fbUser=user;
+    const nameEl=document.getElementById('user-name-display');
+    if(nameEl)nameEl.textContent=user.displayName||user.email||'User';
+    document.getElementById('user-chip').onclick=()=>{if(confirm('Sign out?'))firebase.auth().signOut().then(()=>window.location.href='../personal_site/login.html');};
+  }
+});
+
+state=loadState();
+renderAll();
+initFb();
+</script>
+</body>
+</html>

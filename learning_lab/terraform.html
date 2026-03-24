@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terraform Lab Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --tf:#7B42BC;--tf-dark:#5c2d9a;--tf-light:#F3E8FF;
+  --dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;
+  --green:#16A34A;--green-light:#F0FDF4;
+  --header-bg:#1f0f47;--header-accent:#7B42BC;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#F0EBFF;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#C4B5FD;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#C4B5FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.stat-block.p1 .num{color:#5c2d9a;}
+.stat-block.p2 .num{color:#7B42BC;}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--header-bg),var(--tf));transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#C4B5FD;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#A78BFA;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.tf-lab{border-left:4px solid var(--tf);background:var(--tf-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.tf-badge{background:var(--tf-dark);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.tf-btn{color:var(--tf-dark);}
+.lab-toggle.tf-btn:hover{background:var(--tf-dark);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--tf);color:var(--tf-dark);}
+.detail-btn.open{background:var(--tf-light);border-color:var(--tf);color:var(--tf-dark);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#F3E8FF;border-left:3px solid var(--tf);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--tf-dark);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#EDE9FE;padding:1px 4px;border-radius:3px;color:#4c1d95;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#F3E8FF;}
+.val-row:hover{background:#EDE9FE;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #C4B5FD;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--tf);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#C4B5FD;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#F3E8FF;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:var(--tf);background:#F3E8FF;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--tf-dark);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+.lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1500;align-items:center;justify-content:center;}
+.lb-overlay.open{display:flex;}
+.lb-card{background:white;border-radius:16px;padding:28px 32px;max-width:580px;width:95%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.lb-card h3{font-size:17px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.lb-sub{font-size:12px;color:var(--gray);margin-bottom:18px;}
+.lb-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.lb-table th{background:var(--header-bg);color:white;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:.4px;}
+.lb-table th:first-child{border-radius:8px 0 0 8px;}.lb-table th:last-child{border-radius:0 8px 8px 0;}
+.lb-table td{padding:9px 12px;border-bottom:1px solid var(--light);}
+.lb-table tr:hover td{background:#F3E8FF;}.lb-table tr.me td{background:#EDE9FE;font-weight:700;}
+.lb-rank{font-size:16px;text-align:center;}
+.lb-bar-wrap{background:var(--light);border-radius:99px;height:8px;width:80px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:99px;background:var(--tf-dark);transition:width .4s;}
+.lb-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.lb-btn:hover{background:rgba(255,255,255,.25);}
+.lb-close{margin-top:18px;padding:8px 24px;border-radius:8px;border:none;background:var(--light);color:var(--dark);font-size:12px;font-weight:700;cursor:pointer;}
+.lb-close:hover{background:#E5E7EB;}.lb-loading{text-align:center;padding:24px;color:var(--gray);font-size:13px;}
+.quiz-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;}
+.quiz-overlay.open{display:flex;}
+.quiz-modal{background:white;border-radius:18px;max-width:660px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3);overflow:hidden;}
+.quiz-header{background:var(--header-bg);color:white;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.quiz-header h3{font-size:16px;font-weight:800;margin:0;}.quiz-header p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+.quiz-close{background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.quiz-close:hover{background:rgba(255,255,255,.28);}.quiz-body{padding:24px;}
+.phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.phase-tile{background:#F8FAFC;border:2px solid #E5E7EB;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .2s;}
+.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#F3E8FF;}.phase-tile.all-tile{border-style:dashed;}
+.pt-num{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
+.pt-name{font-size:12px;font-weight:700;color:var(--header-bg);margin-top:3px;line-height:1.3;}
+.pt-score{font-size:10px;color:#16A34A;margin-top:4px;font-weight:700;}
+.quiz-start-btn{width:100%;padding:12px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.quiz-start-btn:hover{filter:brightness(1.1);}.quiz-start-btn:disabled{opacity:.4;cursor:not-allowed;}
+.quiz-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.quiz-prog-bar{flex:1;background:var(--light);border-radius:99px;height:8px;overflow:hidden;}
+.quiz-prog-fill{height:100%;border-radius:99px;background:var(--header-bg);transition:width .4s;}
+.quiz-prog-txt{font-size:11px;font-weight:700;color:var(--gray);min-width:48px;text-align:right;}
+.quiz-question{font-size:15px;font-weight:700;color:var(--dark);line-height:1.5;margin-bottom:18px;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.quiz-option{padding:12px 16px;border-radius:10px;border:2px solid #E5E7EB;background:#FAFAFA;cursor:pointer;font-size:13px;line-height:1.4;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px;}
+.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#F3E8FF;}.quiz-option:disabled{cursor:default;}
+.quiz-option.correct{border-color:#16A34A;background:#F0FDF4;color:#16A34A;}
+.quiz-option.wrong{border-color:#EF4444;background:#FFF1F2;color:#DC2626;}
+.quiz-option.reveal{border-color:#16A34A;background:#F0FDF4;opacity:.7;}
+.quiz-option.correct .opt-letter,.quiz-option.reveal .opt-letter{background:#16A34A;color:white;}
+.quiz-option.wrong .opt-letter{background:#EF4444;color:white;}
+.opt-letter{width:22px;height:22px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.quiz-explanation{background:#F3E8FF;border-left:3px solid var(--tf);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}
+.quiz-explanation.show{display:block;}
+.quiz-next-btn{width:100%;padding:10px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}
+.quiz-next-btn.show{display:block;}
+.quiz-score-screen{text-align:center;padding:10px 0;}
+.score-circle{width:90px;height:90px;border-radius:50%;background:var(--header-bg);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:14px;}
+.sc-num{font-size:22px;font-weight:800;color:white;line-height:1;}.sc-lbl{font-size:11px;color:rgba(255,255,255,.75);}
+.quiz-score-msg{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.quiz-score-sub{font-size:12px;color:var(--gray);margin-bottom:20px;}
+.quiz-review{text-align:left;margin-bottom:16px;max-height:200px;overflow-y:auto;}
+.review-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:12px;line-height:1.4;}
+.review-item.bad{color:#DC2626;}.review-item.ok{color:#16A34A;}.review-icon{flex-shrink:0;}
+.quiz-score-btns{display:flex;gap:10px;}
+.quiz-score-btns button{flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;}
+.qsb-retry{background:var(--header-bg);color:white;}.qsb-back{background:var(--light);color:var(--dark);}
+.quiz-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.quiz-btn:hover{background:rgba(255,255,255,.25);}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F7E3; Terraform Lab Tracker</h1>
+      <p>HashiCorp Terraform / OpenTofu &middot; 6-Phase IaC Deep Dive &middot; HCL, Modules, State, CI/CD &amp; Testing</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+      <a href="ansible.html" class="nav-link">&#x1F9F0; Ansible</a>
+      <a href="arm-bicep.html" class="nav-link">&#x1F4D0; ARM/Bicep</a>
+      <a href="pulumi.html" class="nav-link">&#x1F7E1; Pulumi</a>
+      <span id="user-chip" class="user-chip">&#x1F464; <span id="user-name-display">...</span></span>
+      <button class="quiz-btn" onclick="openQuiz()">&#x1F9E0; Quiz</button>
+      <button class="lb-btn" onclick="openLeaderboard()">&#x1F3C6; Leaderboard</button>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+<div class="lb-overlay" id="lb-overlay" onclick="if(event.target===this)closeLb()">
+  <div class="lb-card"><h3>&#x1F3C6; Team Leaderboard</h3><p class="lb-sub">Live Terraform progress across all teammates</p><div id="lb-body"><div class="lb-loading">&#x21BB; Loading&hellip;</div></div><button class="lb-close" onclick="closeLb()">Close</button></div>
+</div>
+<div class="quiz-overlay" id="quiz-overlay" onclick="if(event.target===this)closeQuiz()">
+  <div class="quiz-modal">
+    <div class="quiz-header"><div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your Terraform knowledge</p></div><button class="quiz-close" onclick="closeQuiz()">&#x2715; Close</button></div>
+    <div class="quiz-body" id="quiz-body"></div>
+  </div>
+</div>
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Sync Terraform lab progress across devices.</p>
+    <div class="fb-steps"><b>Quick setup:</b><br>1. console.firebase.google.com &rarr; Create project<br>2. Realtime Database &rarr; Create (test mode)<br>3. Project Settings &rarr; Web app &rarr; copy config</div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey" /><input class="fb-input" id="fb-databaseURL" placeholder="databaseURL" /><input class="fb-input" id="fb-projectId" placeholder="projectId" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions"><button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button><button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button><button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button></div>
+  </div>
+</div>
+<div id="congrats"><div class="card"><span class="emoji">&#x1F3C6;</span><h2>Terraform Expert!</h2><p>You've completed all Terraform labs!</p><button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button></div></div>
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
+  <div class="big-bar-wrap"><div class="big-bar-label"><span>Overall Terraform Progress</span><span id="stat-pct">0%</span></div><div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div></div>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab" onclick="filterTab('tf',this)">&#x1F7E3; Terraform Labs</button>
+</div>
+<div id="content"></div>
+<script>
+(function(){var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);onAuthReady(function(user){if(user){clearTimeout(t);document.body.style.visibility='visible';}else{window.location.href='../personal_site/login.html';}});})();
+
+const PHASES=[
+  {id:'p1',badge:'PHASE 1',title:'Core Concepts & Setup',week:'Week 1',labs:[
+    {id:'p1-basics',cloud:'tf',title:'Terraform Fundamentals — HCL, Providers & State',meta:'Install Terraform, write first configuration, understand init/plan/apply/destroy lifecycle',
+     steps:[
+      {id:'p1-b-s1',text:'Install Terraform CLI and configure provider authentication',details:['Download from releases.hashicorp.com or brew install terraform / winget install Hashicorp.Terraform','Verify: terraform version','Provider auth: AWS via AWS_ACCESS_KEY_ID/SECRET or ~/.aws/credentials; Azure via az login or ARM_* env vars','TF_LOG=DEBUG for verbose logging; TF_LOG_PATH=./terraform.log to write to file','Install tfenv (version manager): tfenv install 1.9.0; tfenv use 1.9.0','VS Code extension: HashiCorp Terraform provides syntax highlighting, autocomplete, validation']},
+      {id:'p1-b-s2',text:'Write first HCL configuration: provider block and a simple resource',details:['main.tf: terraform { required_providers { aws = { source = "hashicorp/aws" version = "~> 5.0" } } }','Provider block: provider "aws" { region = "us-east-1" }','Resource: resource "aws_s3_bucket" "demo" { bucket = "my-demo-bucket-xyz" }','Or Azure: resource "azurerm_resource_group" "rg" { name = "demo-rg" location = "eastus" }','terraform fmt formats HCL to canonical style; terraform validate checks syntax without cloud calls','.terraform.lock.hcl pins provider versions; commit this to source control']},
+      {id:'p1-b-s3',text:'Run the full init → validate → plan → apply lifecycle',details:['terraform init: downloads providers to .terraform/; initializes backend; idempotent','terraform validate: checks HCL syntax and type correctness — no API calls made','terraform plan: shows add/change/destroy actions; -out=tfplan saves plan for later apply','terraform apply: executes plan (or prompts and runs new plan); type "yes" to confirm','terraform apply -auto-approve: skips confirmation (use in CI/CD only)','Plan output: + = create, ~ = update in-place, - = destroy, -/+ = destroy and recreate']},
+      {id:'p1-b-s4',text:'Understand the Terraform state file and its importance',details:['terraform.tfstate: JSON file mapping config resources to real cloud resources','State tracks: resource IDs, attributes, dependencies — never edit manually','Sensitive data (passwords, keys) stored in plaintext in state — protect the state file','terraform show: human-readable state; terraform state list: all resource addresses','State lock: prevents concurrent modifications; backends like S3+DynamoDB or Azure Blob implement locking','terraform refresh: reconciles state with real-world resources (deprecated in favor of plan -refresh-only)']},
+      {id:'p1-b-s5',text:'Destroy infrastructure and understand targeted operations',details:['terraform destroy: destroys ALL resources in state; prompts for confirmation','terraform destroy -target=aws_s3_bucket.demo: destroys specific resource only','terraform apply -target: apply changes to specific resource (useful during development)','Avoid -target in production — leads to state drift as dependencies are not considered','terraform plan -destroy: preview what destroy will do without executing','After destroy, terraform.tfstate is empty (but not deleted)']},
+     ],
+     validation:[
+      {id:'p1-b-v1',text:'terraform version shows installed version (1.5+)'},
+      {id:'p1-b-v2',text:'Provider authentication works (plan shows no credential errors)'},
+      {id:'p1-b-v3',text:'First resource created successfully via terraform apply'},
+      {id:'p1-b-v4',text:'terraform.tfstate contains resource details after apply'},
+      {id:'p1-b-v5',text:'terraform destroy removes all resources cleanly'},
+     ]}
+  ]},
+  {id:'p2',badge:'PHASE 2',title:'Variables, Outputs & Data Sources',week:'Week 1-2',labs:[
+    {id:'p2-vars',cloud:'tf',title:'Input Variables, Locals, Outputs & Data Sources',meta:'Parameterize configurations with variables, expose values with outputs, reference existing resources via data sources',
+     steps:[
+      {id:'p2-v-s1',text:'Define input variables with types, defaults, and validation blocks',details:['variables.tf: variable "instance_type" { type = string; default = "t3.micro"; description = "EC2 instance type" }','Types: string, number, bool, list(type), map(type), set(type), object({...}), any','Validation: validation { condition = contains(["t3.micro","t3.small"], var.instance_type); error_message = "Invalid instance type." }','Sensitive: variable "db_password" { type = string; sensitive = true } — redacted in output','Mark as required (no default): variable "region" { type = string } — must be provided or Terraform prompts','Reference: var.instance_type in resource blocks']},
+      {id:'p2-v-s2',text:'Use locals for DRY computed values and complex expressions',details:['locals.tf: locals { common_tags = { Environment = var.environment; Project = "demo"; Owner = "infra-team" } }','Reference: local.common_tags','Locals are computed once per plan; useful for complex expressions used in multiple places','locals { name_prefix = "${var.project}-${var.environment}" }','Locals cannot be overridden by the caller (unlike variables) — they are internal computed values','Can reference other locals, variables, and resource attributes']},
+      {id:'p2-v-s3',text:'Define outputs to expose resource attributes after apply',details:['outputs.tf: output "bucket_arn" { value = aws_s3_bucket.demo.arn; description = "S3 bucket ARN" }','Sensitive output: output "db_password" { value = var.db_password; sensitive = true }','terraform output: lists all outputs after apply; terraform output bucket_arn: specific value','Outputs are essential for module composition — child module outputs consumed by parent','terraform output -json: machine-readable output for CI/CD pipelines','Outputs are stored in state and visible to anyone with state access']},
+      {id:'p2-v-s4',text:'Use data sources to reference existing resources not managed by Terraform',details:['data "aws_ami" "ubuntu" { most_recent = true; owners = ["099720109477"]; filter { name="name"; values=["ubuntu/images/hvm-ssd/ubuntu-*-22.04-amd64*"] } }','Reference: data.aws_ami.ubuntu.id','data "azurerm_resource_group" "existing" { name = "prod-rg" } — reference pre-existing RG','data "aws_caller_identity" "current" {} — get current AWS account ID: data.aws_caller_identity.current.account_id','Data sources are read-only; they query the API but never create or modify resources','Useful for: existing VPCs, subnets, KMS keys, AMIs, secrets from AWS Secrets Manager']},
+      {id:'p2-v-s5',text:'Use .tfvars files for environment-specific variable values',details:['terraform.tfvars: automatically loaded; contains variable = "value" assignments','dev.tfvars, prod.tfvars: environment-specific; apply with -var-file=prod.tfvars','Variable precedence (lowest to highest): defaults → terraform.tfvars → *.auto.tfvars → -var-file= → -var → TF_VAR_ env vars','TF_VAR_instance_type=t3.small: env var sets variable value','Never commit .tfvars containing secrets — use vault or environment variables','.gitignore: *.tfvars if secrets; or use separate secrets.tfvars and .gitignore that specific file']},
+     ],
+     validation:[
+      {id:'p2-v-v1',text:'Variable with validation block rejects invalid input with clear error'},
+      {id:'p2-v-v2',text:'locals used in at least 2 resource blocks (DRY tagging)'},
+      {id:'p2-v-v3',text:'Output visible after apply (terraform output shows values)'},
+      {id:'p2-v-v4',text:'Data source correctly retrieves existing resource ID/ARN'},
+      {id:'p2-v-v5',text:'dev.tfvars and prod.tfvars deploy different configurations'},
+     ]}
+  ]},
+  {id:'p3',badge:'PHASE 3',title:'Resource Meta-Arguments & Dynamic Blocks',week:'Week 2',labs:[
+    {id:'p3-meta',cloud:'tf',title:'count, for_each, depends_on, lifecycle & dynamic',meta:'Create multiple resources, handle dependencies, prevent accidental deletion, generate repeated nested blocks',
+     steps:[
+      {id:'p3-m-s1',text:'Use count to create multiple identical resources',details:['resource "aws_iam_user" "devs" { count = 3; name = "dev-${count.index}" }','Reference by index: aws_iam_user.devs[0].arn, aws_iam_user.devs[*].arn (splat)','count = 0: useful for conditionally creating resources: count = var.create_bastion ? 1 : 0','Issue with count: if you remove item from middle of list, Terraform recreates all resources after it (use for_each for named resources)','count.index starts at 0; use toset/tolist for named sets','Remove item from count list → addresses shift → destructive change; prefer for_each']},
+      {id:'p3-m-s2',text:'Use for_each with maps or sets for named resource creation',details:['resource "aws_iam_user" "team" { for_each = toset(["alice", "bob", "carol"]); name = each.key }','With map: for_each = { alice = "admin", bob = "dev" } → each.key = "alice", each.value = "admin"','Reference: aws_iam_user.team["alice"].arn','Adding/removing from map only affects that specific key — no destructive cascading','for_each on a data structure from variable: for_each = var.buckets (type = map(object({...})))','Nested for_each: not directly supported; use local to flatten nested structures first']},
+      {id:'p3-m-s3',text:'Use depends_on for explicit dependencies when implicit is insufficient',details:['Terraform creates implicit dependencies from resource references (resource B uses resource A\'s attribute → B depends on A)','depends_on needed for: side effects not captured by attributes (e.g., IAM policy must exist before EC2 can start)','resource "aws_instance" "app" { depends_on = [aws_iam_role_policy_attachment.app_policy] }','Use sparingly — implicit dependencies are preferred; depends_on disables some Terraform optimizations','Module-level depends_on: propagates to all resources within the module','With for_each/count: depends_on on a resource forces all instances to wait']},
+      {id:'p3-m-s4',text:'Configure lifecycle hooks to control resource replacement and deletion',details:['lifecycle { create_before_destroy = true }: creates replacement first, then destroys original (zero-downtime)',`lifecycle { prevent_destroy = true }: terraform plan fails if resource would be destroyed; protects prod databases`,'lifecycle { ignore_changes = [tags, user_data] }: ignores drift for specified attributes','replace_triggered_by: forces replacement when referenced resource changes (e.g., new AMI → replace EC2)','lifecycle is evaluated during plan phase; not a runtime check — it prevents Terraform actions','Combine create_before_destroy with unique names (timestamp, random_id) to avoid naming conflicts']},
+      {id:'p3-m-s5',text:'Use dynamic blocks to generate repeated nested configuration blocks',details:['Use case: security group rules, IAM policy statements, route table entries — variable number of nested blocks','dynamic "ingress" { for_each = var.ingress_rules; content { from_port = ingress.value.from_port; to_port = ingress.value.to_port; protocol = ingress.value.protocol; cidr_blocks = ingress.value.cidr_blocks } }','The iterator label (ingress) refers to the current element; customize with iterator = "rule"','Dynamic blocks can be nested within other dynamic blocks (for complex nested structures)','Avoid overusing dynamic blocks — can make configuration harder to read; sometimes explicit is clearer','Can use content { ... } with conditional: for_each = var.enable_feature ? [1] : []']},
+     ],
+     validation:[
+      {id:'p3-m-v1',text:'count creates correct number of resources; count = 0 skips creation'},
+      {id:'p3-m-v2',text:'for_each creates named resources; removing one key only destroys that resource'},
+      {id:'p3-m-v3',text:'lifecycle prevent_destroy blocks destroy in plan output'},
+      {id:'p3-m-v4',text:'dynamic block generates multiple security group rules from variable input'},
+     ]}
+  ]},
+  {id:'p4',badge:'PHASE 4',title:'Modules & Reusability',week:'Week 2-3',labs:[
+    {id:'p4-modules',cloud:'tf',title:'Creating & Consuming Modules',meta:'Build reusable modules, use Terraform Registry public modules, compose modules together',
+     steps:[
+      {id:'p4-mod-s1',text:'Create a reusable local module with input variables and outputs',details:['Module structure: modules/vpc/main.tf, variables.tf, outputs.tf (no providers.tf in child modules)','variables.tf: define all inputs the module accepts (with descriptions, types, defaults)','outputs.tf: expose useful attributes: output "vpc_id" { value = aws_vpc.this.id }','main.tf: resources using var.* references for inputs','Module should be self-contained — no hard-coded account IDs or region strings','Document with README.md: inputs table, outputs table, usage example']},
+      {id:'p4-mod-s2',text:'Call the module from root configuration and use its outputs',details:['Root main.tf: module "vpc" { source = "./modules/vpc"; vpc_cidr = "10.0.0.0/16"; environment = var.environment }','Module outputs referenced: module.vpc.vpc_id in other resources','Run terraform init after adding new module source (downloads remote modules or registers local)','module.vpc.outputs: access any output declared in the module','Pass module output to another module: module "app" { source = "./modules/app"; vpc_id = module.vpc.vpc_id }','Module count/for_each: module "env" { for_each = toset(["dev","prod"]); source = "./modules/app" }']},
+      {id:'p4-mod-s3',text:'Use Terraform Registry public modules (hashicorp/vpc/aws, Azure/compute)',details:['Terraform Registry: registry.terraform.io — search for official and partner modules','module "vpc" { source = "terraform-aws-modules/vpc/aws"; version = "5.1.2"; cidr = "10.0.0.0/16"; azs = ["us-east-1a","us-east-1b"] }','Pin version: version = "~> 5.0" (allows 5.x but not 6.0); version = "5.1.2" (exact)','terraform init -upgrade: upgrades modules to latest matching version constraint','Verified modules: green checkmark on registry; official modules from HashiCorp/cloud providers','Read module README carefully — required inputs, optional inputs, outputs, usage examples']},
+      {id:'p4-mod-s4',text:'Use Git and other remote module sources',details:['Git source: module "app" { source = "git::https://github.com/org/repo.git//modules/app?ref=v1.2.0" }','//modules/app: double-slash separates repo from subdirectory path','ref=v1.2.0: pin to tag, branch, or commit hash','SSH: source = "git::ssh://git@github.com/org/repo.git//modules/app"','GitHub shorthand: source = "github.com/org/repo//modules/app"','Private repos: SSH key or HTTPS with token; in CI/CD inject credentials as env vars']},
+      {id:'p4-mod-s5',text:'Compose multiple modules and test with terraform-docs and Terratest',details:['Multi-module composition: networking → compute → database (wiring outputs to inputs)','module "db" { source = "./modules/rds"; subnet_ids = module.vpc.private_subnet_ids; security_group_id = module.app.db_sg_id }','terraform-docs: auto-generate module documentation from variables/outputs: terraform-docs markdown ./modules/vpc','Terratest (Go): write integration tests that deploy real infrastructure and assert outcomes','go test ./... runs Terratest; test creates resources, validates, then destroys','Unit testing: mock providers with tfmock or use override files to avoid real API calls']},
+     ],
+     validation:[
+      {id:'p4-mod-v1',text:'Custom module created and called from root; outputs accessible via module.name.output'},
+      {id:'p4-mod-v2',text:'Terraform Registry public module used with pinned version'},
+      {id:'p4-mod-v3',text:'Git-sourced module used with version ref pinned'},
+      {id:'p4-mod-v4',text:'terraform-docs generates README with inputs/outputs table'},
+     ]}
+  ]},
+  {id:'p5',badge:'PHASE 5',title:'State Management & Backends',week:'Week 3-4',labs:[
+    {id:'p5-state',cloud:'tf',title:'Remote Backends, State Operations & Workspaces',meta:'Migrate to remote state, use state commands, import existing resources, manage environments with workspaces',
+     steps:[
+      {id:'p5-s-s1',text:'Configure remote backend with S3+DynamoDB (AWS) or Azure Blob Storage',details:['AWS S3 backend: terraform { backend "s3" { bucket = "tfstate-bucket"; key = "env/terraform.tfstate"; region = "us-east-1"; dynamodb_table = "tf-lock"; encrypt = true } }','DynamoDB table: create with partition key = LockID (String type); used for state locking','Azure backend: backend "azurerm" { resource_group_name = "rg-tfstate"; storage_account_name = "stgtfstate"; container_name = "tfstate"; key = "prod.terraform.tfstate" }','Terraform Cloud backend: backend "remote" { organization = "my-org"; workspaces { name = "prod" } }','Enable versioning on S3 bucket: allows rolling back to previous state versions','Encryption at rest: S3 SSE-S3 or SSE-KMS; Azure Storage Service Encryption']},
+      {id:'p5-s-s2',text:'Migrate local state to remote backend',details:['Add backend block to terraform {} stanza','Run terraform init: Terraform detects config change and prompts "Do you want to copy existing state?"','Answer "yes" — state is uploaded to remote backend; local terraform.tfstate can be deleted','Verify: terraform state list should still show all resources after migration','Backend changes require terraform init -reconfigure or -migrate-state flags','Partial backend initialization: if backend init fails midway, run terraform init -reconfigure to reset']},
+      {id:'p5-s-s3',text:'Use terraform state commands for state surgery',details:['terraform state list: all managed resource addresses','terraform state show aws_s3_bucket.demo: full attributes of one resource','terraform state mv aws_s3_bucket.old aws_s3_bucket.new: rename without recreating (refactoring)','terraform state rm aws_s3_bucket.demo: remove from state without destroying real resource (Terraform "forgets" it)','terraform state pull: download raw state JSON; terraform state push: upload modified state (dangerous)','moved {} block (v1.1+): declarative state moves, preferable to CLI mv for code reviews']},
+      {id:'p5-s-s4',text:'Import existing infrastructure into Terraform management',details:['terraform import aws_s3_bucket.demo my-existing-bucket: imports real resource into state','Post-import: write matching resource block in config; plan should show no changes','terraform import azure_resource_group.rg /subscriptions/{sub}/resourceGroups/{rg-name}','Import block (v1.5+): import { to = aws_s3_bucket.demo; id = "my-existing-bucket" } — plan shows import','generate config block (experimental): auto-generates resource config from imported state','After import, run terraform plan and reconcile any configuration drift']},
+      {id:'p5-s-s5',text:'Use Terraform workspaces for environment isolation',details:['terraform workspace new dev: creates isolated state for "dev" environment','terraform workspace select prod: switch to prod workspace','terraform workspace list: shows all workspaces; current workspace marked with *','Access current workspace in code: terraform.workspace — use in naming: "${var.project}-${terraform.workspace}"','Workspace state stored separately: s3://bucket/env:/dev/terraform.tfstate vs env:/prod/terraform.tfstate','Limitation: workspaces share the same backend config and code — for large orgs, separate state files per environment is more common']},
+     ],
+     validation:[
+      {id:'p5-s-v1',text:'Remote backend configured; terraform.tfstate no longer stored locally'},
+      {id:'p5-s-v2',text:'State locking tested (concurrent plan blocked with lock error)'},
+      {id:'p5-s-v3',text:'terraform state mv used to rename a resource without recreating it'},
+      {id:'p5-s-v4',text:'Existing resource imported (terraform plan shows no changes after import)'},
+      {id:'p5-s-v5',text:'Workspaces dev/staging/prod created; workspace name used in resource naming'},
+     ]}
+  ]},
+  {id:'p6',badge:'PHASE 6',title:'CI/CD, Testing & Security',week:'Week 4-5',labs:[
+    {id:'p6-cicd',cloud:'tf',title:'Pipelines, Terraform Cloud, Testing & Scanning',meta:'Automate Terraform with CI/CD pipelines, run security scans, write tests, use Terraform Cloud for governance',
+     steps:[
+      {id:'p6-c-s1',text:'Write a GitHub Actions pipeline for Terraform plan on PR and apply on merge',details:['Workflow: on: [pull_request] → checkout → setup-terraform → tf init → tf validate → tf plan','on: [push] to main → checkout → tf init → tf apply -auto-approve','Use OIDC for keyless auth: permissions: id-token: write; aws-actions/configure-aws-credentials with role-to-assume','Store plan output: tf plan -out=tfplan; upload as artifact for apply job to consume','PR comment: use hashicorp/setup-terraform with tf plan output posted to PR via github-script','Never run tf apply on pull_request event — only on merge to main/protected branch']},
+      {id:'p6-c-s2',text:'Configure Terraform Cloud for remote runs, state, and team collaboration',details:['app.terraform.io → create organization → create workspace','VCS-driven workflow: connect GitHub repo; Terraform Cloud auto-runs plan on PR, apply on merge','Remote state: workspace provides hosted state with access controls and state history','Variable sets: define cloud credentials once, assign to multiple workspaces','Sentinel policies: policy-as-code that blocks non-compliant plans (e.g., no public S3 buckets)','Cost estimation: shows estimated monthly cost for resource changes before apply']},
+      {id:'p6-c-s3',text:'Use Terragrunt for DRY multi-environment Terraform management',details:['Terragrunt wraps Terraform: adds live directory structure, DRY backend config, dependency management','Directory structure: live/{env}/{service}/terragrunt.hcl','terragrunt.hcl: include root hcl for backend, inputs = { environment = "dev" }','run_all apply: applies all services in dependency order across entire environment','dependency block: dependency "vpc" { config_path = "../vpc"; mock_outputs = { vpc_id = "vpc-mock" } }','Saves repeating backend config per module; generates backend.tf automatically']},
+      {id:'p6-c-s4',text:'Write Terraform tests using the native terraform test framework',details:['tests/ directory: create *.tftest.hcl files','run "verify_bucket" { command = plan; variables { bucket_name = "test-bucket" }; assert { condition = output.bucket_id != ""; error_message = "bucket_id must not be empty" } }','command = apply: deploys real resources, asserts, then destroys','command = plan: tests without deploying (faster, no cloud credentials needed for some checks)','terraform test runs all test files; -filter=tests/basic.tftest.hcl runs specific test','Mock providers: mock_provider "aws" {} — enables plan-only tests without real credentials']},
+      {id:'p6-c-s5',text:'Run Checkov and tfsec security scans to detect misconfigurations',details:['Checkov: pip install checkov; checkov -d . --framework terraform','Checks for: S3 bucket public access, unencrypted EBS volumes, open security groups, missing tags','tfsec: brew install tfsec; tfsec . -- SARIF output for GitHub Advanced Security integration','Integrate in CI: run after terraform validate; fail pipeline on HIGH severity findings','Baseline: tfsec --soft-fail to allow existing issues while blocking new ones','Terraform Sentinel (Terraform Cloud): policy-as-code enforced server-side before every apply']},
+     ],
+     validation:[
+      {id:'p6-c-v1',text:'GitHub Actions pipeline runs plan on PR and apply on merge to main'},
+      {id:'p6-c-v2',text:'OIDC-based authentication — no static credentials stored in GitHub secrets'},
+      {id:'p6-c-v3',text:'terraform test passes at least 2 test assertions'},
+      {id:'p6-c-v4',text:'Checkov scan runs in CI; no HIGH severity findings in configuration'},
+     ]}
+  ]}
+];
+
+const APP_KEY='terraform_lab_tracker';
+let state={},currentUser=null,db=null,syncRef=null;
+function loadState(){const u=currentUser||'default';const raw=localStorage.getItem(APP_KEY+'_'+u);state=raw?JSON.parse(raw):{steps:{},notes:{},labNotes:{},valChecks:{}};if(!state.steps)state.steps={};if(!state.notes)state.notes={};if(!state.labNotes)state.labNotes={};if(!state.valChecks)state.valChecks={};}
+function saveState(){const u=currentUser||'default';localStorage.setItem(APP_KEY+'_'+u,JSON.stringify(state));pushToFirebase();}
+function initFirebase(){const cfg=JSON.parse(localStorage.getItem('terraform_fb_config')||'null');if(!cfg)return;try{const ex=firebase.apps.find(a=>a.name==='terraform-tracker');const app=ex||firebase.initializeApp(cfg,'terraform-tracker');db=firebase.database(app);syncRef=db.ref('terraform_progress');listenFirebase();setSyncStatus('ok','&#x2714; Synced');}catch(e){setSyncStatus('err','&#x26A0; Sync Error');}}
+function listenFirebase(){if(!syncRef)return;const u=currentUser||'default';syncRef.child(u).on('value',snap=>{const d=snap.val();if(d){state=d;if(!state.steps)state.steps={};if(!state.notes)state.notes={};if(!state.labNotes)state.labNotes={};if(!state.valChecks)state.valChecks={};saveState();renderAll();updateStats();}});}
+function pushToFirebase(){if(!syncRef)return;const u=currentUser||'default';syncRef.child(u).set(state).then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Error'));}
+function setSyncStatus(t,h){const e=document.getElementById('sync-status');e.className='sync-status sync-'+t;e.innerHTML=h;}
+function openFbPanel(){const cfg=JSON.parse(localStorage.getItem('terraform_fb_config')||'null');if(cfg){document.getElementById('fb-apiKey').value=cfg.apiKey||'';document.getElementById('fb-databaseURL').value=cfg.databaseURL||'';document.getElementById('fb-projectId').value=cfg.projectId||'';}document.getElementById('fb-overlay').classList.add('open');}
+function closeFbPanel(){document.getElementById('fb-overlay').classList.remove('open');}
+function saveFbConfig(){const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){showFbMsg('err','Fill all 3 fields.');return;}localStorage.setItem('terraform_fb_config',JSON.stringify(cfg));showFbMsg('ok','Connecting...');initFirebase();setTimeout(closeFbPanel,1000);}
+function clearFbConfig(){localStorage.removeItem('terraform_fb_config');db=null;syncRef=null;setSyncStatus('none','&#x1F4BE; Local Only');closeFbPanel();}
+function showFbMsg(t,m){const e=document.getElementById('fb-msg');e.className='fb-status-msg '+t;e.innerHTML=m;}
+
+function _lbDb(){var app=(typeof firebase!=='undefined')?firebase.apps.find(function(a){return a.name==='mk-site';}):null;return app?firebase.database(app):null;}
+function openLeaderboard(){document.getElementById('lb-overlay').classList.add('open');document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x21BB; Loading&hellip;</div>';var lbDb=_lbDb();if(!lbDb){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x26A0; Firebase not connected.</div>';return;}lbDb.ref('terraform_progress').once('value').then(function(snap){var all=snap.val();if(!all||!Object.keys(all).length){document.getElementById('lb-body').innerHTML='<div class="lb-loading">No data yet.</div>';return;}var rows=Object.entries(all).map(function(e){var name=e[0],u=e[1],tc=0,dc=0,dl=0;PHASES.forEach(function(ph){ph.labs.forEach(function(lab){var ts=lab.steps.length,tv=lab.validation.length;var ds=lab.steps.filter(function(s){return u.steps&&u.steps[s.id];}).length;var dv=lab.validation.filter(function(v){return u.valChecks&&u.valChecks[v.id];}).length;tc+=ts+tv;dc+=ds+dv;if(ds+dv===ts+tv&&ts+tv>0)dl++;});});return{name:name,tc:tc,dc:dc,dl:dl,pct:tc>0?Math.round(dc/tc*100):0};}).sort(function(a,b){return b.pct-a.pct||b.dl-a.dl;});var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];var html=rows.map(function(r,i){return '<tr class="'+(r.name===currentUser?'me':'')+'"><td class="lb-rank">'+(i<3?medals[i]:'#'+(i+1))+'</td><td><b>'+r.name+'</b>'+(r.name===currentUser?' <span style="font-size:10px">(you)</span>':'')+'</td><td><div style="display:flex;align-items:center;gap:6px"><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:'+r.pct+'%"></div></div><span style="font-size:11px;font-weight:700">'+r.pct+'%</span></div></td><td style="text-align:center">'+r.dl+'</td><td style="text-align:center">'+r.dc+'/'+r.tc+'</td></tr>';}).join('');document.getElementById('lb-body').innerHTML='<table class="lb-table"><thead><tr><th>Rank</th><th>Name</th><th>Progress</th><th>Labs Done</th><th>Checks</th></tr></thead><tbody>'+html+'</tbody></table>';}).catch(function(){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x2717; Failed.</div>';});}
+function closeLb(){document.getElementById('lb-overlay').classList.remove('open');}
+
+var ALL_QUIZ=[
+  {id:'q1',phase:1,question:'What does "terraform init" do?',options:['Creates the first resources in the cloud','Downloads providers and modules, initializes the backend — must run before plan/apply','Validates HCL syntax without making API calls','Shows a preview of what changes will be made'],answer:1,explanation:'terraform init initializes the working directory: downloads provider plugins and modules defined in configuration, and configures the backend. It is idempotent and safe to run multiple times. Must be run before plan or apply.'},
+  {id:'q2',phase:1,question:'What information is stored in terraform.tfstate?',options:['The HCL source code for all resources','A mapping of Terraform resource addresses to real cloud resource IDs and current attributes','Only resource IDs — no sensitive data is stored there','A log of all previous apply operations'],answer:1,explanation:'terraform.tfstate is a JSON file that maps Terraform resource addresses (e.g., aws_s3_bucket.demo) to the real cloud resources and their current attributes. It includes ALL resource attributes, including sensitive values like passwords and keys.'},
+  {id:'q3',phase:2,question:'What is the difference between a Terraform variable and a local?',options:['Variables are for strings only; locals can be any type','Variables are inputs set by the caller (user or calling module); locals are computed internal values that cannot be overridden externally','Locals are evaluated at plan time; variables are evaluated at apply time','They are identical — locals just have a shorter syntax'],answer:1,explanation:'Input variables are the "parameters" of a module — set by the person running terraform or the calling module. Locals are computed values defined within the module using expressions; they cannot be overridden from outside and are re-computed each plan.'},
+  {id:'q4',phase:2,question:'What does marking an output as sensitive = true do?',options:['Encrypts the value in terraform.tfstate','Redacts the value from terminal output (shows as <sensitive>), but the value is still stored in state and accessible via terraform output','Prevents the output from being used in other modules','Deletes the output from state after apply completes'],answer:1,explanation:'sensitive = true on an output redacts the value from terminal display (shown as "<sensitive>") to prevent accidental exposure. However, the value is still stored in plaintext in the state file and can be retrieved with terraform output -json or terraform output <name>.'},
+  {id:'q5',phase:3,question:'What is the key advantage of for_each over count?',options:['for_each is faster for large numbers of resources','for_each assigns a stable identity (key) to each resource — removing an item only destroys that resource; count uses index, so removing from the middle cascades changes','for_each works with modules; count does not','count can only create up to 10 resources; for_each has no limit'],answer:1,explanation:'With count, resources are identified by index (0, 1, 2...). Removing item at index 1 causes all subsequent resources to shift, triggering destructive changes. for_each identifies resources by map key or set member — removing an entry only destroys that specific resource.'},
+  {id:'q6',phase:3,question:'What does lifecycle { prevent_destroy = true } do?',options:['Prevents all Terraform operations on the resource','Causes terraform plan to return an error if the resource would be destroyed or replaced — protects against accidental deletion','Prevents the resource from being modified after initial creation','Archives the resource in the cloud provider rather than deleting it'],answer:1,explanation:'When prevent_destroy = true is set, terraform plan returns an error if any action would destroy the resource (including a replace/recreate operation). It does not prevent manual deletion via the cloud console — it only blocks Terraform from destroying it.'},
+  {id:'q7',phase:4,question:'What is the purpose of a Terraform module?',options:['To separate provider configuration from resource configuration','To encapsulate a reusable set of resources — accepts inputs via variables and exposes values via outputs; like a function for infrastructure','To create multiple copies of the same resource using a loop','To manage multiple Terraform versions in the same project'],answer:1,explanation:'A module groups related resources into a reusable abstraction. The caller provides inputs via variables and uses outputs without needing to know the implementation details. This enables DRY infrastructure code and enforces consistent patterns across teams.'},
+  {id:'q8',phase:4,question:'What does the version constraint "~> 5.0" mean for a module or provider?',options:['Any version >= 5.0, no upper bound','Any version >= 5.0 and < 6.0 (allows patch and minor upgrades within major version 5)','Exactly version 5.0','Any version between 5.0 and 5.9 only'],answer:1,explanation:'"~> 5.0" is a pessimistic constraint operator meaning >= 5.0 and < 6.0. It allows minor and patch upgrades (5.1, 5.2.3) but not major version upgrades. "~> 5.1.2" would mean >= 5.1.2 and < 5.2 (only patch updates).'},
+  {id:'q9',phase:5,question:'Why is a remote backend with locking important for teams?',options:['It makes Terraform run faster by caching state in the cloud','It provides shared state accessible by all team members AND prevents concurrent modifications via locking — preventing state corruption','It automatically backs up the state file every hour','It encrypts the state file and rotates encryption keys automatically'],answer:1,explanation:'Local state cannot be shared between team members. A remote backend (S3+DynamoDB, Azure Blob, Terraform Cloud) stores state in a shared location AND implements locking so only one terraform apply can run at a time — preventing race conditions that corrupt the state file.'},
+  {id:'q10',phase:5,question:'What is the difference between terraform state mv and terraform import?',options:['state mv destroys and recreates with new name; import creates a copy','state mv renames a resource address within state (no API calls); import reads an existing real resource into Terraform state for the first time','They do the same thing but with different syntax','state mv is for modules; import is for individual resources'],answer:1,explanation:'terraform state mv changes the address of a resource in state without any cloud API calls — used for refactoring (e.g., renaming a resource or moving it into a module). terraform import reads an existing cloud resource (by its real ID) into Terraform state so it can be managed.'},
+  {id:'q11',phase:6,question:'What does terraform test framework test?',options:['Terraform provider APIs to ensure they are accessible','Infrastructure configuration correctness — asserts outputs, resource attributes, or plan results without (optionally) deploying real resources','Network connectivity between deployed resources','Terraform CLI installation and version compatibility'],answer:1,explanation:'The native terraform test framework (v1.6+) allows writing .tftest.hcl files with run blocks that can run plan (no deployment) or apply (real deployment) and assert conditions on outputs and resource attributes, enabling proper unit and integration testing of modules.'},
+  {id:'q12',phase:6,question:'What does Checkov scan for in Terraform configurations?',options:['HCL syntax errors (already covered by terraform validate)','Security misconfigurations and compliance violations — open security groups, unencrypted storage, missing tags, public buckets, overly permissive IAM policies','Terraform version compatibility issues between providers','Performance bottlenecks in infrastructure design'],answer:1,explanation:'Checkov is a static analysis tool for IaC that scans Terraform (and other IaC) for security misconfigurations before deployment. Examples: S3 bucket with public read access, EBS volumes without encryption, security groups with 0.0.0.0/0 ingress on sensitive ports.'}
+];
+var quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};
+var QUIZ_LS='terraform_quiz_scores';
+function openQuiz(){document.getElementById('quiz-overlay').classList.add('open');quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};renderQuiz();}
+function closeQuiz(){document.getElementById('quiz-overlay').classList.remove('open');}
+function getQuizScores(){try{return JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');}catch(e){return{};}}
+function saveQuizScore(ph,sc,tot){var s=getQuizScores();var k='p'+ph;if(!s[k]||sc>s[k].best)s[k]={best:sc,total:tot};localStorage.setItem(QUIZ_LS,JSON.stringify(s));}
+function renderQuiz(){var body=document.getElementById('quiz-body');var scores=getQuizScores();var phases=[...new Set(ALL_QUIZ.map(function(q){return q.phase;}))].sort(function(a,b){return a-b;});var tiles=phases.map(function(p){return{phase:p,name:PHASES[p-1]?PHASES[p-1].title:'Phase '+p,count:ALL_QUIZ.filter(function(q){return q.phase===p;}).length};});tiles.push({phase:'all',name:'All Phases',count:ALL_QUIZ.length});if(quizState.screen==='select'){body.innerHTML='<p style="font-size:12px;color:var(--gray);margin-bottom:14px">Select a phase to quiz on, or choose <b>All Phases</b>.</p><div class="phase-grid">'+tiles.map(function(t){var sc=scores['p'+t.phase];var scH=sc?'<div class="pt-score">Best: '+sc.best+'/'+sc.total+'</div>':'';return '<div class="phase-tile'+(t.phase==='all'?' all-tile':'')+(quizState.selectedPhase===t.phase?' selected':'')+'" onclick="selectQuizPhase(\''+t.phase+'\')"><div class="pt-num">'+(t.phase==='all'?'ALL':'Phase '+t.phase)+'</div><div class="pt-name">'+t.name+'</div><div style="font-size:10px;color:var(--gray);margin-top:3px">'+t.count+' questions</div>'+scH+'</div>';}).join('')+'</div><button class="quiz-start-btn" onclick="startQuiz()" '+(quizState.selectedPhase===null?'disabled':'')+'>&#x1F680; Start Quiz</button>';}else if(quizState.screen==='question'){var q=quizState.questions[quizState.current];var letters=['A','B','C','D'];var pct=Math.round(quizState.current/quizState.questions.length*100);body.innerHTML='<div class="quiz-progress"><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:'+pct+'%"></div></div><span class="quiz-prog-txt">'+(quizState.current+1)+'/'+quizState.questions.length+'</span></div><div class="quiz-question">'+q.question+'</div><div class="quiz-options" id="quiz-opts">'+q.options.map(function(o,i){return '<button class="quiz-option" id="opt-'+i+'" onclick="answerQuiz('+i+')"><span class="opt-letter">'+letters[i]+'</span><span>'+o+'</span></button>';}).join('')+'</div><div class="quiz-explanation" id="quiz-exp"><b>&#x1F4A1;</b> '+q.explanation+'</div><button class="quiz-next-btn" id="quiz-next" onclick="nextQuestion()">'+(quizState.current+1<quizState.questions.length?'Next &#x2192;':'Results &#x1F3C6;')+'</button>';}else if(quizState.screen==='score'){var sc=quizState.score,tot=quizState.questions.length,pct2=Math.round(sc/tot*100);var msg=pct2===100?'Perfect! &#x1F3C6;':pct2>=80?'Excellent! &#x1F44F;':pct2>=60?'Good Work! &#x1F44D;':pct2>=40?'Keep Practising &#x1F4AA;':'Review the material &#x1F4DA;';var rev=quizState.questions.map(function(q,i){var ok=quizState.wrongs.indexOf(i)===-1;return '<div class="review-item '+(ok?'ok':'bad')+'"><span class="review-icon">'+(ok?'&#x2705;':'&#x274C;')+'</span><span>'+q.question+'</span></div>';}).join('');body.innerHTML='<div class="quiz-score-screen"><div class="score-circle"><div class="sc-num">'+sc+'/'+tot+'</div><div class="sc-lbl">'+pct2+'%</div></div><div class="quiz-score-msg">'+msg+'</div><div class="quiz-score-sub">'+(pct2>=80?'Excellent knowledge!':'Review topics you missed and try again.')+'</div><div class="quiz-review">'+rev+'</div><div class="quiz-score-btns"><button class="qsb-retry" onclick="startQuiz()">&#x1F504; Retry</button><button class="qsb-back" onclick="quizState.screen=\'select\';renderQuiz()">&#x2190; Phases</button></div></div>';}}
+function selectQuizPhase(p){quizState.selectedPhase=p==='all'?'all':parseInt(p);renderQuiz();}
+function startQuiz(){var ph=quizState.selectedPhase;var pool=ph==='all'?ALL_QUIZ.slice():ALL_QUIZ.filter(function(q){return q.phase===ph;});for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}pool=pool.slice(0,ph==='all'?12:Math.min(pool.length,6));quizState=Object.assign({},quizState,{screen:'question',questions:pool,current:0,answered:false,score:0,wrongs:[]});renderQuiz();}
+function answerQuiz(sel){if(quizState.answered)return;quizState.answered=true;var q=quizState.questions[quizState.current];var ok=q.answer===sel;if(ok)quizState.score++;else quizState.wrongs.push(quizState.current);q.options.forEach(function(_,i){var b=document.getElementById('opt-'+i);b.disabled=true;b.className='quiz-option '+(i===q.answer?'correct':i===sel&&!ok?'wrong':'reveal');});document.getElementById('quiz-exp').classList.add('show');document.getElementById('quiz-next').classList.add('show');}
+function nextQuestion(){quizState.current++;if(quizState.current>=quizState.questions.length){saveQuizScore(quizState.selectedPhase,quizState.score,quizState.questions.length);quizState.screen='score';}else{quizState.answered=false;}renderQuiz();}
+
+function initUser(){onAuthReady(function(user){if(!user)return;currentUser=user.displayName||user.email.split('@')[0];document.getElementById('user-name-display').textContent=currentUser;loadState();build();updateStats();initFirebase();});}
+function countAll(){let total=0,done=0,p1to3=0,p1to3Done=0,p4to6=0,p4to6Done=0;PHASES.forEach((ph,idx)=>{ph.labs.forEach(lab=>{total++;const labDone=lab.steps.every(s=>state.steps[s.id])&&lab.validation.every(v=>state.valChecks[v.id]);if(idx<3){p1to3++;if(labDone)p1to3Done++;}else{p4to6++;if(labDone)p4to6Done++;}if(labDone)done++;});});return{total,done,p1to3,p1to3Done,p4to6,p4to6Done};}
+function countPhase(ph){let s=0,d=0;ph.labs.forEach(lab=>{s+=lab.steps.length+lab.validation.length;d+=lab.steps.filter(x=>state.steps[x.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length;});return{s,d};}
+function updateStats(){const c=countAll();document.getElementById('stat-total').textContent=c.total;document.getElementById('stat-done').textContent=c.done;document.getElementById('stat-p1').textContent=c.p1to3Done+'/'+c.p1to3;document.getElementById('stat-p2').textContent=c.p4to6Done+'/'+c.p4to6;const pct=c.total?Math.round(c.done/c.total*100):0;document.getElementById('stat-pct').textContent=pct+'%';document.getElementById('big-bar-fill').style.width=pct+'%';PHASES.forEach(ph=>{const{s,d}=countPhase(ph);const fill=document.getElementById('ph-fill-'+ph.id);if(fill)fill.style.width=(s?Math.round(d/s*100):0)+'%';});if(c.done===c.total&&c.total>0)document.getElementById('congrats').style.display='flex';}
+function toggleStep(id){state.steps[id]=!state.steps[id];if(!state.steps[id])delete state.steps[id];saveState();renderAll();updateStats();}
+function toggleVal(id){state.valChecks[id]=!state.valChecks[id];if(!state.valChecks[id])delete state.valChecks[id];saveState();renderAll();updateStats();}
+function toggleDetail(btn){const p=btn.closest('.step-row').querySelector('.step-details');if(!p)return;const o=p.classList.toggle('open');btn.classList.toggle('open',o);btn.textContent=o?'Hide ▲':'Details ▼';}
+function toggleNote(btn){const p=btn.closest('.step-row').querySelector('.step-note-panel');if(!p)return;const o=p.classList.toggle('open');btn.classList.toggle('open',o);btn.textContent=o?'Note ▲':'Note ▼';}
+function saveNote(id,val){if(val.trim())state.notes[id]=val;else delete state.notes[id];const btn=document.querySelector('[data-note-btn="'+id+'"]');if(btn)btn.classList.toggle('has-note',!!state.notes[id]);saveState();}
+function saveLabNote(id,val){if(val.trim())state.labNotes[id]=val;else delete state.labNotes[id];saveState();}
+let activeFilter='all';
+function filterTab(f,btn){activeFilter=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.lab-section').forEach(sec=>{sec.style.display=(f==='all'||sec.dataset.cloud===f)?'block':'none';});}
+function renderAll(){document.querySelectorAll('.step-row').forEach(r=>{const id=r.dataset.stepId;if(id)r.classList.toggle('done',!!state.steps[id]);const c=r.querySelector('.step-check');if(c&&id)c.innerHTML=state.steps[id]?'&#x2714;':'';});document.querySelectorAll('.val-row').forEach(r=>{const id=r.dataset.valId;if(id)r.classList.toggle('done',!!state.valChecks[id]);const c=r.querySelector('.val-check');if(c&&id)c.innerHTML=state.valChecks[id]?'&#x2714;':'';});document.querySelectorAll('textarea[data-note-id]').forEach(ta=>{ta.value=state.notes[ta.dataset.noteId]||'';});document.querySelectorAll('[data-note-btn]').forEach(btn=>{btn.classList.toggle('has-note',!!state.notes[btn.dataset.noteBtnId]);});document.querySelectorAll('textarea[data-lab-note]').forEach(ta=>{ta.value=state.labNotes[ta.dataset.labNote]||'';});}
+function build(){const c=document.getElementById('content');c.innerHTML='';PHASES.forEach(ph=>{const card=document.createElement('div');card.className='phase-card';card.id='phase-'+ph.id;const{s,d}=countPhase(ph);const pct=s?Math.round(d/s*100):0;card.innerHTML=`<div class="phase-header" onclick="togglePhase(this)"><div class="phase-header-left"><span class="phase-badge">${ph.badge}</span><div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div></div><div style="display:flex;align-items:center;gap:10px"><div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div><span style="font-size:11px;color:#C4B5FD;min-width:32px;text-align:right">${pct}%</span><span class="chevron">&#x25BC;</span></div></div><div class="phase-body">${ph.labs.map(lab=>buildLab(lab)).join('')}</div>`;c.appendChild(card);});}
+function buildLab(lab){const dS=lab.steps.filter(s=>state.steps[s.id]).length;const dV=lab.validation.filter(v=>state.valChecks[v.id]).length;const tot=lab.steps.length+lab.validation.length;const done=dS+dV;const pct=tot?Math.round(done/tot*100):0;return `<div class="lab-section" id="lab-${lab.id}" data-cloud="${lab.cloud}"><div class="lab-header tf-lab"><span class="lab-cloud-badge tf-badge">TF</span><div class="lab-title-area"><div class="lab-title">${lab.title}</div><div class="lab-meta">${lab.meta} &middot; ${done}/${tot} steps</div></div><div class="lab-stats"><div style="font-size:11px;font-weight:700;color:var(--gray)">${pct}%</div><button class="lab-toggle tf-btn" onclick="toggleLab('lab-${lab.id}')">&#x25BC; Expand</button></div></div><div class="steps-list"><div class="section-lbl">&#x1F527; Lab Steps</div>${lab.steps.map((s,i)=>buildStep(s,i+1)).join('')}<div class="section-lbl" style="margin-top:14px">&#x2705; Validation Checks</div>${lab.validation.map(v=>buildVal(v)).join('')}<div class="section-lbl" style="margin-top:14px">&#x1F4DD; Lab Notes</div><textarea class="notes-area" data-lab-note="${lab.id}" placeholder="Notes..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea></div></div>`;}
+function buildStep(s,num){const done=!!state.steps[s.id];const hD=s.details&&s.details.length>0;const hN=!!state.notes[s.id];return `<div class="step-row${done?' done':''}" data-step-id="${s.id}"><div class="step-check" onclick="toggleStep('${s.id}')">${done?'&#x2714;':''}</div><div class="step-main"><div class="step-top"><span class="step-num">${num}.</span><span class="step-text">${s.text}</span>${hD?`<button class="detail-btn" onclick="toggleDetail(this)">Details &#x25BC;</button>`:''}<button class="note-btn${hN?' has-note':''}" data-note-btn="${s.id}" onclick="toggleNote(this)">Note &#x25BC;</button></div>${hD?`<div class="step-details">${s.details.map((d,i)=>`<div class="detail-item"><span class="di-num">${i+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}<div class="step-note-panel"><textarea class="note-textarea" data-note-id="${s.id}" placeholder="Notes..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea><div class="note-hint">&#x1F4A1; Saved locally; synced if Firebase connected.</div></div></div></div>`;}
+function buildVal(v){const done=!!state.valChecks[v.id];return `<div class="val-row${done?' done':''}" data-val-id="${v.id}" onclick="toggleVal('${v.id}')"><div class="val-check">${done?'&#x2714;':''}</div><span class="step-text">&#x1F4CB; ${v.text}</span></div>`;}
+function togglePhase(h){h.closest('.phase-card').classList.toggle('open');}
+function toggleLab(id){const s=document.getElementById(id);if(!s)return;s.classList.toggle('open');const b=s.querySelector('.lab-toggle');if(b)b.innerHTML=s.classList.contains('open')?'&#x25B2; Collapse':'&#x25BC; Expand';}
+function resetProgress(){if(!confirm('Reset all Terraform lab progress for '+currentUser+'?'))return;state={steps:{},notes:{},labNotes:{},valChecks:{}};saveState();build();updateStats();}
+initUser();
+</script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ansible Lab Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --ans:#CC2200;--ans-dark:#991a00;--ans-light:#FFF0EE;
+  --dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;
+  --green:#16A34A;--green-light:#F0FDF4;
+  --header-bg:#1C1C1C;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#FFF5F5;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}.site-header p{font-size:12px;color:#FCA5A5;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#FCA5A5;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}.stat-block .num{font-size:26px;font-weight:800;line-height:1;}.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:#1C1C1C;}.stat-block.done .num{color:var(--green);}.stat-block.p1 .num{color:#991a00;}.stat-block.p2 .num{color:#CC2200;}
+.big-bar-wrap{flex:1;min-width:200px;}.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#1C1C1C,var(--ans));transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.15);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}.phase-week{font-size:11px;color:#FCA5A5;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#FCA5A5;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.ans-lab{border-left:4px solid var(--ans);background:var(--ans-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.ans-badge{background:var(--ans-dark);}
+.lab-title-area{flex:1;}.lab-title{font-size:13px;font-weight:700;}.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.ans-btn{color:var(--ans-dark);}.lab-toggle.ans-btn:hover{background:var(--ans-dark);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}.step-row.done{background:var(--green-light);}.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--ans);color:var(--ans-dark);}.detail-btn.open{background:var(--ans-light);border-color:var(--ans);color:var(--ans-dark);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#FFF0EE;border-left:3px solid var(--ans);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--ans-dark);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#FFE4E1;padding:1px 4px;border-radius:3px;color:#7f1d1d;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}.note-textarea:focus{outline:none;border-color:#F59E0B;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#FFF0EE;}
+.val-row:hover{background:#FFE4E1;}.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #FCA5A5;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--ans);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#FCA5A5;}.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#FFF0EE;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}.fb-input:focus{outline:none;border-color:var(--ans);background:#FFF0EE;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--ans-dark);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+.lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1500;align-items:center;justify-content:center;}.lb-overlay.open{display:flex;}
+.lb-card{background:white;border-radius:16px;padding:28px 32px;max-width:580px;width:95%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.lb-card h3{font-size:17px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}.lb-sub{font-size:12px;color:var(--gray);margin-bottom:18px;}
+.lb-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.lb-table th{background:var(--header-bg);color:white;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:.4px;}
+.lb-table th:first-child{border-radius:8px 0 0 8px;}.lb-table th:last-child{border-radius:0 8px 8px 0;}
+.lb-table td{padding:9px 12px;border-bottom:1px solid var(--light);}
+.lb-table tr:hover td{background:#FFF0EE;}.lb-table tr.me td{background:#FFE4E1;font-weight:700;}
+.lb-rank{font-size:16px;text-align:center;}.lb-bar-wrap{background:var(--light);border-radius:99px;height:8px;width:80px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:99px;background:var(--ans-dark);transition:width .4s;}
+.lb-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}.lb-btn:hover{background:rgba(255,255,255,.25);}
+.lb-close{margin-top:18px;padding:8px 24px;border-radius:8px;border:none;background:var(--light);color:var(--dark);font-size:12px;font-weight:700;cursor:pointer;}.lb-close:hover{background:#E5E7EB;}.lb-loading{text-align:center;padding:24px;color:var(--gray);font-size:13px;}
+.quiz-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;}.quiz-overlay.open{display:flex;}
+.quiz-modal{background:white;border-radius:18px;max-width:660px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3);overflow:hidden;}
+.quiz-header{background:var(--header-bg);color:white;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.quiz-header h3{font-size:16px;font-weight:800;margin:0;}.quiz-header p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+.quiz-close{background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;}.quiz-close:hover{background:rgba(255,255,255,.28);}.quiz-body{padding:24px;}
+.phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.phase-tile{background:#F8FAFC;border:2px solid #E5E7EB;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .2s;}
+.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#FFF0EE;}.phase-tile.all-tile{border-style:dashed;}
+.pt-num{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
+.pt-name{font-size:12px;font-weight:700;color:var(--header-bg);margin-top:3px;line-height:1.3;}.pt-score{font-size:10px;color:#16A34A;margin-top:4px;font-weight:700;}
+.quiz-start-btn{width:100%;padding:12px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}.quiz-start-btn:hover{filter:brightness(1.15);}.quiz-start-btn:disabled{opacity:.4;cursor:not-allowed;}
+.quiz-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}.quiz-prog-bar{flex:1;background:var(--light);border-radius:99px;height:8px;overflow:hidden;}
+.quiz-prog-fill{height:100%;border-radius:99px;background:var(--header-bg);transition:width .4s;}.quiz-prog-txt{font-size:11px;font-weight:700;color:var(--gray);min-width:48px;text-align:right;}
+.quiz-question{font-size:15px;font-weight:700;color:var(--dark);line-height:1.5;margin-bottom:18px;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.quiz-option{padding:12px 16px;border-radius:10px;border:2px solid #E5E7EB;background:#FAFAFA;cursor:pointer;font-size:13px;line-height:1.4;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px;}
+.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#FFF0EE;}.quiz-option:disabled{cursor:default;}
+.quiz-option.correct{border-color:#16A34A;background:#F0FDF4;color:#16A34A;}.quiz-option.wrong{border-color:#EF4444;background:#FFF1F2;color:#DC2626;}
+.quiz-option.reveal{border-color:#16A34A;background:#F0FDF4;opacity:.7;}
+.quiz-option.correct .opt-letter,.quiz-option.reveal .opt-letter{background:#16A34A;color:white;}.quiz-option.wrong .opt-letter{background:#EF4444;color:white;}
+.opt-letter{width:22px;height:22px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.quiz-explanation{background:#FFF0EE;border-left:3px solid var(--ans);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}.quiz-explanation.show{display:block;}
+.quiz-next-btn{width:100%;padding:10px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}.quiz-next-btn.show{display:block;}
+.quiz-score-screen{text-align:center;padding:10px 0;}
+.score-circle{width:90px;height:90px;border-radius:50%;background:var(--header-bg);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:14px;}
+.sc-num{font-size:22px;font-weight:800;color:white;line-height:1;}.sc-lbl{font-size:11px;color:rgba(255,255,255,.75);}
+.quiz-score-msg{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}.quiz-score-sub{font-size:12px;color:var(--gray);margin-bottom:20px;}
+.quiz-review{text-align:left;margin-bottom:16px;max-height:200px;overflow-y:auto;}
+.review-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:12px;line-height:1.4;}
+.review-item.bad{color:#DC2626;}.review-item.ok{color:#16A34A;}.review-icon{flex-shrink:0;}
+.quiz-score-btns{display:flex;gap:10px;}.quiz-score-btns button{flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;}
+.qsb-retry{background:var(--header-bg);color:white;}.qsb-back{background:var(--light);color:var(--dark);}
+.quiz-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}.quiz-btn:hover{background:rgba(255,255,255,.25);}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F9F0; Ansible Lab Tracker</h1>
+      <p>Red Hat Ansible Automation Platform &middot; 6-Phase Deep Dive &middot; Playbooks, Roles, Vault, AWX/AAP &amp; CI/CD</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+      <a href="terraform.html" class="nav-link">&#x1F7E3; Terraform</a>
+      <a href="arm-bicep.html" class="nav-link">&#x1F4D0; ARM/Bicep</a>
+      <a href="pulumi.html" class="nav-link">&#x1F7E1; Pulumi</a>
+      <span id="user-chip" class="user-chip">&#x1F464; <span id="user-name-display">...</span></span>
+      <button class="quiz-btn" onclick="openQuiz()">&#x1F9E0; Quiz</button>
+      <button class="lb-btn" onclick="openLeaderboard()">&#x1F3C6; Leaderboard</button>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+<div class="lb-overlay" id="lb-overlay" onclick="if(event.target===this)closeLb()">
+  <div class="lb-card"><h3>&#x1F3C6; Team Leaderboard</h3><p class="lb-sub">Live Ansible progress across all teammates</p><div id="lb-body"><div class="lb-loading">&#x21BB; Loading&hellip;</div></div><button class="lb-close" onclick="closeLb()">Close</button></div>
+</div>
+<div class="quiz-overlay" id="quiz-overlay" onclick="if(event.target===this)closeQuiz()">
+  <div class="quiz-modal">
+    <div class="quiz-header"><div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your Ansible knowledge</p></div><button class="quiz-close" onclick="closeQuiz()">&#x2715; Close</button></div>
+    <div class="quiz-body" id="quiz-body"></div>
+  </div>
+</div>
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3><p class="fb-desc">Sync Ansible lab progress across devices.</p>
+    <div class="fb-steps"><b>Quick setup:</b><br>1. console.firebase.google.com &rarr; Create project<br>2. Realtime Database &rarr; Create (test mode)<br>3. Project Settings &rarr; Web app &rarr; copy config</div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey" /><input class="fb-input" id="fb-databaseURL" placeholder="databaseURL" /><input class="fb-input" id="fb-projectId" placeholder="projectId" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions"><button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button><button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button><button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button></div>
+  </div>
+</div>
+<div id="congrats"><div class="card"><span class="emoji">&#x1F3C6;</span><h2>Ansible Expert!</h2><p>You've completed all Ansible labs!</p><button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button></div></div>
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
+  <div class="big-bar-wrap"><div class="big-bar-label"><span>Overall Ansible Progress</span><span id="stat-pct">0%</span></div><div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div></div>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab" onclick="filterTab('ans',this)">&#x1F9F0; Ansible Labs</button>
+</div>
+<div id="content"></div>
+<script>
+(function(){var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);onAuthReady(function(user){if(user){clearTimeout(t);document.body.style.visibility='visible';}else{window.location.href='../personal_site/login.html';}});})();
+
+const PHASES=[
+  {id:'p1',badge:'PHASE 1',title:'Architecture, Inventory & Ad-Hoc Commands',week:'Week 1',labs:[
+    {id:'p1-setup',cloud:'ans',title:'Control Node Setup, Inventory & Connectivity',meta:'Install Ansible, build inventory, configure SSH, test with ping module and ad-hoc commands',
+     steps:[
+      {id:'p1-s-s1',text:'Install Ansible on the control node and verify installation',details:['RHEL/CentOS: sudo dnf install ansible-core -y; Ubuntu: sudo apt install ansible -y','pip: pip install ansible (installs core + community collections)','Verify: ansible --version; shows version, Python path, config file location','Config file precedence: ./ansible.cfg > ~/.ansible.cfg > /etc/ansible/ansible.cfg','Minimal ansible.cfg: [defaults] inventory = ./inventory; remote_user = ansible; host_key_checking = False','ANSIBLE_CONFIG env var: overrides all config file paths']},
+      {id:'p1-s-s2',text:'Create and structure an inventory file (INI and YAML formats)',details:['INI format: [webservers]\nweb01 ansible_host=192.168.1.10\nweb02 ansible_host=192.168.1.11\n\n[dbservers]\ndb01 ansible_host=192.168.1.20','Group of groups: [datacenter:children]\nwebservers\ndbservers','YAML inventory: all: children: webservers: hosts: web01: ansible_host: 192.168.1.10','Dynamic inventory: script or plugin that returns JSON (AWS, Azure, GCP plugins available)','ansible-inventory --list: shows parsed inventory in JSON; --graph: shows hierarchy','Inventory variables: ansible_user, ansible_port, ansible_ssh_private_key_file, ansible_become']},
+      {id:'p1-s-s3',text:'Configure SSH key-based authentication to managed nodes',details:['Generate key: ssh-keygen -t ed25519 -C "ansible" (on control node)','Copy to managed nodes: ssh-copy-id -i ~/.ssh/id_ed25519.pub ansible@web01','Dedicated ansible service account: useradd -m ansible; add to sudoers: ansible ALL=(ALL) NOPASSWD:ALL','ansible.cfg: private_key_file = ~/.ssh/id_ed25519; remote_user = ansible','SSH agent: eval $(ssh-agent); ssh-add ~/.ssh/id_ed25519 (for passphrase-protected keys)','Verify: ssh ansible@web01 (should connect without password)']},
+      {id:'p1-s-s4',text:'Test connectivity and run ad-hoc commands with core modules',details:['Ping all: ansible all -m ping (returns pong if SSH and Python available on target)','Shell command: ansible webservers -m shell -a "uptime"','Copy file: ansible all -m copy -a "src=/tmp/test.txt dest=/tmp/test.txt mode=0644"','Package: ansible all -m package -a "name=vim state=present" -b (--become for sudo)','Service: ansible all -m service -a "name=nginx state=started enabled=yes" -b','File info: ansible web01 -m setup (returns all gathered facts — OS, IPs, CPU, memory)']},
+      {id:'p1-s-s5',text:'Understand Ansible facts and configure fact caching',details:['Facts gathered automatically at play start: ansible_os_family, ansible_hostname, ansible_default_ipv4','gather_facts: false in play to skip (speeds up plays that don\'t need facts)','Custom facts: create /etc/ansible/facts.d/custom.fact (INI or JSON); accessible as ansible_local','Fact caching: ansible.cfg [defaults] fact_caching = jsonfile; fact_caching_connection = /tmp/facts_cache; fact_caching_timeout = 86400','Use cached facts for faster playbook runs against stable infrastructure','ansible -m setup web01 -a "filter=ansible_os*": filter specific facts']},
+     ],
+     validation:[
+      {id:'p1-s-v1',text:'ansible all -m ping returns pong from all inventory hosts'},
+      {id:'p1-s-v2',text:'INI and YAML inventory both parse correctly (ansible-inventory --list)'},
+      {id:'p1-s-v3',text:'Ad-hoc commands (package, service, copy) run without password prompts'},
+      {id:'p1-s-v4',text:'ansible_facts visible for all managed nodes'},
+      {id:'p1-s-v5',text:'Inventory groups (webservers, dbservers) correctly target subset of hosts'},
+     ]}
+  ]},
+  {id:'p2',badge:'PHASE 2',title:'Playbooks, Variables & Handlers',week:'Week 1-2',labs:[
+    {id:'p2-playbooks',cloud:'ans',title:'Writing Idempotent Playbooks with Variables & Handlers',meta:'Build playbooks with vars, notify/handlers, conditionals, loops, and check mode',
+     steps:[
+      {id:'p2-p-s1',text:'Write a playbook with tasks, handlers, and notify to install and configure nginx',details:['Playbook structure: ---\n- name: Configure web server\n  hosts: webservers\n  become: true\n  tasks:\n    - name: Install nginx\n      package: name=nginx state=present\n      notify: Restart nginx\n  handlers:\n    - name: Restart nginx\n      service: name=nginx state=restarted','Handlers run at end of play (or with meta: flush_handlers); only run once even if notified multiple times','Handler only fires when the notifying task reports "changed" — not when state is already correct (idempotency)','Multiple notify: a single task can notify multiple handlers','listen: handlers can listen on a topic name instead of handler name (decoupling)','ansible-playbook site.yml --diff: shows file diffs; --check: dry run (no changes)']},
+      {id:'p2-p-s2',text:'Define and use variables at multiple levels (playbook, vars_files, group_vars, host_vars)',details:['vars in playbook: vars: http_port: 80; app_name: myapp','vars_files: - vars/main.yml (separate file for cleaner playbooks)','group_vars/webservers.yml: applies to webservers group; group_vars/all.yml: applies to all hosts','host_vars/web01.yml: applies to web01 only; useful for host-specific config','Variable precedence (low to high): role defaults → inventory → group_vars → host_vars → play vars → extra_vars (-e)','Extra vars: ansible-playbook site.yml -e "env=prod version=2.1" — always wins']},
+      {id:'p2-p-s3',text:'Use register, when conditions, and failed_when/changed_when',details:['register: result: captures task output (stdout, stderr, rc, changed)','when: result.rc == 0: run next task only if previous command succeeded','when: ansible_os_family == "Debian": conditional based on facts','failed_when: result.rc not in [0, 1]: treat specific return codes as success','changed_when: false: mark task as never changed (for idempotent read-only commands)','combine: when: result.stdout | length > 0 and ansible_hostname == "web01"']},
+      {id:'p2-p-s4',text:'Implement loops with loop, with_items, and loop_control',details:['loop: - apache2\n  - nginx\n  - php: installs each package (each.item is current item)','with_items (legacy): equivalent to loop with a list','Nested loops: loop: "{{ matrix | product(variants) | list }}" (Jinja2 product filter)','loop_control: label: "{{ item.name }}": custom label shown in output (for complex items)','loop_control: loop_var: pkg_item: rename loop variable to avoid conflict in nested includes','dict2items: loop: "{{ my_dict | dict2items }}": iterate over dictionary keys/values']},
+      {id:'p2-p-s5',text:'Use tags and run playbooks in check/diff mode for safe operations',details:['tags: [install, deploy]: mark tasks for selective execution','ansible-playbook site.yml --tags install: run only tagged tasks','ansible-playbook site.yml --skip-tags deploy: skip tagged tasks','ansible-playbook site.yml --list-tasks: shows all tasks without running','ansible-playbook site.yml --check --diff: dry run with diff output (safe preview)','always tag: tasks tagged "always" run regardless of --tags filter (use for critical setup tasks)']},
+     ],
+     validation:[
+      {id:'p2-p-v1',text:'Playbook is idempotent — second run shows all "ok", zero "changed"'},
+      {id:'p2-p-v2',text:'Handler fires on first run (config change) but not second (no change)'},
+      {id:'p2-p-v3',text:'group_vars and host_vars override each other correctly (host_vars wins)'},
+      {id:'p2-p-v4',text:'loop installs multiple packages; loop_control shows clean output'},
+      {id:'p2-p-v5',text:'--check --diff shows changes without modifying hosts'},
+     ]}
+  ]},
+  {id:'p3',badge:'PHASE 3',title:'Roles, Galaxy & Collections',week:'Week 2',labs:[
+    {id:'p3-roles',cloud:'ans',title:'Creating Roles, Using Galaxy & Installing Collections',meta:'Build reusable roles, publish to Galaxy, consume community roles, install collections',
+     steps:[
+      {id:'p3-r-s1',text:'Create a role using ansible-galaxy init and understand directory structure',details:['ansible-galaxy init roles/webserver: creates standard skeleton','Structure: tasks/main.yml, handlers/main.yml, defaults/main.yml, vars/main.yml, templates/, files/, meta/main.yml','tasks/main.yml: main task list for the role','defaults/main.yml: lowest-priority variables; callers can override these','vars/main.yml: higher-priority variables; harder to override (use for internal role constants)','meta/main.yml: role metadata — author, license, dependencies (other roles this role requires)']},
+      {id:'p3-r-s2',text:'Define role tasks, handlers, templates, and defaults',details:['tasks/main.yml: - include_tasks: install.yml (split into install/configure/service sub-task files)','templates/nginx.conf.j2: Jinja2 template; variables expand when template module renders it','files/index.html: static files copied with copy module','defaults/main.yml: nginx_port: 80; nginx_worker_processes: auto','handlers/main.yml: - name: reload nginx; service: name=nginx state=reloaded','Role tags: include tags in task files so callers can filter role tasks']},
+      {id:'p3-r-s3',text:'Install and use community roles from Ansible Galaxy',details:['Search: ansible-galaxy search nginx --author geerlingguy','Install: ansible-galaxy install geerlingguy.nginx (downloads to ~/.ansible/roles/ or roles/)','requirements.yml: - src: geerlingguy.nginx; version: "3.2.0" (pin versions)','Install from requirements: ansible-galaxy install -r requirements.yml','Use in playbook: roles: - geerlingguy.nginx (after install)','Galaxy API: galaxy.ansible.com — browse quality scores, downloads, GitHub links']},
+      {id:'p3-r-s4',text:'Install and use Ansible Collections',details:['Collections package: roles + modules + plugins + playbooks in a namespace.name format','Install: ansible-galaxy collection install community.general community.docker','requirements.yml collections section: collections: - name: community.general; version: ">=7.0.0"','Use module from collection: community.docker.docker_container: name: nginx; image: nginx:latest','Installed at: ~/.ansible/collections/ or ./collections/','ansible-galaxy collection list: shows installed collections; ansible-galaxy collection install --upgrade: updates']},
+      {id:'p3-r-s5',text:'Manage role dependencies and test roles with Molecule',details:['meta/main.yml dependencies: - role: geerlingguy.java; when: ansible_os_family == "RedHat"','Dependencies resolve recursively and run before the declaring role','Molecule: pip install molecule[docker]; molecule init role roles/webserver','Molecule workflow: molecule create (spin up Docker containers) → molecule converge (run role) → molecule verify (run tests) → molecule destroy','molecule test: full lifecycle in one command','Molecule uses testinfra or Ansible for assertions: check port open, service running, file exists']},
+     ],
+     validation:[
+      {id:'p3-r-v1',text:'Custom role created, structured correctly, and called from playbook'},
+      {id:'p3-r-v2',text:'Role defaults overridden via group_vars without modifying role code'},
+      {id:'p3-r-v3',text:'Galaxy role installed via requirements.yml with pinned version'},
+      {id:'p3-r-v4',text:'Collection module (community.general or community.docker) used in playbook'},
+      {id:'p3-r-v5',text:'Molecule converge passes; verify tests assert service running and port open'},
+     ]}
+  ]},
+  {id:'p4',badge:'PHASE 4',title:'Advanced Modules, Jinja2 & Error Handling',week:'Week 2-3',labs:[
+    {id:'p4-advanced',cloud:'ans',title:'Jinja2 Templates, block/rescue, delegate_to & Dynamic Vars',meta:'Master Jinja2 templating, structured error handling, delegation patterns, and dynamic variable management',
+     steps:[
+      {id:'p4-a-s1',text:'Use the template module with Jinja2 for configuration file generation',details:['templates/nginx.conf.j2: server { listen {{ nginx_port }}; server_name {{ ansible_hostname }}; }','template module: src=nginx.conf.j2; dest=/etc/nginx/nginx.conf; owner=root; mode=0644','Jinja2 filters: {{ var | upper }}, {{ list | join(",") }}, {{ dict | dict2items }}, {{ value | default("fallback") }}','Conditionals in template: {% if ansible_os_family == "Debian" %}apt{% else %}yum{% endif %}','Loop in template: {% for server in upstream_servers %}server {{ server }};{% endfor %}','Validate option: validate: nginx -t -c %s (tests config before installing to dest)']},
+      {id:'p4-a-s2',text:'Implement block/rescue/always for structured error handling',details:['block: groups tasks; rescue: runs on failure of any block task; always: runs regardless','block:\n  - name: Try risky operation\n    command: /script.sh\nrescue:\n  - name: Rollback\n    command: /rollback.sh\nalways:\n  - name: Cleanup temp files\n    file: path=/tmp/work state=absent','ignore_errors: true: task continues on failure; use with register to check result later','any_errors_fatal: true: if any host fails, stop playbook on ALL hosts (not just failed host)','max_fail_percentage: 20: fail play if more than 20% of hosts fail a task','serial: 1: rolling updates — process one host at a time (useful with block/rescue)']},
+      {id:'p4-a-s3',text:'Use delegate_to, run_once, and local_action for special execution patterns',details:['delegate_to: localhost: run this task on control node instead of target (e.g., DNS update, load balancer config)','run_once: true: run task on first host in inventory only (with delegate_to for control node tasks)','local_action: equivalent to delegate_to: localhost (older syntax)','Use case: remove server from load balancer (delegate to control node) → apply patch → add back','delegate_facts: true: gathered facts attributed to original host, not delegate','inventory_hostname vs ansible_hostname: inventory_hostname is the name in inventory; ansible_hostname is from OS facts']},
+      {id:'p4-a-s4',text:'Use set_fact, include_vars, and include_tasks for dynamic variable management',details:['set_fact: app_version: "{{ result.stdout | trim }}": creates a variable from task output','set_fact with cacheable: yes: persists across play (like gather_facts)','include_vars: "{{ ansible_os_family }}.yml": load OS-specific variables dynamically','include_tasks: configure_{{ ansible_os_family }}.yml: include OS-specific task files','import_tasks vs include_tasks: import = static (parse time); include = dynamic (runtime); use include for conditional inclusion','add_host: adds a discovered host to a group during playbook run (useful after provisioning)']},
+      {id:'p4-a-s5',text:'Use tags, flush_handlers, and meta tasks for play flow control',details:['meta: flush_handlers: forces all pending handlers to run immediately (before end of play)','meta: end_play: stops play for current host batch; meta: end_batch: stops current batch','meta: clear_facts: clears cached facts (useful when playbook modifies the host significantly)','tags: always: task always runs regardless of --tags filter (for pre/post setup)','ansible-playbook --start-at-task "Configure nginx": start playbook from a specific task','ansible-playbook --step: prompt before each task (useful for debugging complex playbooks)']},
+     ],
+     validation:[
+      {id:'p4-a-v1',text:'Jinja2 template renders correctly with host variables; validate option checks config'},
+      {id:'p4-a-v2',text:'block/rescue handles task failure gracefully; always section runs in both success/failure'},
+      {id:'p4-a-v3',text:'delegate_to runs task on control node while iterating managed hosts'},
+      {id:'p4-a-v4',text:'include_vars loads OS-appropriate variables based on ansible_os_family'},
+     ]}
+  ]},
+  {id:'p5',badge:'PHASE 5',title:'Ansible Vault & Secret Management',week:'Week 3-4',labs:[
+    {id:'p5-vault',cloud:'ans',title:'ansible-vault, vault-id & HashiCorp Vault Integration',meta:'Encrypt secrets with ansible-vault, manage multiple vault passwords, retrieve secrets from HashiCorp Vault',
+     steps:[
+      {id:'p5-v-s1',text:'Encrypt sensitive variables with ansible-vault create and encrypt_string',details:['ansible-vault create group_vars/all/vault.yml: creates new encrypted file','ansible-vault encrypt existing_file.yml: encrypts existing YAML file','ansible-vault encrypt_string "MyS3cret" --name db_password: creates inline encrypted variable','ansible-vault edit vault.yml: opens in $EDITOR for modification','ansible-vault view vault.yml: decrypts to stdout for viewing','Store vault password in ~/.vault_pass (not in repo!); ansible.cfg: vault_password_file = ~/.vault_pass']},
+      {id:'p5-v-s2',text:'Use vault-encrypted variables in playbooks transparently',details:['Separate vault file pattern: group_vars/all/vars.yml (plain) + group_vars/all/vault.yml (encrypted)','In vars.yml: db_password: "{{ vault_db_password }}"; in vault.yml: vault_db_password: "encrypted-value"','This pattern: commit both files; plaintext file shows structure; vault file hides values','ansible-playbook site.yml --ask-vault-pass: prompt at runtime','ansible-playbook site.yml --vault-password-file=~/.vault_pass: file-based (for automation)','Ansible will auto-decrypt vault-encrypted files when variables are loaded']},
+      {id:'p5-v-s3',text:'Use vault-id for multiple vault passwords (dev vs prod)',details:['vault-id label format: ansible-vault create --vault-id dev@prompt vault_dev.yml','Store passwords: --vault-id dev@~/.vault_pass_dev --vault-id prod@~/.vault_pass_prod','ansible-playbook site.yml --vault-id dev@~/.vault_pass_dev --vault-id prod@~/.vault_pass_prod','Each encrypted file is labeled with its vault-id; Ansible uses correct password automatically','Use case: shared repo with dev team seeing dev secrets but not prod secrets','ansible-vault rekey --new-vault-id prod@prompt vault_prod.yml: change vault password']},
+      {id:'p5-v-s4',text:'Integrate Ansible with HashiCorp Vault for dynamic secret retrieval',details:['Install: ansible-galaxy collection install community.hashi_vault','Set env: VAULT_ADDR=https://vault.example.com; VAULT_TOKEN=s.xxx (or use approle auth)','Lookup plugin: db_password: "{{ lookup(\'community.hashi_vault.hashi_vault\', \'secret=secret/data/db:password\') }}"','Advantages over ansible-vault: secrets not stored in repo AT ALL; auto-rotation; audit trail','approle auth: generate role_id and secret_id; more secure than token for automation','Vault namespaces: lookup supports namespace parameter for Vault Enterprise']},
+      {id:'p5-v-s5',text:'Best practices: vault in CI/CD pipelines and secret rotation',details:['CI/CD: store vault password as pipeline secret (GitHub Actions secret, GitLab CI variable)','Inject at runtime: ansible-playbook -e @secrets.yml --vault-password-file <(echo $VAULT_PASS)','Never commit unencrypted vault files; use pre-commit hooks: ansible-vault check','Rotation: ansible-vault rekey --new-vault-password-file new_pass.txt vault.yml','Audit: grep -r "vault_" group_vars/: confirms all secrets are vault-prefixed and encrypted','Consider external secrets (HashiCorp Vault, AWS Secrets Manager) for large orgs — ansible-vault for small teams']},
+     ],
+     validation:[
+      {id:'p5-v-v1',text:'ansible-vault encrypted file committed; git log shows encrypted content'},
+      {id:'p5-v-v2',text:'Playbook runs with vault password file; secrets decrypted and used transparently'},
+      {id:'p5-v-v3',text:'vault-id allows different passwords for dev and prod vault files'},
+      {id:'p5-v-v4',text:'HashiCorp Vault lookup retrieves secret dynamically at playbook run time'},
+     ]}
+  ]},
+  {id:'p6',badge:'PHASE 6',title:'AWX / Ansible Automation Platform & CI/CD',week:'Week 4-5',labs:[
+    {id:'p6-awx',cloud:'ans',title:'AWX Setup, Job Templates & API-driven Automation',meta:'Deploy AWX, configure projects/inventories/credentials, build workflow templates, trigger via API',
+     steps:[
+      {id:'p6-a-s1',text:'Deploy AWX using the AWX Operator on Kubernetes',details:['Prerequisites: Kubernetes cluster (k3s or minikube for lab), kubectl, kustomize','Install operator: kustomize build . | kubectl apply -f -','Wait for pods: kubectl get pods -n awx — awx-operator and awx pods should be Running','Default admin password: kubectl get secret awx-admin-password -o jsonpath="{.data.password}" | base64 -d','AWX Web UI: http://<nodeIP>:30080 — admin / <retrieved-password>','Production: deploy with persistent storage (PVC), PostgreSQL, ingress/SSL, resource limits']},
+      {id:'p6-a-s2',text:'Configure projects, inventories, and credentials in AWX',details:['Project: source control configuration; URL: git@github.com:org/ansible-playbooks.git; branch: main','AWX clones repo on job launch (or on schedule); credential: Machine Credential or SCM Credential','Inventory: create inventory; add source (SCM, dynamic AWS/Azure, or manual); sync to discover hosts','Machine Credential: SSH key or username/password for connecting to managed nodes','Vault Credential: vault password or vault-id for decrypting ansible-vault secrets','Save everything in AWX; playbooks and roles in Git; do NOT upload playbooks via AWX UI']},
+      {id:'p6-a-s3',text:'Create Job Templates with survey forms for parameterized deployments',details:['Job Template: name, project, playbook file, inventory, credentials, verbosity, limits','Survey: adds form questions that set extra_vars at job launch time','Survey question types: text, integer, password (hidden), choice, multi-select','Example survey: "Deploy version?" → text input → maps to app_version extra var','Prompt on launch: for variables you don\'t want hardcoded but also not a full survey','Job Template tags: --tags extra_var lets callers filter tags via API or UI']},
+      {id:'p6-a-s4',text:'Build Workflow Job Templates for multi-stage deployments',details:['Workflow Job Template: chains multiple job templates with success/failure paths','Example: Test → (success) → Deploy Staging → (success) → Approval Gate → Deploy Prod','Approval node: workflow pauses for human approval before continuing (AWX Enterprise / AAP feature)','Workflow variables: pass extra vars from one job to the next via set_stats module in playbooks','set_stats: data: { "deploy_version": "{{ app_version }}" } aggregate: yes','Workflow can include inventory sync, project update, and job template nodes in the same flow']},
+      {id:'p6-a-s5',text:'Trigger AWX jobs via REST API from CI/CD pipelines',details:['AWX API: /api/v2/ — browse all endpoints','Launch job template: POST /api/v2/job_templates/{id}/launch/ with JSON body {"extra_vars": {"env": "prod"}}','Authentication: Bearer token (create in AWX → Users → Tokens) or Basic auth','Check job status: GET /api/v2/jobs/{job_id}/ → status field: pending/running/successful/failed','Wait for completion: poll status every 10 seconds until terminal state','GitHub Actions example: curl -s -X POST -H "Authorization: Bearer $AWX_TOKEN" -H "Content-Type: application/json" -d \'{"extra_vars":{"version":"$VERSION"}}\' ${AWX_URL}/api/v2/job_templates/5/launch/']},
+     ],
+     validation:[
+      {id:'p6-a-v1',text:'AWX accessible; project syncs from Git repo successfully'},
+      {id:'p6-a-v2',text:'Job Template runs playbook with correct inventory and credentials'},
+      {id:'p6-a-v3',text:'Survey form collects input; extra_var used in playbook'},
+      {id:'p6-a-v4',text:'Workflow Template chains 2+ job templates with conditional paths'},
+      {id:'p6-a-v5',text:'API call from CI triggers job template; polls for completion'},
+     ]}
+  ]}
+];
+
+const APP_KEY='ansible_lab_tracker';
+let state={},currentUser=null,db=null,syncRef=null;
+function loadState(){const u=currentUser||'default';const raw=localStorage.getItem(APP_KEY+'_'+u);state=raw?JSON.parse(raw):{steps:{},notes:{},labNotes:{},valChecks:{}};if(!state.steps)state.steps={};if(!state.notes)state.notes={};if(!state.labNotes)state.labNotes={};if(!state.valChecks)state.valChecks={};}
+function saveState(){const u=currentUser||'default';localStorage.setItem(APP_KEY+'_'+u,JSON.stringify(state));pushToFirebase();}
+function initFirebase(){const cfg=JSON.parse(localStorage.getItem('ansible_fb_config')||'null');if(!cfg)return;try{const ex=firebase.apps.find(a=>a.name==='ansible-tracker');const app=ex||firebase.initializeApp(cfg,'ansible-tracker');db=firebase.database(app);syncRef=db.ref('ansible_progress');listenFirebase();setSyncStatus('ok','&#x2714; Synced');}catch(e){setSyncStatus('err','&#x26A0; Sync Error');}}
+function listenFirebase(){if(!syncRef)return;const u=currentUser||'default';syncRef.child(u).on('value',snap=>{const d=snap.val();if(d){state=d;if(!state.steps)state.steps={};if(!state.notes)state.notes={};if(!state.labNotes)state.labNotes={};if(!state.valChecks)state.valChecks={};saveState();renderAll();updateStats();}});}
+function pushToFirebase(){if(!syncRef)return;const u=currentUser||'default';syncRef.child(u).set(state).then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Error'));}
+function setSyncStatus(t,h){const e=document.getElementById('sync-status');e.className='sync-status sync-'+t;e.innerHTML=h;}
+function openFbPanel(){const cfg=JSON.parse(localStorage.getItem('ansible_fb_config')||'null');if(cfg){document.getElementById('fb-apiKey').value=cfg.apiKey||'';document.getElementById('fb-databaseURL').value=cfg.databaseURL||'';document.getElementById('fb-projectId').value=cfg.projectId||'';}document.getElementById('fb-overlay').classList.add('open');}
+function closeFbPanel(){document.getElementById('fb-overlay').classList.remove('open');}
+function saveFbConfig(){const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){showFbMsg('err','Fill all 3 fields.');return;}localStorage.setItem('ansible_fb_config',JSON.stringify(cfg));showFbMsg('ok','Connecting...');initFirebase();setTimeout(closeFbPanel,1000);}
+function clearFbConfig(){localStorage.removeItem('ansible_fb_config');db=null;syncRef=null;setSyncStatus('none','&#x1F4BE; Local Only');closeFbPanel();}
+function showFbMsg(t,m){const e=document.getElementById('fb-msg');e.className='fb-status-msg '+t;e.innerHTML=m;}
+function _lbDb(){var app=(typeof firebase!=='undefined')?firebase.apps.find(function(a){return a.name==='mk-site';}):null;return app?firebase.database(app):null;}
+function openLeaderboard(){document.getElementById('lb-overlay').classList.add('open');document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x21BB; Loading&hellip;</div>';var lbDb=_lbDb();if(!lbDb){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x26A0; Not connected.</div>';return;}lbDb.ref('ansible_progress').once('value').then(function(snap){var all=snap.val();if(!all||!Object.keys(all).length){document.getElementById('lb-body').innerHTML='<div class="lb-loading">No data yet.</div>';return;}var rows=Object.entries(all).map(function(e){var name=e[0],u=e[1],tc=0,dc=0,dl=0;PHASES.forEach(function(ph){ph.labs.forEach(function(lab){var ts=lab.steps.length,tv=lab.validation.length;var ds=lab.steps.filter(function(s){return u.steps&&u.steps[s.id];}).length;var dv=lab.validation.filter(function(v){return u.valChecks&&u.valChecks[v.id];}).length;tc+=ts+tv;dc+=ds+dv;if(ds+dv===ts+tv&&ts+tv>0)dl++;});});return{name:name,tc:tc,dc:dc,dl:dl,pct:tc>0?Math.round(dc/tc*100):0};}).sort(function(a,b){return b.pct-a.pct||b.dl-a.dl;});var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];var html=rows.map(function(r,i){return '<tr class="'+(r.name===currentUser?'me':'')+'"><td class="lb-rank">'+(i<3?medals[i]:'#'+(i+1))+'</td><td><b>'+r.name+'</b></td><td><div style="display:flex;align-items:center;gap:6px"><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:'+r.pct+'%"></div></div><span style="font-size:11px;font-weight:700">'+r.pct+'%</span></div></td><td style="text-align:center">'+r.dl+'</td><td style="text-align:center">'+r.dc+'/'+r.tc+'</td></tr>';}).join('');document.getElementById('lb-body').innerHTML='<table class="lb-table"><thead><tr><th>Rank</th><th>Name</th><th>Progress</th><th>Labs Done</th><th>Checks</th></tr></thead><tbody>'+html+'</tbody></table>';}).catch(function(){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x2717; Failed.</div>';});}
+function closeLb(){document.getElementById('lb-overlay').classList.remove('open');}
+var ALL_QUIZ=[
+  {id:'q1',phase:1,question:'What is the Ansible control node and what is unique about it?',options:['The managed node that runs the Ansible agent daemon','The machine where Ansible is installed and playbooks are executed from; managed nodes require no special agent — only SSH and Python','A dedicated server that stores inventory and variable data for all playbooks','The primary node in an AWX cluster that distributes jobs to worker nodes'],answer:1,explanation:'The control node is where you install Ansible and run ansible-playbook commands. Managed nodes only need SSH access and Python — no agent is installed. This agentless architecture simplifies deployment and reduces attack surface.'},
+  {id:'q2',phase:1,question:'What does the ansible -m ping module actually test?',options:['ICMP ping (latency test to the managed node)','SSH connectivity AND Python availability on the managed node','Whether the managed node\'s ansible agent is running','DNS resolution for all hostnames in the inventory'],answer:1,explanation:'The Ansible ping module tests SSH connectivity to the managed node AND verifies that Python is available (required to run Ansible tasks). It returns "pong" on success. It does NOT test ICMP/network ping.'},
+  {id:'q3',phase:2,question:'When does an Ansible handler run?',options:['Immediately after the task that notifies it','At the end of the entire play, only if the notifying task reported "changed"','On every playbook run regardless of task state','At the beginning of the next play after it is notified'],answer:1,explanation:'Handlers run at the end of the play (or after meta: flush_handlers), and only if a notifying task reported "changed". If the notifying task reports "ok" (already in desired state), the handler does NOT fire. Multiple notifications for the same handler result in only one execution.'},
+  {id:'q4',phase:2,question:'What is the variable precedence order in Ansible (lowest to highest)?',options:['host_vars → group_vars → playbook vars → command-line -e','Role defaults → inventory/group_vars → host_vars → playbook vars → -e extra_vars (highest)','Command-line -e → host_vars → group_vars → role defaults','inventory → role defaults → host_vars → command-line -e'],answer:1,explanation:'Ansible has 22 levels of precedence. The key practical order: role defaults (lowest) → inventory group_vars → group_vars files → host_vars → play vars → include_vars → set_fact → registered vars → role/include params → extra vars (-e flag, highest). Extra vars always win.'},
+  {id:'q5',phase:3,question:'What command creates the standard Ansible role directory structure?',options:['ansible-playbook --init-role rolename','ansible-galaxy role init rolename','ansible create role rolename','ansible-galaxy init roles/rolename'],answer:1,explanation:'"ansible-galaxy role init rolename" (or "ansible-galaxy init rolename") creates the standard role skeleton with directories: tasks/, handlers/, defaults/, vars/, templates/, files/, meta/, tests/. The generated meta/main.yml requires filling in for Galaxy publishing.'},
+  {id:'q6',phase:3,question:'What is the difference between Ansible Roles and Collections?',options:['Roles are for Linux; Collections are for Windows','Roles bundle related tasks/templates/handlers for one purpose; Collections bundle roles + modules + plugins + playbooks into a distributable namespace package','Collections are the old format; Roles are the newer replacement','They are identical — "collection" is just the Ansible Galaxy term for a role'],answer:1,explanation:'A Role focuses on one configuration concern (e.g., install nginx). A Collection is a distribution format that packages multiple roles, custom modules, plugins, and playbooks together under a namespace (e.g., community.docker). Collections are installed with ansible-galaxy collection install.'},
+  {id:'q7',phase:4,question:'In Ansible, what is Jinja2 used for?',options:['Parsing YAML inventory files','Template rendering — substituting variables, applying filters, and using conditionals/loops to generate configuration files and dynamic task values','Managing encrypted vault files','Defining role dependencies and metadata'],answer:1,explanation:'Jinja2 is the templating engine used throughout Ansible for: (1) the template module to generate config files with variable substitution, (2) dynamic task parameters with {{ variable }} syntax, (3) conditionals in when: clauses, and (4) applying filters like | default(), | upper, | join(",").'},
+  {id:'q8',phase:4,question:'What does delegate_to do in an Ansible task?',options:['Runs the task as a different user (sudo escalation)','Runs the task on a different host than the current play host — useful for control-plane operations like load balancer updates while iterating app servers','Delegates the task to the AWX controller instead of the control node','Marks the task as optional — skips it if the target host is unreachable'],answer:1,explanation:'delegate_to runs a specific task on a different host than the one being iterated. Common pattern: iterate over app servers but delegate load balancer add/remove operations to localhost (control node). The host variables (ansible_hostname etc.) still refer to the original host unless delegate_facts: true is set.'},
+  {id:'q9',phase:5,question:'How does ansible-vault protect secrets committed to version control?',options:['It stores secrets in a separate encrypted database outside the repository','It encrypts strings and files using AES-256; the encrypted values are safe to commit to Git and are decrypted at runtime using a vault password','It replaces secrets with references to an external secret store automatically','It creates a hash of secrets that Ansible uses for comparison but cannot be reversed'],answer:1,explanation:'ansible-vault encrypts content using AES-256 symmetric encryption. The encrypted ciphertext is safe to commit to Git — without the vault password, it cannot be decrypted. At runtime, Ansible decrypts vault content transparently when you provide the vault password (via --ask-vault-pass, file, or env var).'},
+  {id:'q10',phase:5,question:'What is vault-id in Ansible and why is it useful?',options:['A unique identifier for each encrypted vault file','A label system that allows multiple vault passwords — different labels for different environments (dev/prod) so each environment\'s secrets use a separate password','The user ID that created the vault encryption','A HashiCorp Vault integration token stored in ansible.cfg'],answer:1,explanation:'vault-id allows labeling encrypted content with an identifier (e.g., dev, prod) and associating each label with a different password. This lets a single playbook have dev secrets (readable by dev team) and prod secrets (only known to ops team) in the same repo without cross-access.'},
+  {id:'q11',phase:6,question:'What is the difference between a Job Template and a Workflow Job Template in AWX?',options:['Job Templates run faster; Workflow Templates support more hosts','A Job Template runs a single playbook against an inventory; a Workflow Job Template chains multiple Job Templates with conditional success/failure paths and approval gates','Workflow Templates require Red Hat subscriptions; Job Templates are free','Job Templates are for ad-hoc commands; Workflow Templates are for scheduled jobs'],answer:1,explanation:'A Job Template is the basic unit that runs one playbook with specified inventory, credentials, and parameters. A Workflow Job Template is a higher-level construct that chains multiple Job Templates (and inventory syncs, approvals) in a directed graph with conditional routing based on success or failure.'},
+  {id:'q12',phase:6,question:'How do you trigger an AWX Job Template from a CI/CD pipeline?',options:['Copy playbooks directly to the AWX server and run them','POST to the AWX REST API endpoint /api/v2/job_templates/{id}/launch/ with an Authorization Bearer token and optional extra_vars JSON body','Use the ansible-playbook --awx flag which auto-discovers and runs via AWX','Configure a webhook in AWX pointing to the CI/CD server'],answer:1,explanation:'The AWX REST API allows programmatic job launching. A POST request to /api/v2/job_templates/{id}/launch/ with an Authorization: Bearer {token} header (token created in AWX UI) launches the job. You can pass extra_vars as JSON in the request body. Poll /api/v2/jobs/{job_id}/ to check completion status.'}
+];
+var quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};
+var QUIZ_LS='ansible_quiz_scores';
+function openQuiz(){document.getElementById('quiz-overlay').classList.add('open');quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};renderQuiz();}
+function closeQuiz(){document.getElementById('quiz-overlay').classList.remove('open');}
+function getQuizScores(){try{return JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');}catch(e){return{};}}
+function saveQuizScore(ph,sc,tot){var s=getQuizScores();var k='p'+ph;if(!s[k]||sc>s[k].best)s[k]={best:sc,total:tot};localStorage.setItem(QUIZ_LS,JSON.stringify(s));}
+function renderQuiz(){var body=document.getElementById('quiz-body');var scores=getQuizScores();var phases=[...new Set(ALL_QUIZ.map(function(q){return q.phase;}))].sort(function(a,b){return a-b;});var tiles=phases.map(function(p){return{phase:p,name:PHASES[p-1]?PHASES[p-1].title:'Phase '+p,count:ALL_QUIZ.filter(function(q){return q.phase===p;}).length};});tiles.push({phase:'all',name:'All Phases',count:ALL_QUIZ.length});if(quizState.screen==='select'){body.innerHTML='<p style="font-size:12px;color:var(--gray);margin-bottom:14px">Select a phase to quiz on.</p><div class="phase-grid">'+tiles.map(function(t){var sc=scores['p'+t.phase];var scH=sc?'<div class="pt-score">Best: '+sc.best+'/'+sc.total+'</div>':'';return '<div class="phase-tile'+(t.phase==='all'?' all-tile':'')+(quizState.selectedPhase===t.phase?' selected':'')+'" onclick="selectQuizPhase(\''+t.phase+'\')"><div class="pt-num">'+(t.phase==='all'?'ALL':'Phase '+t.phase)+'</div><div class="pt-name">'+t.name+'</div><div style="font-size:10px;color:var(--gray);margin-top:3px">'+t.count+' questions</div>'+scH+'</div>';}).join('')+'</div><button class="quiz-start-btn" onclick="startQuiz()" '+(quizState.selectedPhase===null?'disabled':'')+'>&#x1F680; Start Quiz</button>';}else if(quizState.screen==='question'){var q=quizState.questions[quizState.current];var letters=['A','B','C','D'];var pct=Math.round(quizState.current/quizState.questions.length*100);body.innerHTML='<div class="quiz-progress"><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:'+pct+'%"></div></div><span class="quiz-prog-txt">'+(quizState.current+1)+'/'+quizState.questions.length+'</span></div><div class="quiz-question">'+q.question+'</div><div class="quiz-options" id="quiz-opts">'+q.options.map(function(o,i){return '<button class="quiz-option" id="opt-'+i+'" onclick="answerQuiz('+i+')"><span class="opt-letter">'+letters[i]+'</span><span>'+o+'</span></button>';}).join('')+'</div><div class="quiz-explanation" id="quiz-exp"><b>&#x1F4A1;</b> '+q.explanation+'</div><button class="quiz-next-btn" id="quiz-next" onclick="nextQuestion()">'+(quizState.current+1<quizState.questions.length?'Next &#x2192;':'Results &#x1F3C6;')+'</button>';}else if(quizState.screen==='score'){var sc=quizState.score,tot=quizState.questions.length,pct2=Math.round(sc/tot*100);var msg=pct2===100?'Perfect! &#x1F3C6;':pct2>=80?'Excellent! &#x1F44F;':pct2>=60?'Good Work! &#x1F44D;':'Review the material &#x1F4DA;';var rev=quizState.questions.map(function(q,i){var ok=quizState.wrongs.indexOf(i)===-1;return '<div class="review-item '+(ok?'ok':'bad')+'"><span class="review-icon">'+(ok?'&#x2705;':'&#x274C;')+'</span><span>'+q.question+'</span></div>';}).join('');body.innerHTML='<div class="quiz-score-screen"><div class="score-circle"><div class="sc-num">'+sc+'/'+tot+'</div><div class="sc-lbl">'+pct2+'%</div></div><div class="quiz-score-msg">'+msg+'</div><div class="quiz-score-btns"><button class="qsb-retry" onclick="startQuiz()">&#x1F504; Retry</button><button class="qsb-back" onclick="quizState.screen=\'select\';renderQuiz()">&#x2190; Phases</button></div></div>';}}
+function selectQuizPhase(p){quizState.selectedPhase=p==='all'?'all':parseInt(p);renderQuiz();}
+function startQuiz(){var ph=quizState.selectedPhase;var pool=ph==='all'?ALL_QUIZ.slice():ALL_QUIZ.filter(function(q){return q.phase===ph;});for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}pool=pool.slice(0,ph==='all'?12:Math.min(pool.length,6));quizState=Object.assign({},quizState,{screen:'question',questions:pool,current:0,answered:false,score:0,wrongs:[]});renderQuiz();}
+function answerQuiz(sel){if(quizState.answered)return;quizState.answered=true;var q=quizState.questions[quizState.current];var ok=q.answer===sel;if(ok)quizState.score++;else quizState.wrongs.push(quizState.current);q.options.forEach(function(_,i){var b=document.getElementById('opt-'+i);b.disabled=true;b.className='quiz-option '+(i===q.answer?'correct':i===sel&&!ok?'wrong':'reveal');});document.getElementById('quiz-exp').classList.add('show');document.getElementById('quiz-next').classList.add('show');}
+function nextQuestion(){quizState.current++;if(quizState.current>=quizState.questions.length){saveQuizScore(quizState.selectedPhase,quizState.score,quizState.questions.length);quizState.screen='score';}else{quizState.answered=false;}renderQuiz();}
+function initUser(){onAuthReady(function(user){if(!user)return;currentUser=user.displayName||user.email.split('@')[0];document.getElementById('user-name-display').textContent=currentUser;loadState();build();updateStats();initFirebase();});}
+function countAll(){let total=0,done=0,p1to3=0,p1to3Done=0,p4to6=0,p4to6Done=0;PHASES.forEach((ph,idx)=>{ph.labs.forEach(lab=>{total++;const labDone=lab.steps.every(s=>state.steps[s.id])&&lab.validation.every(v=>state.valChecks[v.id]);if(idx<3){p1to3++;if(labDone)p1to3Done++;}else{p4to6++;if(labDone)p4to6Done++;}if(labDone)done++;});});return{total,done,p1to3,p1to3Done,p4to6,p4to6Done};}
+function countPhase(ph){let s=0,d=0;ph.labs.forEach(lab=>{s+=lab.steps.length+lab.validation.length;d+=lab.steps.filter(x=>state.steps[x.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length;});return{s,d};}
+function updateStats(){const c=countAll();document.getElementById('stat-total').textContent=c.total;document.getElementById('stat-done').textContent=c.done;document.getElementById('stat-p1').textContent=c.p1to3Done+'/'+c.p1to3;document.getElementById('stat-p2').textContent=c.p4to6Done+'/'+c.p4to6;const pct=c.total?Math.round(c.done/c.total*100):0;document.getElementById('stat-pct').textContent=pct+'%';document.getElementById('big-bar-fill').style.width=pct+'%';PHASES.forEach(ph=>{const{s,d}=countPhase(ph);const fill=document.getElementById('ph-fill-'+ph.id);if(fill)fill.style.width=(s?Math.round(d/s*100):0)+'%';});if(c.done===c.total&&c.total>0)document.getElementById('congrats').style.display='flex';}
+function toggleStep(id){state.steps[id]=!state.steps[id];if(!state.steps[id])delete state.steps[id];saveState();renderAll();updateStats();}
+function toggleVal(id){state.valChecks[id]=!state.valChecks[id];if(!state.valChecks[id])delete state.valChecks[id];saveState();renderAll();updateStats();}
+function toggleDetail(btn){const p=btn.closest('.step-row').querySelector('.step-details');if(!p)return;const o=p.classList.toggle('open');btn.classList.toggle('open',o);btn.textContent=o?'Hide ▲':'Details ▼';}
+function toggleNote(btn){const p=btn.closest('.step-row').querySelector('.step-note-panel');if(!p)return;const o=p.classList.toggle('open');btn.classList.toggle('open',o);btn.textContent=o?'Note ▲':'Note ▼';}
+function saveNote(id,val){if(val.trim())state.notes[id]=val;else delete state.notes[id];const btn=document.querySelector('[data-note-btn="'+id+'"]');if(btn)btn.classList.toggle('has-note',!!state.notes[id]);saveState();}
+function saveLabNote(id,val){if(val.trim())state.labNotes[id]=val;else delete state.labNotes[id];saveState();}
+let activeFilter='all';
+function filterTab(f,btn){activeFilter=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.lab-section').forEach(sec=>{sec.style.display=(f==='all'||sec.dataset.cloud===f)?'block':'none';});}
+function renderAll(){document.querySelectorAll('.step-row').forEach(r=>{const id=r.dataset.stepId;if(id)r.classList.toggle('done',!!state.steps[id]);const c=r.querySelector('.step-check');if(c&&id)c.innerHTML=state.steps[id]?'&#x2714;':'';});document.querySelectorAll('.val-row').forEach(r=>{const id=r.dataset.valId;if(id)r.classList.toggle('done',!!state.valChecks[id]);const c=r.querySelector('.val-check');if(c&&id)c.innerHTML=state.valChecks[id]?'&#x2714;':'';});document.querySelectorAll('textarea[data-note-id]').forEach(ta=>{ta.value=state.notes[ta.dataset.noteId]||'';});document.querySelectorAll('[data-note-btn]').forEach(btn=>{btn.classList.toggle('has-note',!!state.notes[btn.dataset.noteBtnId]);});document.querySelectorAll('textarea[data-lab-note]').forEach(ta=>{ta.value=state.labNotes[ta.dataset.labNote]||'';});}
+function build(){const c=document.getElementById('content');c.innerHTML='';PHASES.forEach(ph=>{const card=document.createElement('div');card.className='phase-card';card.id='phase-'+ph.id;const{s,d}=countPhase(ph);const pct=s?Math.round(d/s*100):0;card.innerHTML=`<div class="phase-header" onclick="togglePhase(this)"><div class="phase-header-left"><span class="phase-badge">${ph.badge}</span><div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div></div><div style="display:flex;align-items:center;gap:10px"><div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div><span style="font-size:11px;color:#FCA5A5;min-width:32px;text-align:right">${pct}%</span><span class="chevron">&#x25BC;</span></div></div><div class="phase-body">${ph.labs.map(lab=>buildLab(lab)).join('')}</div>`;c.appendChild(card);});}
+function buildLab(lab){const dS=lab.steps.filter(s=>state.steps[s.id]).length;const dV=lab.validation.filter(v=>state.valChecks[v.id]).length;const tot=lab.steps.length+lab.validation.length;const done=dS+dV;const pct=tot?Math.round(done/tot*100):0;return `<div class="lab-section" id="lab-${lab.id}" data-cloud="${lab.cloud}"><div class="lab-header ans-lab"><span class="lab-cloud-badge ans-badge">ANS</span><div class="lab-title-area"><div class="lab-title">${lab.title}</div><div class="lab-meta">${lab.meta} &middot; ${done}/${tot} steps</div></div><div class="lab-stats"><div style="font-size:11px;font-weight:700;color:var(--gray)">${pct}%</div><button class="lab-toggle ans-btn" onclick="toggleLab('lab-${lab.id}')">&#x25BC; Expand</button></div></div><div class="steps-list"><div class="section-lbl">&#x1F527; Lab Steps</div>${lab.steps.map((s,i)=>buildStep(s,i+1)).join('')}<div class="section-lbl" style="margin-top:14px">&#x2705; Validation Checks</div>${lab.validation.map(v=>buildVal(v)).join('')}<div class="section-lbl" style="margin-top:14px">&#x1F4DD; Lab Notes</div><textarea class="notes-area" data-lab-note="${lab.id}" placeholder="Notes..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea></div></div>`;}
+function buildStep(s,num){const done=!!state.steps[s.id];const hD=s.details&&s.details.length>0;const hN=!!state.notes[s.id];return `<div class="step-row${done?' done':''}" data-step-id="${s.id}"><div class="step-check" onclick="toggleStep('${s.id}')">${done?'&#x2714;':''}</div><div class="step-main"><div class="step-top"><span class="step-num">${num}.</span><span class="step-text">${s.text}</span>${hD?`<button class="detail-btn" onclick="toggleDetail(this)">Details &#x25BC;</button>`:''}<button class="note-btn${hN?' has-note':''}" data-note-btn="${s.id}" onclick="toggleNote(this)">Note &#x25BC;</button></div>${hD?`<div class="step-details">${s.details.map((d,i)=>`<div class="detail-item"><span class="di-num">${i+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}<div class="step-note-panel"><textarea class="note-textarea" data-note-id="${s.id}" placeholder="Notes..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea><div class="note-hint">&#x1F4A1; Saved locally.</div></div></div></div>`;}
+function buildVal(v){const done=!!state.valChecks[v.id];return `<div class="val-row${done?' done':''}" data-val-id="${v.id}" onclick="toggleVal('${v.id}')"><div class="val-check">${done?'&#x2714;':''}</div><span class="step-text">&#x1F4CB; ${v.text}</span></div>`;}
+function togglePhase(h){h.closest('.phase-card').classList.toggle('open');}
+function toggleLab(id){const s=document.getElementById(id);if(!s)return;s.classList.toggle('open');const b=s.querySelector('.lab-toggle');if(b)b.innerHTML=s.classList.contains('open')?'&#x25B2; Collapse':'&#x25BC; Expand';}
+function resetProgress(){if(!confirm('Reset all Ansible lab progress for '+currentUser+'?'))return;state={steps:{},notes:{},labNotes:{},valChecks:{}};saveState();build();updateStats();}
+initUser();
+</script>
+</body>
+</html>

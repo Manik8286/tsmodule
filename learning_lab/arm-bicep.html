@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARM / Bicep Lab Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --ab:#00B4D8;--ab-dark:#0077A8;--ab-light:#E0F7FF;
+  --dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;
+  --green:#16A34A;--green-light:#F0FDF4;
+  --header-bg:#0A1628;--header-accent:#00B4D8;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#E8F8FC;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#67E8F9;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#67E8F9;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.stat-block.p1 .num{color:#0077A8;}
+.stat-block.p2 .num{color:#00B4D8;}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--header-bg),#00B4D8);transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#67E8F9;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#00B4D8;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.ab-lab{border-left:4px solid var(--ab);background:var(--ab-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.ab-badge{background:var(--ab-dark);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.ab-btn{color:var(--ab-dark);}
+.lab-toggle.ab-btn:hover{background:var(--ab-dark);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--ab-dark);color:var(--ab-dark);}
+.detail-btn.open{background:var(--ab-light);border-color:var(--ab-dark);color:var(--ab-dark);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#CFFAFE;border-left:3px solid var(--ab);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--ab-dark);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#A5F3FC;padding:1px 4px;border-radius:3px;color:#0E7490;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#CFFAFE;}
+.val-row:hover{background:#A5F3FC;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--ab);background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--ab);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#67E8F9;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#CFFAFE;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:var(--ab);background:#CFFAFE;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--ab-dark);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--ab-dark);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+.lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1500;align-items:center;justify-content:center;}
+.lb-overlay.open{display:flex;}
+.lb-card{background:white;border-radius:16px;padding:28px 32px;max-width:580px;width:95%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.lb-card h3{font-size:17px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.lb-sub{font-size:12px;color:var(--gray);margin-bottom:18px;}
+.lb-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.lb-table th{background:var(--header-bg);color:white;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:.4px;}
+.lb-table th:first-child{border-radius:8px 0 0 8px;}.lb-table th:last-child{border-radius:0 8px 8px 0;}
+.lb-table td{padding:9px 12px;border-bottom:1px solid var(--light);}
+.lb-table tr:hover td{background:#CFFAFE;}.lb-table tr.me td{background:#A5F3FC;font-weight:700;}
+.lb-rank{font-size:16px;text-align:center;}
+.lb-bar-wrap{background:var(--light);border-radius:99px;height:8px;width:80px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:99px;background:var(--ab-dark);transition:width .4s;}
+.lb-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.lb-btn:hover{background:rgba(255,255,255,.25);}
+.lb-close{margin-top:18px;padding:8px 24px;border-radius:8px;border:none;background:var(--light);color:var(--dark);font-size:12px;font-weight:700;cursor:pointer;}
+.lb-close:hover{background:#E5E7EB;}.lb-loading{text-align:center;padding:24px;color:var(--gray);font-size:13px;}
+.quiz-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;}
+.quiz-overlay.open{display:flex;}
+.quiz-modal{background:white;border-radius:18px;max-width:660px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3);overflow:hidden;}
+.quiz-header{background:var(--header-bg);color:white;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.quiz-header h3{font-size:16px;font-weight:800;margin:0;}.quiz-header p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+.quiz-close{background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.quiz-close:hover{background:rgba(255,255,255,.28);}.quiz-body{padding:24px;}
+.phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.phase-tile{background:#F8FAFC;border:2px solid #E5E7EB;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .2s;}
+.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#CFFAFE;}.phase-tile.all-tile{border-style:dashed;}
+.pt-num{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
+.pt-name{font-size:12px;font-weight:700;color:var(--header-bg);margin-top:3px;line-height:1.3;}
+.pt-score{font-size:10px;color:#16A34A;margin-top:4px;font-weight:700;}
+.quiz-start-btn{width:100%;padding:12px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.quiz-start-btn:hover{filter:brightness(1.1);}.quiz-start-btn:disabled{opacity:.4;cursor:not-allowed;}
+.quiz-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.quiz-prog-bar{flex:1;background:var(--light);border-radius:99px;height:8px;overflow:hidden;}
+.quiz-prog-fill{height:100%;border-radius:99px;background:var(--header-bg);transition:width .4px;}
+.quiz-prog-txt{font-size:11px;font-weight:700;color:var(--gray);min-width:48px;text-align:right;}
+.quiz-question{font-size:15px;font-weight:700;color:var(--dark);line-height:1.5;margin-bottom:18px;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.quiz-option{padding:12px 16px;border-radius:10px;border:2px solid #E5E7EB;background:#FAFAFA;cursor:pointer;font-size:13px;line-height:1.4;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px;}
+.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#CFFAFE;}.quiz-option:disabled{cursor:default;}
+.quiz-option.correct{border-color:#16A34A;background:#F0FDF4;color:#16A34A;}
+.quiz-option.wrong{border-color:#EF4444;background:#FFF1F2;color:#DC2626;}
+.quiz-option.reveal{border-color:#16A34A;background:#F0FDF4;opacity:.7;}
+.quiz-option.correct .opt-letter,.quiz-option.reveal .opt-letter{background:#16A34A;color:white;}
+.quiz-option.wrong .opt-letter{background:#EF4444;color:white;}
+.opt-letter{width:22px;height:22px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.quiz-explanation{background:#CFFAFE;border-left:3px solid var(--ab);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}
+.quiz-explanation.show{display:block;}
+.quiz-next-btn{width:100%;padding:10px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}
+.quiz-next-btn.show{display:block;}
+.quiz-score-screen{text-align:center;padding:10px 0;}
+.score-circle{width:90px;height:90px;border-radius:50%;background:var(--header-bg);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:14px;}
+.sc-num{font-size:22px;font-weight:800;color:white;line-height:1;}.sc-lbl{font-size:11px;color:rgba(255,255,255,.75);}
+.quiz-score-msg{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.quiz-score-sub{font-size:12px;color:var(--gray);margin-bottom:20px;}
+.quiz-review{text-align:left;margin-bottom:16px;max-height:200px;overflow-y:auto;}
+.review-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:12px;line-height:1.4;}
+.review-item.bad{color:#DC2626;}.review-item.ok{color:#16A34A;}.review-icon{flex-shrink:0;}
+.quiz-score-btns{display:flex;gap:10px;}
+.quiz-score-btns button{flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;}
+.qsb-retry{background:var(--header-bg);color:white;}.qsb-back{background:var(--light);color:var(--dark);}
+.quiz-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.quiz-btn:hover{background:rgba(255,255,255,.25);}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F4D0; ARM / Bicep Lab Tracker</h1>
+      <p>Azure Resource Manager &amp; Bicep &middot; 6-Phase Deep Dive &middot; Templates, Modules, Stacks, What-If &amp; CI/CD</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+      <a href="terraform.html" class="nav-link">&#x1F7E3; Terraform</a>
+      <a href="ansible.html" class="nav-link">&#x1F9F0; Ansible</a>
+      <a href="pulumi.html" class="nav-link">&#x1F7E1; Pulumi</a>
+      <span id="user-chip" class="user-chip">&#x1F464; <span id="user-name-display">...</span></span>
+      <button class="quiz-btn" onclick="openQuiz()">&#x1F9E0; Quiz</button>
+      <button class="lb-btn" onclick="openLeaderboard()">&#x1F3C6; Leaderboard</button>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+<div class="lb-overlay" id="lb-overlay" onclick="if(event.target===this)closeLb()">
+  <div class="lb-card"><h3>&#x1F3C6; Team Leaderboard</h3><p class="lb-sub">Live ARM/Bicep progress across all teammates</p><div id="lb-body"><div class="lb-loading">&#x21BB; Loading&hellip;</div></div><button class="lb-close" onclick="closeLb()">Close</button></div>
+</div>
+<div class="quiz-overlay" id="quiz-overlay" onclick="if(event.target===this)closeQuiz()">
+  <div class="quiz-modal">
+    <div class="quiz-header"><div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your ARM/Bicep knowledge</p></div><button class="quiz-close" onclick="closeQuiz()">&#x2715; Close</button></div>
+    <div class="quiz-body" id="quiz-body"></div>
+  </div>
+</div>
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Sync ARM/Bicep lab progress across devices.</p>
+    <div class="fb-steps"><b>Quick setup:</b><br>1. console.firebase.google.com &rarr; Create project<br>2. Realtime Database &rarr; Create (test mode)<br>3. Project Settings &rarr; Web app &rarr; copy config</div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey" /><input class="fb-input" id="fb-databaseURL" placeholder="databaseURL" /><input class="fb-input" id="fb-projectId" placeholder="projectId" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions"><button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button><button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button><button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button></div>
+  </div>
+</div>
+<div id="congrats"><div class="card"><span class="emoji">&#x1F3C6;</span><h2>ARM/Bicep Expert!</h2><p>You've completed all ARM/Bicep labs!</p><button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button></div></div>
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
+  <div class="big-bar-wrap"><div class="big-bar-label"><span>Overall ARM/Bicep Progress</span><span id="stat-pct">0%</span></div><div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div></div>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab" onclick="filterTab('ab',this)">&#x1F4D0; ARM/Bicep Labs</button>
+</div>
+<div id="content"></div>
+<script>
+(function(){var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);onAuthReady(function(user){if(user){clearTimeout(t);document.body.style.visibility='visible';}else{window.location.href='../personal_site/login.html';}});})();
+
+const PHASES=[
+  {id:'p1',badge:'PHASE 1',title:'ARM Template Fundamentals',week:'Week 1',labs:[
+    {id:'p1-arm',cloud:'ab',title:'ARM Template Structure, Parameters & Deployment',meta:'Understand JSON template anatomy, deploy via CLI and Portal, use parameters and variables',
+     steps:[
+      {id:'p1-a-s1',text:'Understand ARM template JSON schema and sections',details:['ARM template: JSON file with 6 top-level sections: $schema, contentVersion, parameters, variables, resources, outputs','$schema: https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#','contentVersion: "1.0.0.0" — tracks template version (informational)','resources array: list of resource objects with type, apiVersion, name, location, properties','apiVersion is critical — each resource type has its own API versions; use current stable version','ARM reference: docs.microsoft.com/azure/templates lists all resource types and their API versions']},
+      {id:'p1-a-s2',text:'Define and use parameters to make templates reusable',details:['parameters section: { "storageAccountName": { "type": "string", "minLength": 3, "maxLength": 24, "metadata": { "description": "Globally unique storage account name" } } }','Parameter types: string, securestring, int, bool, object, secureObject, array','defaultValue: "myapp-dev-sa" — used if not supplied at deploy time','allowedValues: ["Standard_LRS", "Premium_LRS"] — restrict valid inputs','Reference in template: "[parameters(\'storageAccountName\')]"','Deploy with: az deployment group create --parameters storageAccountName=mysa123']},
+      {id:'p1-a-s3',text:'Use variables to simplify repeated expressions',details:['variables section: computed values used across the template','{ "storageName": "[concat(parameters(\'prefix\'), \'storage\', uniqueString(resourceGroup().id))]" }','Reference: "[variables(\'storageName\')]"','uniqueString(resourceGroup().id): deterministic 13-char hash — useful for globally unique names','Variables are resolved once at deploy time — not re-evaluated per resource','Use variables for naming patterns, concatenated strings, conditional flags']},
+      {id:'p1-a-s4',text:'Deploy ARM templates via Azure CLI and PowerShell',details:['az deployment group create --resource-group myRG --template-file main.json --parameters @params.json','az deployment group what-if: preview changes before deployment (like terraform plan)','New-AzResourceGroupDeployment -ResourceGroupName myRG -TemplateFile main.json -TemplateParameterFile params.json','Portal: Deploy a custom template → upload template JSON','az deployment group show: view deployment status and outputs','az deployment group list: list all deployments in a resource group']},
+      {id:'p1-a-s5',text:'Define outputs and use template functions',details:['outputs section: { "storageEndpoint": { "type": "string", "value": "[reference(parameters(\'storageName\')).primaryEndpoints.blob]" } }','reference() function: retrieve runtime properties of deployed resources (not available in parameters/variables)','concat(), format(), toLower(), toUpper(), substring(): string manipulation functions','resourceId(): construct resource ID — "[resourceId(\'Microsoft.Storage/storageAccounts\', variables(\'storageName\'))]"','subscription(), resourceGroup(): built-in functions for subscription and RG context','copyIndex(): used with copy element for resource iteration']},
+     ],
+     validation:[
+      {id:'p1-a-v1',text:'ARM template deploys storage account via az deployment group create'},
+      {id:'p1-a-v2',text:'Parameters file used; allowedValues validation rejects invalid input'},
+      {id:'p1-a-v3',text:'variables() used for naming; uniqueString ensures unique resource name'},
+      {id:'p1-a-v4',text:'az deployment group what-if shows correct changes before apply'},
+      {id:'p1-a-v5',text:'Output value visible in deployment result (blob endpoint URL)'},
+     ]}
+  ]},
+  {id:'p2',badge:'PHASE 2',title:'Bicep Language & Syntax',week:'Week 1-2',labs:[
+    {id:'p2-bicep',cloud:'ab',title:'Bicep Syntax, Transpilation & Resource Declarations',meta:'Write Bicep files, use expressions and decorators, transpile to ARM JSON',
+     steps:[
+      {id:'p2-b-s1',text:'Install Bicep CLI and write first .bicep file',details:['az bicep install: installs Bicep CLI','bicep --version: verify install','VS Code extension: Bicep (ms-azuretools.vscode-bicep) — syntax highlighting, IntelliSense, linting','First Bicep file: param storageAccountName string; param location string = resourceGroup().location','resource sa \'Microsoft.Storage/storageAccounts@2023-01-01\' = { name: storageAccountName; location: location; sku: { name: \'Standard_LRS\' }; kind: \'StorageV2\'; properties: {} }','output blobEndpoint string = sa.properties.primaryEndpoints.blob']},
+      {id:'p2-b-s2',text:'Understand Bicep parameter decorators and types',details:['@description(\'Storage account name — globally unique\'): add documentation','@minLength(3) @maxLength(24): validation decorators','@allowed([\'Standard_LRS\', \'Premium_LRS\']): allowedValues equivalent','@secure(): for passwords/secrets — type string; value not shown in logs','param environmentName string = \'dev\': default value with assignment syntax','Type: string, int, bool, array, object, resource (strongly-typed resource references)']},
+      {id:'p2-b-s3',text:'Use Bicep expressions, string interpolation and conditional resources',details:['String interpolation: var storageName = \'${prefix}storage${uniqueString(resourceGroup().id)}\'','Ternary: var sku = (env == \'prod\') ? \'Premium_LRS\' : \'Standard_LRS\'','Conditional resource: resource sa ... = if (deployStorage) { ... }','resource sa ... = if (env != \'test\') { ... }: skip resource in test environment','Existing resources: resource sa \'Microsoft.Storage/storageAccounts@2023-01-01\' existing = { name: existingName }','sa.id, sa.properties: access properties of existing resource (no deployment, read-only reference)']},
+      {id:'p2-b-s4',text:'Transpile Bicep to ARM JSON and deploy',details:['az bicep build --file main.bicep: produces main.json ARM template','az bicep decompile --file main.json: convert ARM JSON to Bicep (best-effort)','az deployment group create --template-file main.bicep: deploy Bicep directly (az CLI handles transpilation)','bicep build-params: validate and build parameter files (.bicepparam)','main.bicepparam: using \'./main.bicep\'; param storageAccountName = \'mystore\'','bicep linter: auto-runs on build; rules for unused params, unnecessary concat, etc.']},
+      {id:'p2-b-s5',text:'Use resource loops and batch sizes',details:['[for storageAccount in storageAccounts: { ... }]: loop over array to create multiple resources','resource sa \'Microsoft.Storage/storageAccounts@2023-01-01\' = [for name in storageNames: { name: name; ... }]','sa[0].properties: reference specific instance','@batchSize(2): decorator to deploy in batches (default: parallel); use for sequential rollout','range(0, 5): generates [0,1,2,3,4] — useful for numeric loops','Loop outputs: output endpoints array = [for i in range(0, length(storageNames)): sa[i].properties.primaryEndpoints.blob]']},
+     ],
+     validation:[
+      {id:'p2-b-v1',text:'Bicep file deploys resource via az deployment group create --template-file main.bicep'},
+      {id:'p2-b-v2',text:'@secure() decorator used for password parameter; not shown in deployment logs'},
+      {id:'p2-b-v3',text:'Conditional resource skips deployment when condition is false'},
+      {id:'p2-b-v4',text:'Resource loop creates multiple storage accounts from array parameter'},
+     ]}
+  ]},
+  {id:'p3',badge:'PHASE 3',title:'Bicep Modules & Template Specs',week:'Week 2',labs:[
+    {id:'p3-modules',cloud:'ab',title:'Bicep Modules, Template Specs & Registry',meta:'Build reusable Bicep modules, publish to Template Specs and Bicep Registry',
+     steps:[
+      {id:'p3-m-s1',text:'Create and consume Bicep modules',details:['Module: separate .bicep file consumed by another bicep file','modules/storage.bicep: param name string; param location string; resource sa ... output blobEndpoint string = sa.properties.primaryEndpoints.blob','Call from parent: module sa \'./modules/storage.bicep\' = { name: \'storageDeploy\'; params: { name: storageAccountName; location: location } }','Access module output: sa.outputs.blobEndpoint','Modules enable DRY — write storage/vnet/appService once, reuse across environments','module name must match deployment name rules (no spaces, max 64 chars)']},
+      {id:'p3-m-s2',text:'Use remote modules from Bicep Registry',details:['Bicep Registry: OCI-compatible artifact registry (Azure Container Registry)','Publish: az bicep publish --file modules/storage.bicep --target br:myacr.azurecr.io/bicep/storage:v1.0','Consume: module sa \'br:myacr.azurecr.io/bicep/storage:v1.0\' = { ... }','Public registry: br/public: prefix for Microsoft\'s public module registry','module sa \'br/public:storage/storage-account:0.4\' = { ... }: use public module','bicepconfig.json: configure registry aliases and credentials']},
+      {id:'p3-m-s3',text:'Publish and deploy Azure Template Specs',details:['Template Spec: Azure resource that stores ARM/Bicep template in Azure (versioned, RBAC-controlled)','az ts create --name mySpec --resource-group myRG --location eastus --version 1.0 --template-file main.bicep','List: az ts list --resource-group myRG','Deploy: az deployment group create --template-spec /subscriptions/.../resourceGroups/myRG/providers/Microsoft.Resources/templateSpecs/mySpec/versions/1.0','Template Specs as Bicep module source: module app \'ts:sub-id/rg/specName:1.0\' = { ... }','Access control: assign Reader role to allow use; Owner to publish new versions']},
+      {id:'p3-m-s4',text:'Implement module versioning and parameter file strategies',details:['.bicepparam files: strongly-typed parameter files for Bicep; using directive links to template','params.dev.bicepparam: using \'./main.bicep\'; param environment = \'dev\'; param sku = \'Standard_LRS\'','az deployment group create --parameters params.prod.bicepparam: deploy with typed params','Parameter precedence: CLI --parameters override file values','Breaking vs non-breaking module changes: adding required param = breaking; adding optional with default = non-breaking','Version strategy: semantic versioning (1.0, 1.1, 2.0) for Template Specs and registry artifacts']},
+      {id:'p3-m-s5',text:'Organize large Bicep projects with bicepconfig.json',details:['bicepconfig.json: project-level config for linter rules, module aliases, registry credentials','aliases: { "myregistry": { "registry": "myacr.azurecr.io" } } — use br/myregistry: shorthand','linter rules: configure severity (off/warning/error) per rule; disable specific rules per file with #disable-next-line','analyzers: security rules (use-resource-id-functions, no-hardcoded-env-urls)','moduleAliases: shorthand for common module paths (local or registry)','bicepconfig.json is picked up automatically from project directory or parent directories']},
+     ],
+     validation:[
+      {id:'p3-m-v1',text:'Bicep module created and consumed from parent; output wired correctly'},
+      {id:'p3-m-v2',text:'Template Spec published and deployed via spec reference'},
+      {id:'p3-m-v3',text:'bicepconfig.json configures alias for ACR registry module source'},
+     ]}
+  ]},
+  {id:'p4',badge:'PHASE 4',title:'Deployment Scopes & Advanced Features',week:'Week 2-3',labs:[
+    {id:'p4-scopes',cloud:'ab',title:'Deployment Scopes, copy Element & Linked Templates',meta:'Deploy at subscription/management group scope, use copy for iteration, link templates',
+     steps:[
+      {id:'p4-s-s1',text:'Deploy at subscription scope (resource groups, policies, RBAC)',details:['targetScope = \'subscription\': required in Bicep for subscription-level deployments','az deployment sub create --location eastus --template-file sub.bicep','Resource types available at sub scope: Microsoft.Resources/resourceGroups, Microsoft.Authorization/policyAssignments, roleAssignments','module rg \'./resource-group.bicep\' = { scope: subscription(); name: \'rgDeploy\'; params: { ... } }','Create RG then deploy into it: resource myRG ... = { ... }; module app \'./app.bicep\' = { scope: myRG; ... }','Cross-scope deployment: deploy resources at different scopes in same template using scope keyword']},
+      {id:'p4-s-s2',text:'Deploy at management group scope for org-wide policies',details:['targetScope = \'managementGroup\': for MG-level deployments','az deployment mg create --management-group-id myMG --location eastus --template-file mg.bicep','Resource types: Microsoft.Authorization/policyDefinitions, policySetDefinitions, roleDefinitions at MG scope','Policy assignment: resource policyAssignment \'Microsoft.Authorization/policyAssignments@2022-06-01\' = { ... }','Management group hierarchy: tenant → management groups → subscriptions → resource groups','Tenant scope: targetScope = \'tenant\' — for tenant-level role assignments (very rare)']},
+      {id:'p4-s-s3',text:'Use ARM copy element for resource and property iteration',details:['copy element (ARM JSON): create multiple resources with a loop','{ "copy": { "name": "storageCopy", "count": "[length(parameters(\'storageNames\'))]", "mode": "Parallel" }, "name": "[parameters(\'storageNames\')[copyIndex()]]", ... }','mode: "Parallel" (default) or "Serial" with batchSize for sequential','Property copy: copy within a resource to iterate over nested properties (e.g., multiple IP configs on NIC)','Bicep equivalent: [for name in storageNames: { name: name; ... }] — cleaner and preferred','copyIndex(offset): start count from offset (e.g., copyIndex(1) for 1-based indexing']},
+      {id:'p4-s-s4',text:'Use linked and nested templates for complex deployments',details:['Linked templates (ARM JSON): reference external template via templateLink URI','{ "type": "Microsoft.Resources/deployments", "properties": { "mode": "Incremental", "templateLink": { "uri": "[concat(parameters(\'baseUri\'), \'/modules/storage.json\')]" } } }','Nested templates: inline ARM template within parent template (no external file needed)','Linked templates must be publicly accessible (storage account URL or Template Spec)','Bicep modules supersede linked templates — preferred approach in modern Bicep','SAS tokens: secure linked template access from private storage account']},
+      {id:'p4-s-s5',text:'Understand Incremental vs Complete deployment modes',details:['Incremental mode (default): adds/updates resources; does not delete resources not in template','Complete mode: makes resource group match template exactly — removes unlisted resources (DANGEROUS)','az deployment group create --mode Complete: use with caution; can delete production resources','What-if with Complete: always run what-if before Complete mode deployment to see deletions','ARM tags: use Incremental to avoid losing tags set outside the template','Best practice: always use Incremental in production; Complete only in clean dev environments']},
+     ],
+     validation:[
+      {id:'p4-s-v1',text:'Subscription-scope deployment creates resource group and assigns policy'},
+      {id:'p4-s-v2',text:'Bicep loop deploys 3 storage accounts with different names'},
+      {id:'p4-s-v3',text:'What-if correctly identifies resource deletion in Complete mode'},
+     ]}
+  ]},
+  {id:'p5',badge:'PHASE 5',title:'What-If, Deployment Stacks & PSRule',week:'Week 3',labs:[
+    {id:'p5-advanced',cloud:'ab',title:'What-If Analysis, Deployment Stacks & PSRule Validation',meta:'Preview changes with what-if, manage lifecycle with Deployment Stacks, enforce compliance with PSRule',
+     steps:[
+      {id:'p5-a-s1',text:'Use what-if for pre-deployment change analysis',details:['az deployment group what-if --resource-group myRG --template-file main.bicep --parameters @params.json','Output shows: + Create, ~ Modify, - Delete, x Ignore, = No change','--result-format FullResourcePayloads: show complete before/after resource payload','PowerShell: Get-AzResourceGroupDeploymentWhatIfResult','What-if in CI: fail pipeline if unexpected deletions detected in what-if output','ARM Deployment What-If API: REST endpoint for programmatic pre-deployment analysis']},
+      {id:'p5-a-s2',text:'Manage resource lifecycle with Azure Deployment Stacks',details:['Deployment Stacks: manage a group of ARM resources as a unit with deny assignments and deletion controls','az stack group create --name myStack --resource-group myRG --template-file main.bicep --deny-settings-mode none','Deny settings: denyDelete, denyWriteAndDelete — protect managed resources from out-of-band changes','az stack group set: update stack (redeploy template with new config)','az stack group delete --delete-all: delete stack and all managed resources (cleanup guaranteed)','Stacks vs RG-scoped deployments: stacks track which resources they manage; regular deployments don\'t']},
+      {id:'p5-a-s3',text:'Validate templates with PSRule for Azure',details:['PSRule: PowerShell-based rules engine for validating ARM/Bicep templates','Install: Install-Module PSRule.Rules.Azure -Scope CurrentUser','Assert-PSRule -InputPath . -Module PSRule.Rules.Azure: validate all templates in current directory','Rules: 300+ built-in Azure Well-Architected Framework rules (security, reliability, performance)','Common failures: missing diagnostic settings, storage account HTTPS-only, TLS versions, SKU restrictions','Custom rules: write .Rule.ps1 files for org-specific naming or tagging requirements']},
+      {id:'p5-a-s4',text:'Use Bicep linter and VS Code for template quality',details:['Bicep linter: runs automatically on build; configurable via bicepconfig.json','Built-in rules: no-unused-params, no-unused-vars, simplify-interpolation, use-resource-id-functions','VS Code Bicep extension: real-time linting, hover docs for all resource types and properties','bicep format: format Bicep file to canonical style (like prettier for Bicep)','bicep build --no-restore: skip module restoration (faster in CI when modules are cached)','azure-pipelines.yml or GitHub Actions: run bicep build + PSRule in PR validation stage']},
+      {id:'p5-a-s5',text:'Implement ARM template parameter validation patterns',details:['Parameter constraints: @minValue, @maxValue for integers; @minLength, @maxLength for strings','@allowed(): whitelist valid values — deploy fails immediately if invalid param supplied','Conditional expressions for complex validation: ternary in variable; assert not available in ARM','Cross-parameter validation: use variables that fail if combination is invalid (workaround via condition)','Secure parameter file: use Azure Key Vault reference in parameters file','{ "adminPassword": { "reference": { "keyVault": { "id": "/subscriptions/.../vaults/myKV" }, "secretName": "adminPassword" } } }']},
+     ],
+     validation:[
+      {id:'p5-a-v1',text:'what-if output correctly shows + Create for new resource and ~ Modify for changed property'},
+      {id:'p5-a-v2',text:'Deployment Stack created; denyDelete prevents manual resource deletion'},
+      {id:'p5-a-v3',text:'PSRule.Rules.Azure finds at least one security violation in test template'},
+      {id:'p5-a-v4',text:'KV reference in parameter file successfully fetches secret at deploy time'},
+     ]}
+  ]},
+  {id:'p6',badge:'PHASE 6',title:'CI/CD with GitHub Actions & Azure DevOps',week:'Week 3-4',labs:[
+    {id:'p6-cicd',cloud:'ab',title:'Pipeline Automation, OIDC & Compliance Gates',meta:'Deploy via GitHub Actions and Azure Pipelines with OIDC auth, what-if PR gates, and policy compliance checks',
+     steps:[
+      {id:'p6-c-s1',text:'Set up GitHub Actions for Bicep deployments with OIDC',details:['OIDC: federated identity — GitHub Actions assumes Azure Service Principal without storing credentials','Azure: App Registration → Certificates & Secrets → Federated credentials → GitHub Actions','GitHub secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID (no client secret needed)','uses: azure/login@v2 with client-id, tenant-id, subscription-id and federated credential','uses: azure/arm-deploy@v2: deploy ARM/Bicep template in workflow step','uses: azure/CLI@v2: run az deployment commands directly in pipeline']},
+      {id:'p6-c-s2',text:'Implement what-if PR gates in GitHub Actions',details:['PR workflow: trigger on pull_request → run az deployment group what-if → post result as PR comment','uses: actions/github-script: post what-if output as PR comment for review','Fail PR if what-if shows unexpected deletions: parse --result-format FullResourcePayloads JSON output','Branch protection: require what-if check to pass before merge allowed','Separate workflows: pr.yml (what-if + PSRule on PR), deploy.yml (actual deploy on merge to main)','Environment approval: GitHub Environments → require manual approval for prod deployments']},
+      {id:'p6-c-s3',text:'Deploy Bicep via Azure Pipelines (YAML pipelines)',details:['azure-pipelines.yml: trigger on main branch → AzureCLI or AzureResourceManagerTemplateDeployment task','AzureResourceManagerTemplateDeployment@3: built-in ADO task for ARM/Bicep deployments','csmFile: main.bicep; csmParametersFile: params.prod.json; deploymentMode: Incremental','Service connection: Azure Resource Manager — use workload identity federation (OIDC) in ADO','Environments in ADO: add approval checks and branch policies before prod stage','RunScripts task: run PSRule validation as a pipeline gate before deployment']},
+      {id:'p6-c-s4',text:'Implement Azure Policy compliance as a deployment gate',details:['Azure Policy: assign policy at MG/subscription level; deny non-compliant deployments in real-time','Policy effect "deny": ARM deployment blocked if resource violates policy (e.g., no public IP, require tags)','Effect "deployIfNotExists": auto-remediate non-compliant resources (adds diagnostic settings)','Compliance scanning in pipeline: az policy state trigger-scan; az policy state list --query for violations','OPA/Gatekeeper for AKS: admission controller enforcing policies on Kubernetes resources','Policy-as-code: store policy definitions in repo; deploy via Bicep at MG scope in CI/CD']},
+      {id:'p6-c-s5',text:'Implement rollback strategy and deployment history management',details:['Azure deployment history: stored per resource group (max 800 entries); older ones auto-purged','az deployment group list --resource-group myRG: view all deployments','az deployment operation group list: view per-resource operation status','Rollback: redeploy previous template version from deployment history or source control tag','No native rollback command — best practice: tag releases in Git; re-run pipeline with previous tag','Deployment Stacks delete: guarantee clean teardown when decommissioning environments']},
+     ],
+     validation:[
+      {id:'p6-c-v1',text:'GitHub Actions deploys Bicep with OIDC — no client secret stored in repo'},
+      {id:'p6-c-v2',text:'PR workflow posts what-if output as PR comment before merge'},
+      {id:'p6-c-v3',text:'Azure Pipelines deploys Bicep template with service connection and approval gate'},
+      {id:'p6-c-v4',text:'Azure Policy deny effect blocks non-compliant ARM deployment in test'},
+     ]}
+  ]},
+];
+
+const ALL_QUIZ=[
+  {id:'q1',phase:'p1',question:'Which ARM template function generates a deterministic unique string based on input (commonly used for globally unique resource names)?',options:['newGuid()','random()','uniqueString()','generateUnique()'],answer:2,explanation:'"uniqueString()" generates a deterministic 13-character hash based on the input string. uniqueString(resourceGroup().id) produces the same value every time for the same RG, making it ideal for globally unique but deterministic naming.'},
+  {id:'q2',phase:'p1',question:'What does "az deployment group what-if" do?',options:['Deploys resources in dry-run mode that auto-reverts after 1 hour','Previews what changes would be made without actually deploying','Lists all recent deployments in the resource group','Validates template syntax without connecting to Azure'],answer:1,explanation:'"az deployment group what-if" shows what the deployment would do (create, modify, delete) without actually making any changes — similar to "terraform plan". It\'s essential for reviewing changes before production deployments.'},
+  {id:'q3',phase:'p2',question:'Which Bicep decorator restricts parameter values to a specific set?',options:['@validate()','@allowed()','@enum()','@oneOf()'],answer:1,explanation:'"@allowed([...]) " is the Bicep decorator equivalent of ARM\'s "allowedValues". It restricts the parameter to a specific list of values. The deployment fails immediately if an invalid value is supplied.'},
+  {id:'q4',phase:'p2',question:'In Bicep, how do you reference a resource that already exists in Azure (without managing it)?',options:['resource sa ... = existing { name: existingName }','resource sa ... existing = { name: existingName }','import sa from \'storageAccounts\' where name == existingName','resource sa ... = reference(existingName)'],answer:1,explanation:'"resource sa \'Microsoft.Storage/storageAccounts@2023-01-01\' existing = { name: existingName }" tells Bicep to reference an existing Azure resource. You can then read its properties (sa.id, sa.properties) without managing its lifecycle.'},
+  {id:'q5',phase:'p3',question:'Where are Bicep Registry modules stored?',options:['Azure Blob Storage containers','Azure Container Registry (OCI-compatible artifacts)','Azure Key Vault','Azure DevOps Artifacts'],answer:1,explanation:'Bicep modules published to a Bicep Registry are stored in Azure Container Registry (ACR) as OCI artifacts. They are referenced using the "br:" prefix: br:myacr.azurecr.io/bicep/storage:v1.0.'},
+  {id:'q6',phase:'p3',question:'What is an Azure Template Spec?',options:['A Bicep file with enforced parameter validation','An Azure resource that stores and versions ARM/Bicep templates with RBAC access control','A JSON schema file for validating ARM templates','A Git-based versioning system for ARM templates'],answer:1,explanation:'An Azure Template Spec is an Azure resource type (Microsoft.Resources/templateSpecs) that stores ARM/Bicep templates in Azure with versioning and RBAC. Teams share access via role assignments — Readers can deploy, Owners can publish new versions.'},
+  {id:'q7',phase:'p4',question:'Which Bicep targetScope value is needed to create resource groups and assign policies at the subscription level?',options:['targetScope = \'resourceGroup\'','targetScope = \'subscription\'','targetScope = \'tenant\'','targetScope = \'managementGroup\''],answer:1,explanation:'"targetScope = \'subscription\'" enables subscription-level deployments in Bicep, allowing you to create resource groups, assign policies, and set RBAC at the subscription scope. Deployed with "az deployment sub create".'},
+  {id:'q8',phase:'p4',question:'What is the difference between ARM Incremental and Complete deployment modes?',options:['Incremental deploys faster; Complete adds validation','Incremental adds/updates resources in the template; Complete deletes any resources in the RG not present in the template','Incremental supports Bicep; Complete only works with ARM JSON','Complete mode requires approval; Incremental is automatic'],answer:1,explanation:'Incremental mode (default) only creates/updates resources listed in the template, leaving unlisted resources untouched. Complete mode makes the resource group match the template exactly — deleting any resources not in the template. Complete mode is dangerous in production.'},
+  {id:'q9',phase:'p5',question:'What are Azure Deployment Stacks used for?',options:['Storing multiple Bicep templates in a single artifact','Managing a group of ARM resources as a unit with lifecycle control and deny assignments','Providing a visual deployment pipeline in Azure Portal','Running what-if analysis across multiple subscriptions'],answer:1,explanation:'Deployment Stacks track which resources belong to a deployment and can apply deny assignments to prevent out-of-band modifications. "az stack group delete --delete-all" guarantees cleanup of all managed resources — solving the "leftover resources" problem.'},
+  {id:'q10',phase:'p5',question:'What does PSRule for Azure do?',options:['Deploys ARM templates via PowerShell with auto-retry','Validates ARM/Bicep templates against 300+ Azure Well-Architected Framework rules before deployment','Converts ARM JSON templates to Bicep automatically','Manages Azure Policy definitions via PowerShell scripts'],answer:1,explanation:'PSRule.Rules.Azure validates ARM/Bicep templates against best practice rules from the Azure Well-Architected Framework. It catches common issues like missing diagnostic settings, insecure TLS versions, and unenforced HTTPS before deployment.'},
+  {id:'q11',phase:'p6',question:'What is the benefit of using OIDC (federated identity) in GitHub Actions for Azure deployments?',options:['Deployments run faster because no credential lookup is needed','No long-lived client secrets are stored in GitHub — short-lived tokens are exchanged at runtime','It enables parallel deployments across multiple subscriptions simultaneously','Bicep templates are automatically validated before deployment'],answer:1,explanation:'OIDC federated credentials eliminate the need for long-lived client secrets in GitHub. GitHub Actions exchanges a short-lived OIDC token for an Azure access token at runtime, reducing credential exposure risk. Only CLIENT_ID, TENANT_ID, and SUBSCRIPTION_ID are stored in GitHub secrets.'},
+  {id:'q12',phase:'p6',question:'Which Azure Policy effect prevents non-compliant ARM deployments in real-time?',options:['Audit (logs violation but allows deployment)','DeployIfNotExists (auto-remediates after deployment)','Deny (blocks the ARM deployment immediately)','Modify (changes resource properties to comply)'],answer:2,explanation:'"Deny" effect causes ARM to reject the deployment request immediately if the resource violates the policy — before the resource is created or modified. "Audit" only logs. "DeployIfNotExists" and "Modify" act after resource creation.'},
+];
+
+const APP_KEY='arm_bicep_lab_tracker';
+const FB_CONFIG_KEY='arm_bicep_fb_config';
+const FB_APP_NAME='arm-bicep-tracker';
+const FB_REF_PATH='arm_bicep_progress';
+const QUIZ_LS='arm_bicep_quiz_scores';
+
+let state={};
+let fbApp=null,fbDb=null,fbUser=null;
+
+function loadState(){try{return JSON.parse(localStorage.getItem(APP_KEY)||'{}')}catch{return{}}}
+function saveState(){localStorage.setItem(APP_KEY,JSON.stringify(state));syncToFb();}
+
+function initFb(){
+  const cfg=localStorage.getItem(FB_CONFIG_KEY);
+  if(!cfg)return;
+  try{
+    const c=JSON.parse(cfg);
+    if(firebase.apps.find(a=>a.name===FB_APP_NAME)){fbApp=firebase.apps.find(a=>a.name===FB_APP_NAME);}
+    else{fbApp=firebase.initializeApp(c,FB_APP_NAME);}
+    fbDb=firebase.database(fbApp);
+    firebase.auth(fbApp).onAuthStateChanged(u=>{
+      fbUser=u;
+      if(u){setSyncStatus('ok','&#x2714; Synced');loadFromFb();}
+      else{firebase.auth(fbApp).signInAnonymously().catch(()=>setSyncStatus('err','&#x26A0; Auth Fail'));}
+    });
+  }catch(e){setSyncStatus('err','&#x26A0; FB Error');}
+}
+function setSyncStatus(cls,html){const el=document.getElementById('sync-status');if(!el)return;el.className='sync-status sync-'+cls;el.innerHTML=html;}
+function syncToFb(){
+  if(!fbDb||!fbUser)return;
+  setSyncStatus('ing','&#x21BB; Syncing&hellip;');
+  fbDb.ref(FB_REF_PATH+'/'+fbUser.uid).set({...state,_email:fbUser.email||'anon',_ts:Date.now()})
+    .then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Fail'));
+}
+function loadFromFb(){
+  if(!fbDb||!fbUser)return;
+  fbDb.ref(FB_REF_PATH+'/'+fbUser.uid).once('value').then(snap=>{
+    const d=snap.val();
+    if(d){Object.keys(d).filter(k=>!k.startsWith('_')).forEach(k=>state[k]=d[k]);renderAll();}
+  });
+}
+function openFbPanel(){
+  const cfg=localStorage.getItem(FB_CONFIG_KEY);
+  if(cfg){try{const c=JSON.parse(cfg);document.getElementById('fb-apiKey').value=c.apiKey||'';document.getElementById('fb-databaseURL').value=c.databaseURL||'';document.getElementById('fb-projectId').value=c.projectId||'';}catch{}}
+  document.getElementById('fb-overlay').classList.add('open');
+}
+function closeFbPanel(){document.getElementById('fb-overlay').classList.remove('open');}
+function saveFbConfig(){
+  const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};
+  if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){showFbMsg('err','All 3 fields required');return;}
+  localStorage.setItem(FB_CONFIG_KEY,JSON.stringify(cfg));
+  showFbMsg('ok','Config saved — connecting&hellip;');
+  setTimeout(()=>{closeFbPanel();initFb();},900);
+}
+function clearFbConfig(){localStorage.removeItem(FB_CONFIG_KEY);fbApp=null;fbDb=null;fbUser=null;setSyncStatus('none','&#x1F4BE; Local Only');closeFbPanel();}
+function showFbMsg(cls,msg){const el=document.getElementById('fb-msg');el.className='fb-status-msg '+cls;el.innerHTML=msg;}
+
+function getStep(id){return state['s_'+id]||0;}
+function setStep(id,val){state['s_'+id]=val;saveState();}
+function getNote(id){return state['n_'+id]||'';}
+function setNote(id,val){state['n_'+id]=val;saveState();}
+function getPhaseNote(id){return state['pn_'+id]||'';}
+function setPhaseNote(id,val){state['pn_'+id]=val;saveState();}
+function getVal(id){return state['v_'+id]||0;}
+function setVal(id,val){state['v_'+id]=val;saveState();}
+
+function toggleStep(id,el){
+  const done=!getStep(id);setStep(id,done?1:0);
+  const row=el.closest('.step-row');row.classList.toggle('done',done);
+  el.innerHTML=done?'&#x2714;':'';
+  updateStats();checkCongrats();
+}
+function toggleVal(id,el){
+  const done=!getVal(id);setVal(id,done?1:0);
+  const row=el.closest('.val-row');row.classList.toggle('done',done);
+  el.innerHTML=done?'&#x2714;':'';
+  updateStats();checkCongrats();
+}
+function toggleDetail(btn,id){
+  const panel=document.getElementById('dp-'+id);
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Hide':'Details';
+}
+function toggleNote(btn,id){
+  const panel=document.getElementById('np-'+id);
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+}
+function saveNote(id,ta){setNote(id,ta.value);}
+function savePhaseNote(id,ta){setPhaseNote(id,ta.value);}
+function toggleLab(el){el.closest('.lab-section').classList.toggle('open');}
+function togglePhase(el){el.closest('.phase-card').classList.toggle('open');}
+
+function filterTab(cloud,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.phase-card').forEach(pc=>{
+    if(cloud==='all'){pc.style.display='';return;}
+    const hasLab=[...pc.querySelectorAll('.lab-section')].some(ls=>ls.dataset.cloud===cloud);
+    pc.style.display=hasLab?'':'none';
+  });
+}
+
+function countLab(lab){
+  const tc=lab.steps.length+(lab.validation||[]).length;
+  const dc=lab.steps.filter(s=>getStep(s.id)).length+(lab.validation||[]).filter(v=>getVal(v.id)).length;
+  return{tc,dc};
+}
+function updateStats(){
+  let totalC=0,doneC=0,p1c=0,p1d=0,p2c=0,p2d=0;
+  PHASES.forEach((ph,i)=>{
+    ph.labs.forEach(lab=>{
+      const{tc,dc}=countLab(lab);
+      totalC+=tc;doneC+=dc;
+      if(i<3){p1c+=tc;p1d+=dc;}else{p2c+=tc;p2d+=dc;}
+    });
+    updatePhaseBar(ph);
+  });
+  document.getElementById('stat-total').textContent=totalC;
+  document.getElementById('stat-done').textContent=doneC;
+  document.getElementById('stat-p1').textContent=p1d+'/'+p1c;
+  document.getElementById('stat-p2').textContent=p2d+'/'+p2c;
+  const pct=totalC?Math.round(doneC/totalC*100):0;
+  document.getElementById('stat-pct').textContent=pct+'%';
+  document.getElementById('big-bar-fill').style.width=pct+'%';
+}
+function updatePhaseBar(ph){
+  let tc=0,dc=0;
+  ph.labs.forEach(lab=>{const r=countLab(lab);tc+=r.tc;dc+=r.dc;});
+  const bar=document.getElementById('pb-'+ph.id);
+  if(bar)bar.style.width=(tc?Math.round(dc/tc*100):0)+'%';
+}
+function checkCongrats(){
+  let tc=0,dc=0;
+  PHASES.forEach(ph=>ph.labs.forEach(lab=>{const r=countLab(lab);tc+=r.tc;dc+=r.dc;}));
+  if(tc&&dc===tc){const el=document.getElementById('congrats');el.style.display='flex';}
+}
+function resetProgress(){
+  if(!confirm('Reset all ARM/Bicep lab progress?'))return;
+  Object.keys(state).forEach(k=>delete state[k]);
+  saveState();location.reload();
+}
+
+function renderAll(){
+  const wrap=document.getElementById('content');
+  wrap.innerHTML='';
+  PHASES.forEach(ph=>{
+    const card=document.createElement('div');
+    card.className='phase-card open';
+    let labsHtml='';
+    ph.labs.forEach(lab=>{
+      const{tc,dc}=countLab(lab);
+      let stepsHtml='';
+      lab.steps.forEach((s,si)=>{
+        const done=getStep(s.id);
+        const note=getNote(s.id);
+        const detailsHtml=s.details?s.details.map((d,di)=>`<div class="detail-item"><span class="di-num">${di+1}.</span><span class="di-text">${d.replace(/`([^`]+)`/g,'<code>$1</code>')}</span></div>`).join(''):'';
+        stepsHtml+=`<div class="step-row${done?' done':''}" id="sr-${s.id}">
+          <div class="step-check" onclick="toggleStep('${s.id}',this)">${done?'&#x2714;':''}</div>
+          <div class="step-main">
+            <div class="step-top">
+              <span class="step-num">${si+1}.</span>
+              <span class="step-text">${s.text}</span>
+              ${detailsHtml?`<button class="detail-btn" onclick="toggleDetail(this,'${s.id}')">Details</button>`:''}
+              <button class="note-btn${note?' has-note':''}" onclick="toggleNote(this,'${s.id}')">&#x1F4DD;</button>
+            </div>
+            ${detailsHtml?`<div class="step-details" id="dp-${s.id}"><div class="detail-item" style="font-size:11px;font-weight:700;color:var(--ab-dark);margin-bottom:6px;">Step Details</div>${detailsHtml}</div>`:''}
+            <div class="step-note-panel" id="np-${s.id}">
+              <textarea class="note-textarea" placeholder="Your notes..." onchange="saveNote('${s.id}',this)" onblur="saveNote('${s.id}',this)">${note}</textarea>
+              <div class="note-hint">Notes saved locally in your browser.</div>
+            </div>
+          </div>
+        </div>`;
+      });
+      let valHtml='';
+      if(lab.validation&&lab.validation.length){
+        valHtml='<div class="section-lbl">&#x2705; Validation Checklist</div>';
+        lab.validation.forEach(v=>{
+          const done=getVal(v.id);
+          valHtml+=`<div class="val-row${done?' done':''}"><div class="val-check" onclick="toggleVal('${v.id}',this)">${done?'&#x2714;':''}</div><span class="step-text">${v.text}</span></div>`;
+        });
+      }
+      const phasNoteVal=getPhaseNote(lab.id);
+      labsHtml+=`<div class="lab-section" data-cloud="${lab.cloud}">
+        <div class="lab-header ${lab.cloud}-lab">
+          <span class="lab-cloud-badge ${lab.cloud}-badge">${lab.cloud.toUpperCase()}</span>
+          <div class="lab-title-area"><div class="lab-title">${lab.title}</div><div class="lab-meta">${lab.meta}</div></div>
+          <div class="lab-stats"><span style="font-size:11px;color:#6B7280;">${dc}/${tc}</span><button class="lab-toggle ${lab.cloud}-btn" onclick="toggleLab(this)">&#x25BC; Steps</button></div>
+        </div>
+        <div class="steps-list">
+          <div class="section-lbl">&#x1F4CB; Lab Steps</div>
+          ${stepsHtml}
+          ${valHtml}
+          <div class="section-lbl" style="margin-top:14px;">&#x1F4DD; Phase Notes</div>
+          <textarea class="notes-area" placeholder="Notes for this lab..." onchange="savePhaseNote('${lab.id}',this)" onblur="savePhaseNote('${lab.id}',this)">${phasNoteVal}</textarea>
+        </div>
+      </div>`;
+    });
+    card.innerHTML=`<div class="phase-header" onclick="togglePhase(this)">
+      <div class="phase-header-left">
+        <span class="phase-badge">${ph.badge}</span>
+        <div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="phase-progress-bar"><div class="phase-progress-fill" id="pb-${ph.id}" style="width:0%"></div></div>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+    </div>
+    <div class="phase-body">${labsHtml}</div>`;
+    wrap.appendChild(card);
+  });
+  updateStats();
+}
+
+/* ---- LEADERBOARD ---- */
+function openLeaderboard(){document.getElementById('lb-overlay').classList.add('open');loadLeaderboard();}
+function closeLb(){document.getElementById('lb-overlay').classList.remove('open');}
+function loadLeaderboard(){
+  const lbBody=document.getElementById('lb-body');
+  lbBody.innerHTML='<div class="lb-loading">&#x21BB; Loading&hellip;</div>';
+  const cfg=localStorage.getItem(FB_CONFIG_KEY);
+  if(!cfg){lbBody.innerHTML='<div class="lb-loading">Connect Firebase sync to see leaderboard.</div>';return;}
+  try{
+    const c=JSON.parse(cfg);
+    let lbApp=firebase.apps.find(a=>a.name==='mk-site')||firebase.initializeApp(c,'mk-site');
+    let lbDb=firebase.database(lbApp);
+    firebase.auth(lbApp).onAuthStateChanged(u=>{
+      if(!u){firebase.auth(lbApp).signInAnonymously();}
+    });
+    lbDb.ref(FB_REF_PATH).once('value').then(snap=>{
+      const data=snap.val()||{};
+      const rows=Object.entries(data).map(([uid,d])=>{
+        let tc=0,dc=0;
+        PHASES.forEach(ph=>ph.labs.forEach(lab=>{
+          lab.steps.forEach(s=>{tc++;if(d['s_'+s.id])dc++;});
+          (lab.validation||[]).forEach(v=>{tc++;if(d['v_'+v.id])dc++;});
+        }));
+        const pct=tc?Math.round(dc/tc*100):0;
+        return{uid,email:d._email||'Anonymous',dc,tc,pct};
+      }).sort((a,b)=>b.pct-a.pct);
+      if(!rows.length){lbBody.innerHTML='<div class="lb-loading">No data yet.</div>';return;}
+      const medals=['&#x1F947;','&#x1F948;','&#x1F949;'];
+      let html='<table class="lb-table"><thead><tr><th>Rank</th><th>User</th><th>Done</th><th>Progress</th></tr></thead><tbody>';
+      rows.forEach((r,i)=>{
+        const isMe=fbUser&&r.uid===fbUser.uid;
+        html+=`<tr${isMe?' class="me"':''}><td class="lb-rank">${medals[i]||'#'+(i+1)}</td><td>${r.email}</td><td>${r.dc}/${r.tc}</td><td><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:${r.pct}%"></div></div><span style="font-size:11px;margin-left:6px;">${r.pct}%</span></td></tr>`;
+      });
+      html+='</tbody></table>';
+      lbBody.innerHTML=html;
+    }).catch(()=>{lbBody.innerHTML='<div class="lb-loading">&#x26A0; Failed to load.</div>';});
+  }catch(e){lbBody.innerHTML='<div class="lb-loading">&#x26A0; Firebase error.</div>';}
+}
+
+/* ---- QUIZ ---- */
+let quizState={};
+function openQuiz(){document.getElementById('quiz-overlay').classList.add('open');showQuizPhaseSelect();}
+function closeQuiz(){document.getElementById('quiz-overlay').classList.remove('open');}
+function getBestScore(phaseId){try{const s=JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');return s[phaseId]||null;}catch{return null;}}
+function setBestScore(phaseId,score,total){try{const s=JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');if(!s[phaseId]||score>s[phaseId].score){s[phaseId]={score,total,pct:Math.round(score/total*100)};}localStorage.setItem(QUIZ_LS,JSON.stringify(s));}catch{}}
+function showQuizPhaseSelect(){
+  const body=document.getElementById('quiz-body');
+  let html='<div style="margin-bottom:12px;font-size:13px;font-weight:700;color:#1F2937;">Select phase to quiz:</div><div class="phase-grid">';
+  html+=`<div class="phase-tile all-tile" onclick="startQuiz('all',this)"><div class="pt-num">ALL</div><div class="pt-name">All Phases</div><div class="pt-score">${ALL_QUIZ.length} questions</div></div>`;
+  PHASES.forEach(ph=>{
+    const best=getBestScore(ph.id);
+    const qCount=ALL_QUIZ.filter(q=>q.phase===ph.id).length;
+    html+=`<div class="phase-tile" onclick="startQuiz('${ph.id}',this)"><div class="pt-num">${ph.badge}</div><div class="pt-name">${ph.title}</div><div class="pt-score">${best?best.pct+'% best':qCount+' questions'}</div></div>`;
+  });
+  html+='</div><button class="quiz-start-btn" id="quiz-start-btn" onclick="beginQuiz()" disabled>Select a Phase</button>';
+  body.innerHTML=html;
+  quizState={selectedPhase:null};
+}
+function startQuiz(phaseId,tile){
+  document.querySelectorAll('.phase-tile').forEach(t=>t.classList.remove('selected'));
+  tile.classList.add('selected');
+  quizState.selectedPhase=phaseId;
+  const btn=document.getElementById('quiz-start-btn');
+  btn.disabled=false;
+  btn.textContent='Start Quiz \u2192';
+}
+function beginQuiz(){
+  const ph=quizState.selectedPhase;
+  if(!ph)return;
+  const questions=ph==='all'?[...ALL_QUIZ]:ALL_QUIZ.filter(q=>q.phase===ph);
+  quizState={selectedPhase:ph,questions,current:0,score:0,answers:[]};
+  renderQuizQuestion();
+}
+function renderQuizQuestion(){
+  const{questions,current}=quizState;
+  if(current>=questions.length){showQuizScore();return;}
+  const q=questions[current];
+  const pct=Math.round(current/questions.length*100);
+  const letters=['A','B','C','D'];
+  let html=`<div class="quiz-progress"><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:${pct}%"></div></div><span class="quiz-prog-txt">${current+1}/${questions.length}</span></div>`;
+  html+=`<div class="quiz-question">${q.question}</div><div class="quiz-options">`;
+  q.options.forEach((opt,i)=>{
+    html+=`<button class="quiz-option" onclick="answerQuiz(${i})" data-idx="${i}"><span class="opt-letter">${letters[i]}</span>${opt}</button>`;
+  });
+  html+=`</div><div class="quiz-explanation" id="quiz-exp">${q.explanation}</div><button class="quiz-next-btn" id="quiz-next" onclick="nextQuestion()">${current+1<questions.length?'Next Question \u2192':'See Results'}</button>`;
+  document.getElementById('quiz-body').innerHTML=html;
+}
+function answerQuiz(idx){
+  const q=quizState.questions[quizState.current];
+  const opts=document.querySelectorAll('.quiz-option');
+  opts.forEach(o=>o.disabled=true);
+  const correct=idx===q.answer;
+  if(correct)quizState.score++;
+  quizState.answers.push({q,chosen:idx,correct});
+  opts[idx].classList.add(correct?'correct':'wrong');
+  if(!correct)opts[q.answer].classList.add('reveal');
+  document.getElementById('quiz-exp').classList.add('show');
+  document.getElementById('quiz-next').classList.add('show');
+}
+function nextQuestion(){quizState.current++;renderQuizQuestion();}
+function showQuizScore(){
+  const{score,questions,selectedPhase,answers}=quizState;
+  const total=questions.length;
+  const pct=Math.round(score/total*100);
+  setBestScore(selectedPhase,score,total);
+  const msgs=pct===100?'Perfect Score!':pct>=80?'Excellent!':pct>=60?'Good Progress!':'Keep Practicing!';
+  let reviewHtml='';
+  answers.forEach(a=>{
+    reviewHtml+=`<div class="review-item ${a.correct?'ok':'bad'}"><span class="review-icon">${a.correct?'&#x2714;':'&#x2718;'}</span><span>${a.q.question}</span></div>`;
+  });
+  document.getElementById('quiz-body').innerHTML=`<div class="quiz-score-screen">
+    <div class="score-circle"><span class="sc-num">${score}/${total}</span><span class="sc-lbl">${pct}%</span></div>
+    <div class="quiz-score-msg">${msgs}</div>
+    <div class="quiz-score-sub">Phase: ${selectedPhase==='all'?'All Phases':PHASES.find(p=>p.id===selectedPhase)?.title}</div>
+    <div class="quiz-review">${reviewHtml}</div>
+    <div class="quiz-score-btns">
+      <button class="qsb-retry" onclick="beginQuiz()">&#x1F504; Retry</button>
+      <button class="qsb-back" onclick="showQuizPhaseSelect()">&#x2190; Phase Select</button>
+    </div>
+  </div>`;
+}
+
+onAuthReady(function(user){
+  if(user){
+    fbUser=user;
+    const nameEl=document.getElementById('user-name-display');
+    if(nameEl)nameEl.textContent=user.displayName||user.email||'User';
+    document.getElementById('user-chip').onclick=()=>{if(confirm('Sign out?'))firebase.auth().signOut().then(()=>window.location.href='../personal_site/login.html');};
+  }
+});
+
+state=loadState();
+renderAll();
+initFb();
+</script>
+</body>
+</html>
