@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Lab — Interactive Coding Environment</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--border:#30363D;
+  --py-blue:#4B8BBE;--py-yellow:#FFD43B;--py-light:#5B9BD5;
+  --green:#3FB950;--green2:#2EA043;--cyan:#79C0FF;--yellow:#E3B341;
+  --orange:#F0883E;--red:#FF7B72;--purple:#D2A8FF;
+  --white:#C9D1D9;--gray:#8B949E;--header-bg:#1a2e4a;--radius:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--white);}
+
+/* Header */
+.site-header{background:var(--header-bg);color:white;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0;border-bottom:2px solid var(--py-blue);}
+.site-header h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.site-header p{font-size:11px;color:#93C5FD;margin-top:1px;}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.nav-link{font-size:11px;padding:3px 10px;border-radius:5px;background:rgba(255,255,255,.1);color:#BAE6FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.2);color:white;}
+.py-badge{background:var(--py-blue);color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;}
+
+/* Layout */
+.app{display:flex;height:calc(100vh - 56px);overflow:hidden;}
+
+/* Sidebar */
+.sidebar{width:290px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+.stab{flex:1;padding:8px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--gray);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.stab.active{color:var(--py-blue);border-bottom-color:var(--py-blue);}
+.stab:hover{color:var(--white);}
+.sidebar-content{flex:1;overflow-y:auto;padding:10px;}
+.sidebar-content::-webkit-scrollbar{width:4px;}
+.sidebar-content::-webkit-scrollbar-track{background:transparent;}
+.sidebar-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* Progress */
+.prog-wrap{margin-bottom:12px;}
+.prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.prog-label{font-size:11px;font-weight:700;color:var(--white);}
+.prog-count{font-size:10px;color:var(--green);}
+.prog-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--py-blue),var(--py-yellow));border-radius:99px;transition:width .4s;}
+
+/* Exercise items */
+.ex-section{margin-bottom:14px;}
+.ex-section-hdr{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.ex-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.ex-item:hover{border-color:var(--py-blue);background:#1c2430;}
+.ex-item.active{border-color:var(--py-blue);background:#1c2430;}
+.ex-item.done{border-color:var(--green2);}
+.ex-title{font-size:12px;font-weight:600;color:var(--white);display:flex;align-items:center;gap:6px;}
+.ex-badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:700;}
+.badge-easy{background:#1a3a1a;color:var(--green);}
+.badge-medium{background:#3a2a0a;color:var(--yellow);}
+.badge-hard{background:#3a0a0a;color:var(--red);}
+.ex-desc{font-size:11px;color:var(--gray);margin-top:4px;line-height:1.5;}
+.ex-tasks{margin-top:8px;display:none;}
+.ex-item.active .ex-tasks{display:block;}
+.ex-task{font-size:11px;color:var(--gray);padding:3px 0;display:flex;gap:6px;align-items:flex-start;line-height:1.5;}
+.ex-task.done{color:var(--green);}
+.ex-task-icon{flex-shrink:0;margin-top:1px;}
+.load-ex-btn{font-size:10px;padding:4px 10px;border-radius:5px;border:1px solid var(--py-blue);background:transparent;color:var(--py-blue);cursor:pointer;font-weight:700;margin-top:8px;transition:all .2s;width:100%;}
+.load-ex-btn:hover{background:var(--py-blue);color:white;}
+
+/* Cheatsheet */
+.cs-section{margin-bottom:14px;}
+.cs-title{font-size:10px;font-weight:700;color:var(--py-blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.cs-cmd{display:flex;gap:8px;margin-bottom:4px;padding:4px 6px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.cs-cmd:hover{background:var(--bg3);}
+.cs-cmd-name{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;color:var(--py-yellow);min-width:110px;flex-shrink:0;line-height:1.5;}
+.cs-cmd-desc{font-size:11px;color:var(--gray);line-height:1.4;}
+
+/* Main editor area */
+.editor-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Editor toolbar */
+.editor-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.editor-dots{display:flex;gap:5px;}
+.dot{width:12px;height:12px;border-radius:50%;}
+.dot-red{background:#FF5F57;}.dot-yellow{background:#FFBD2E;}.dot-green{background:#28CA41;}
+.editor-title{font-size:12px;color:var(--gray);flex:1;margin-left:4px;}
+.editor-actions{display:flex;gap:6px;align-items:center;}
+.run-btn{background:var(--green2);border:none;color:white;font-size:12px;font-weight:700;padding:5px 14px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;}
+.run-btn:hover{background:var(--green);}
+.run-btn:disabled{background:var(--border);color:var(--gray);cursor:not-allowed;}
+.clear-btn{background:transparent;border:1px solid var(--border);color:var(--gray);font-size:11px;padding:4px 10px;border-radius:5px;cursor:pointer;transition:all .2s;}
+.clear-btn:hover{border-color:var(--red);color:var(--red);}
+.mode-toggle{font-size:10px;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--gray);cursor:pointer;font-weight:600;transition:all .2s;}
+.mode-toggle.active{border-color:var(--py-blue);color:var(--py-blue);}
+.py-status{font-size:10px;color:var(--gray);display:flex;align-items:center;gap:4px;}
+.py-status.loading{color:var(--yellow);}
+.py-status.ready{color:var(--green);}
+
+/* Split pane */
+.split-pane{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.editor-pane{flex:0 0 55%;display:flex;flex-direction:column;overflow:hidden;border-bottom:2px solid var(--py-blue);}
+.output-pane{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Code editor */
+.code-editor-wrap{flex:1;position:relative;overflow:hidden;}
+.code-editor{width:100%;height:100%;background:var(--bg);border:none;outline:none;color:var(--white);font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.7;padding:14px 16px;resize:none;tab-size:4;}
+.code-editor::-webkit-scrollbar{width:6px;}
+.code-editor::-webkit-scrollbar-track{background:transparent;}
+.code-editor::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.line-nums{position:absolute;left:0;top:0;bottom:0;width:38px;background:var(--bg2);border-right:1px solid var(--border);padding:14px 6px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.7;color:var(--border);text-align:right;pointer-events:none;overflow:hidden;}
+.code-editor{padding-left:50px;}
+
+/* Output */
+.output-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:6px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.output-bar-title{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
+.exec-time{font-size:10px;color:var(--gray);margin-left:auto;}
+.output-scroll{flex:1;overflow-y:auto;padding:12px 16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:12px;line-height:1.7;}
+.output-scroll::-webkit-scrollbar{width:6px;}
+.output-scroll::-webkit-scrollbar-track{background:transparent;}
+.output-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.out-stdout{color:var(--white);white-space:pre-wrap;word-break:break-all;}
+.out-stderr{color:var(--red);white-space:pre-wrap;word-break:break-all;}
+.out-result{color:var(--py-yellow);white-space:pre-wrap;word-break:break-all;}
+.out-info{color:var(--cyan);font-style:italic;}
+.out-success{color:var(--green);}
+.out-empty{color:var(--gray);font-style:italic;}
+
+/* Challenge bar */
+.challenge-bar{background:var(--bg2);border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0;}
+.challenge-title{font-size:10px;font-weight:700;color:var(--py-yellow);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.challenge-text{font-size:12px;color:var(--white);line-height:1.5;}
+.challenge-task{font-size:11px;color:var(--gray);margin-top:4px;padding:4px 0;display:flex;gap:6px;align-items:flex-start;}
+.challenge-task.done{color:var(--green);}
+.challenge-hint{font-size:11px;color:var(--gray);margin-top:6px;background:var(--bg3);padding:6px 10px;border-radius:5px;border-left:3px solid var(--py-blue);display:none;}
+.challenge-hint.visible{display:block;}
+.challenge-btns{display:flex;gap:6px;margin-top:8px;}
+.cbtn{font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-weight:600;background:var(--bg3);color:var(--gray);transition:all .2s;}
+.cbtn:hover{color:var(--white);}
+.cbtn.hint{color:var(--purple);border-color:var(--purple);}
+.cbtn.skip{color:var(--orange);border-color:var(--orange);}
+.cbtn.check{color:var(--green);border-color:var(--green);}
+
+/* REPL mode */
+.repl-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.repl-history{flex:1;overflow-y:auto;padding:12px 16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.7;}
+.repl-history::-webkit-scrollbar{width:6px;}
+.repl-history::-webkit-scrollbar-track{background:transparent;}
+.repl-history::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.repl-in{color:var(--py-blue);}
+.repl-out{color:var(--white);white-space:pre-wrap;}
+.repl-err{color:var(--red);white-space:pre-wrap;}
+.repl-res{color:var(--py-yellow);white-space:pre-wrap;}
+.repl-input-row{display:flex;align-items:center;padding:10px 16px;border-top:1px solid var(--border);background:var(--bg3);flex-shrink:0;}
+.repl-prompt{color:var(--py-blue);font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;margin-right:8px;flex-shrink:0;}
+#repl-input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;caret-color:var(--white);}
+
+@media(max-width:768px){.sidebar{width:240px;}.site-header h1{font-size:13px;}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <h1><span class="py-badge">PY</span> Python Lab — Interactive Coding Environment</h1>
+    <p>Real Python 3 in your browser via Pyodide &middot; Exercises &middot; REPL &middot; Cheatsheet</p>
+  </div>
+  <div class="nav-links">
+    <a href="../personal_site/index.html" class="nav-link">Home</a>
+    <a href="../personal_site/learning.html" class="nav-link">Learning Hub</a>
+    <a href="linux-terminal.html" class="nav-link">Linux</a>
+    <a href="docker-terminal.html" class="nav-link">Docker</a>
+    <a href="k8s-terminal.html" class="nav-link">K8s</a>
+    <a href="ps-terminal.html" class="nav-link">PowerShell</a>
+    <a href="index.html" class="nav-link">IaaS Labs</a>
+  </div>
+</header>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="stab active" onclick="showTab('exercises',this)">Exercises</div>
+      <div class="stab" onclick="showTab('cheatsheet',this)">Cheatsheet</div>
+      <div class="stab" onclick="showTab('snippets',this)">Snippets</div>
+    </div>
+
+    <!-- Exercises tab -->
+    <div class="sidebar-content" id="tab-exercises">
+      <div class="prog-wrap">
+        <div class="prog-top">
+          <span class="prog-label">Progress</span>
+          <span class="prog-count" id="prog-text">0 / 0 done</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div id="ex-list"></div>
+    </div>
+
+    <!-- Cheatsheet tab -->
+    <div class="sidebar-content" id="tab-cheatsheet" style="display:none;">
+      <div id="cheatsheet-content"></div>
+    </div>
+
+    <!-- Snippets tab -->
+    <div class="sidebar-content" id="tab-snippets" style="display:none;">
+      <div id="snippets-content"></div>
+    </div>
+  </div>
+
+  <!-- Editor / REPL area -->
+  <div class="editor-wrap">
+    <div class="editor-bar">
+      <div class="editor-dots">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+      </div>
+      <span class="editor-title" id="editor-title">untitled.py</span>
+      <div class="editor-actions">
+        <span class="py-status loading" id="py-status">&#x23F3; Loading Python...</span>
+        <button class="mode-toggle" id="mode-toggle" onclick="toggleMode()">REPL Mode</button>
+        <button class="clear-btn" onclick="clearAll()">Clear</button>
+        <button class="run-btn" id="run-btn" onclick="runCode()" disabled>&#x25B6; Run &nbsp;<kbd style="font-size:9px;opacity:.7">Ctrl+Enter</kbd></button>
+      </div>
+    </div>
+
+    <!-- Editor mode -->
+    <div id="editor-mode" class="split-pane">
+      <div class="editor-pane">
+        <div class="code-editor-wrap">
+          <div class="line-nums" id="line-nums">1</div>
+          <textarea class="code-editor" id="code-editor"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+            placeholder="# Write Python code here and press Run (or Ctrl+Enter)&#10;print('Hello, Python!')"
+            oninput="updateLineNums()" onkeydown="handleEditorKey(event)"></textarea>
+        </div>
+      </div>
+      <div class="output-pane">
+        <div class="output-bar">
+          <span class="output-bar-title">Output</span>
+          <span class="exec-time" id="exec-time"></span>
+        </div>
+        <div class="output-scroll" id="output-scroll">
+          <div class="out-info">Python 3 runtime (Pyodide). Press Run or Ctrl+Enter to execute your code.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPL mode -->
+    <div id="repl-mode" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+      <div class="repl-history" id="repl-history">
+        <div class="out-info">Python 3 REPL &mdash; type expressions and press Enter to evaluate.</div>
+      </div>
+      <div class="repl-input-row">
+        <span class="repl-prompt">&gt;&gt;&gt;</span>
+        <input type="text" id="repl-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          placeholder="type expression..." onkeydown="handleReplKey(event)" disabled>
+      </div>
+    </div>
+
+    <!-- Challenge bar -->
+    <div class="challenge-bar" id="challenge-bar" style="display:none;">
+      <div class="challenge-title" id="chal-title">Current Exercise</div>
+      <div class="challenge-text" id="chal-text"></div>
+      <div id="chal-tasks"></div>
+      <div class="challenge-hint" id="chal-hint"></div>
+      <div class="challenge-btns">
+        <button class="cbtn hint" onclick="showHint()">Hint</button>
+        <button class="cbtn check" onclick="checkExercise()">Check</button>
+        <button class="cbtn skip" onclick="skipExercise()">Skip</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Auth Guard ────────────────────────────────────────────────────────────────
+(function(){
+  var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);
+  onAuthReady(function(user){
+    if(user){clearTimeout(t);document.body.style.visibility='visible';}
+    else{window.location.href='../personal_site/login.html';}
+  });
+})();
+</script>
+
+<!-- Pyodide -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+
+<script>
+// ─── Exercises ────────────────────────────────────────────────────────────────
+const EXERCISES = [
+  {
+    id:'ex1', title:'Hello World & Variables', badge:'easy',
+    desc:'Learn print(), variables, and basic data types.',
+    starter:'# Exercise 1: Hello World & Variables\n# Run this starter code, then complete the tasks below.\n\nname = "Python"\nversion = 3.12\nis_awesome = True\n\nprint(f"Hello from {name} {version}!")\nprint(f"Is Python awesome? {is_awesome}")\n',
+    tasks:[
+      {id:'t1', text:'Create a variable <code>greeting</code> assigned to any string', check:(code,out)=>/greeting\s*=\s*["']/.test(code)},
+      {id:'t2', text:'Print your <code>greeting</code> variable', check:(code,out)=>out.trim().length>0&&/print.*greeting/.test(code)},
+      {id:'t3', text:'Create an integer variable and a float variable', check:(code,out)=>/\w+\s*=\s*\d+[^.\w]/.test(code)&&/\w+\s*=\s*\d+\.\d+/.test(code)},
+    ],
+    hint:'Use print(variable_name) to display variables. f-strings let you embed variables: f"Hello {name}"'
+  },
+  {
+    id:'ex2', title:'Control Flow', badge:'easy',
+    desc:'Use if/elif/else and for/while loops.',
+    starter:'# Exercise 2: Control Flow\nnumbers = [3, 7, 2, 9, 4, 1, 8, 5]\n\n# Find and print even numbers\nfor n in numbers:\n    if n % 2 == 0:\n        print(f"{n} is even")\n',
+    tasks:[
+      {id:'t1', text:'Write a <code>for</code> loop that iterates a list or range', check:(code,out)=>/for\s+\w+\s+in\s+/.test(code)},
+      {id:'t2', text:'Use an <code>if</code> statement inside your loop or code', check:(code,out)=>/if\s+.+:/.test(code)},
+      {id:'t3', text:'Print output shows at least 2 lines', check:(code,out)=>out.trim().split('\n').filter(l=>l.trim()).length>=2},
+    ],
+    hint:'for item in collection: ... | if condition: ... elif condition: ... else: ...'
+  },
+  {
+    id:'ex3', title:'Functions', badge:'easy',
+    desc:'Define and call functions with parameters and return values.',
+    starter:'# Exercise 3: Functions\ndef greet(name, greeting="Hello"):\n    return f"{greeting}, {name}!"\n\nprint(greet("Alice"))\nprint(greet("Bob", "Hi"))\n',
+    tasks:[
+      {id:'t1', text:'Define a function using <code>def</code>', check:(code,out)=>/def\s+\w+\s*\(/.test(code)},
+      {id:'t2', text:'Your function uses a <code>return</code> statement', check:(code,out)=>/return\s+/.test(code)},
+      {id:'t3', text:'Call your function and print the result', check:(code,out)=>out.trim().length>0},
+    ],
+    hint:'def function_name(param1, param2="default"): ... return value'
+  },
+  {
+    id:'ex4', title:'Lists & Dicts', badge:'easy',
+    desc:'Work with Python collections — lists, dicts, and list comprehensions.',
+    starter:'# Exercise 4: Lists & Dicts\nfruits = ["apple", "banana", "cherry", "date"]\n\n# List operations\nfruits.append("elderberry")\nprint("Fruits:", fruits)\nprint("Sorted:", sorted(fruits))\n\n# Dict\nscores = {"Alice": 95, "Bob": 87, "Carol": 92}\nfor name, score in scores.items():\n    print(f"{name}: {score}")\n',
+    tasks:[
+      {id:'t1', text:'Create a list and add an element with <code>.append()</code>', check:(code,out)=>/\.append\(/.test(code)},
+      {id:'t2', text:'Create a dictionary with at least 2 key-value pairs', check:(code,out)=>/{[^}]*:\s*[^,}]+,[^}]*}/.test(code)||/\w+\s*=\s*\{/.test(code)},
+      {id:'t3', text:'Use a list comprehension <code>[expr for x in iterable]</code>', check:(code,out)=>/\[.+for\s+\w+\s+in\s+/.test(code)},
+    ],
+    hint:'my_list = [1,2,3]; my_list.append(4) | squares = [x**2 for x in range(10)] | my_dict = {"key": "value"}'
+  },
+  {
+    id:'ex5', title:'Error Handling', badge:'medium',
+    desc:'Use try/except to handle exceptions gracefully.',
+    starter:'# Exercise 5: Error Handling\ndef safe_divide(a, b):\n    try:\n        result = a / b\n        return result\n    except ZeroDivisionError:\n        return "Cannot divide by zero!"\n    except TypeError as e:\n        return f"Type error: {e}"\n\nprint(safe_divide(10, 2))\nprint(safe_divide(10, 0))\nprint(safe_divide(10, "x"))\n',
+    tasks:[
+      {id:'t1', text:'Use a <code>try</code> block with at least one <code>except</code> handler', check:(code,out)=>/try\s*:/.test(code)&&/except\s+/.test(code)},
+      {id:'t2', text:'Handle at least 2 different exception types', check:(code,out)=>(code.match(/except\s+\w/g)||[]).length>=2},
+      {id:'t3', text:'Output shows both a success result and a handled error message', check:(code,out)=>out.trim().split('\n').filter(l=>l.trim()).length>=2},
+    ],
+    hint:'try: ... except ValueError: ... except (TypeError, KeyError) as e: print(e) ... finally: ...'
+  },
+  {
+    id:'ex6', title:'Classes & OOP', badge:'medium',
+    desc:'Define a class with __init__, methods, and inheritance.',
+    starter:'# Exercise 6: Classes & OOP\nclass Animal:\n    def __init__(self, name, sound):\n        self.name = name\n        self.sound = sound\n\n    def speak(self):\n        return f"{self.name} says {self.sound}!"\n\nclass Dog(Animal):\n    def __init__(self, name):\n        super().__init__(name, "Woof")\n\n    def fetch(self, item):\n        return f"{self.name} fetches the {item}!"\n\ndog = Dog("Rex")\nprint(dog.speak())\nprint(dog.fetch("ball"))\n',
+    tasks:[
+      {id:'t1', text:'Define a class with <code>__init__</code>', check:(code,out)=>/class\s+\w+/.test(code)&&/def\s+__init__/.test(code)},
+      {id:'t2', text:'Add at least one method to your class', check:(code,out)=>(code.match(/def\s+\w+\s*\(self/g)||[]).length>=2},
+      {id:'t3', text:'Create an instance and call a method', check:(code,out)=>out.trim().length>0},
+    ],
+    hint:'class MyClass: def __init__(self, x): self.x = x  | class Child(Parent): super().__init__(...)'
+  },
+  {
+    id:'ex7', title:'Modules & stdlib', badge:'medium',
+    desc:'Use Python standard library modules: json, datetime, math, random.',
+    starter:'# Exercise 7: Modules & stdlib\nimport json\nimport math\nimport random\nfrom datetime import datetime, timedelta\n\n# Math\nprint(f"Pi: {math.pi:.4f}")\nprint(f"sqrt(144): {math.sqrt(144)}")\n\n# Random\nprint(f"Random 1-100: {random.randint(1, 100)}")\n\n# Date\nnow = datetime.now()\nprint(f"Now: {now.strftime(\'%Y-%m-%d %H:%M\')}")\ntomorrow = now + timedelta(days=1)\nprint(f"Tomorrow: {tomorrow.strftime(\'%Y-%m-%d\')}")\n',
+    tasks:[
+      {id:'t1', text:'Import and use the <code>math</code> module', check:(code,out)=>/import\s+math/.test(code)&&/math\./.test(code)},
+      {id:'t2', text:'Import and use the <code>datetime</code> module', check:(code,out)=>/datetime/.test(code)},
+      {id:'t3', text:'Serialize a Python dict to JSON using <code>json.dumps()</code>', check:(code,out)=>/json\.dumps\(/.test(code)},
+    ],
+    hint:'import json; json.dumps({"key":"val"}) | import math; math.sqrt(x) | from datetime import datetime; datetime.now()'
+  },
+  {
+    id:'ex8', title:'Comprehensions & Functional', badge:'hard',
+    desc:'Master list/dict/set comprehensions, map, filter, and lambda.',
+    starter:'# Exercise 8: Comprehensions & Functional\nnums = list(range(1, 21))\n\n# List comprehension\nsquares = [x**2 for x in nums if x % 2 == 0]\nprint("Even squares:", squares)\n\n# Dict comprehension\nword_lengths = {w: len(w) for w in ["python", "code", "lab", "learning"]}\nprint("Word lengths:", word_lengths)\n\n# Lambda + filter + map\nevens = list(filter(lambda x: x % 2 == 0, nums))\ndoubled = list(map(lambda x: x * 2, evens[:5]))\nprint("Doubled evens:", doubled)\n',
+    tasks:[
+      {id:'t1', text:'Use a list comprehension with a condition (if clause)', check:(code,out)=>/\[.+for\s+\w+\s+in\s+.+if\s+/.test(code)},
+      {id:'t2', text:'Use a dict comprehension <code>{k: v for ...}</code>', check:(code,out)=>/{.+:\s*.+for\s+\w+\s+in/.test(code)},
+      {id:'t3', text:'Use <code>lambda</code> with <code>map</code> or <code>filter</code>', check:(code,out)=>/lambda/.test(code)&&(/(map|filter)\s*\(/.test(code))},
+    ],
+    hint:'[x for x in lst if x>0] | {k:v for k,v in d.items()} | list(map(lambda x: x*2, lst))'
+  },
+  {
+    id:'ex9', title:'Generators & Decorators', badge:'hard',
+    desc:'Write generator functions with yield and simple decorators.',
+    starter:'# Exercise 9: Generators & Decorators\nimport time\nimport functools\n\n# Generator\ndef fibonacci(n):\n    a, b = 0, 1\n    for _ in range(n):\n        yield a\n        a, b = b, a + b\n\nprint("Fibonacci:", list(fibonacci(10)))\n\n# Decorator\ndef timer(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        start = time.time()\n        result = func(*args, **kwargs)\n        elapsed = time.time() - start\n        print(f"{func.__name__} took {elapsed:.4f}s")\n        return result\n    return wrapper\n\n@timer\ndef slow_sum(n):\n    return sum(range(n))\n\nresult = slow_sum(100000)\nprint(f"Sum: {result}")\n',
+    tasks:[
+      {id:'t1', text:'Define a generator function using <code>yield</code>', check:(code,out)=>/def\s+\w+/.test(code)&&/yield\s+/.test(code)},
+      {id:'t2', text:'Write a decorator function and apply it with <code>@</code>', check:(code,out)=>/def\s+\w+\s*\(func\)/.test(code)&&/@\w+/.test(code)},
+      {id:'t3', text:'Print output from both the generator and the decorated function', check:(code,out)=>out.trim().split('\n').filter(l=>l.trim()).length>=2},
+    ],
+    hint:'def gen(): yield 1; yield 2 | def deco(f): def wrapper(*a, **k): ... return wrapper; @deco def func(): ...'
+  },
+  {
+    id:'ex10', title:'File & Data Processing', badge:'hard',
+    desc:'Use StringIO, csv, and json to process data without real files.',
+    starter:'# Exercise 10: File & Data Processing\nimport json\nimport csv\nimport io\n\n# JSON data processing\ndata = [\n    {"name": "Alice", "score": 95, "grade": "A"},\n    {"name": "Bob",   "score": 82, "grade": "B"},\n    {"name": "Carol", "score": 91, "grade": "A"},\n    {"name": "Dave",  "score": 74, "grade": "C"},\n]\n\n# Serialize and deserialize\njson_str = json.dumps(data, indent=2)\nparsed   = json.loads(json_str)\n\n# Analyse\navg = sum(s["score"] for s in parsed) / len(parsed)\nprint(f"Average score: {avg:.1f}")\ntop = max(parsed, key=lambda s: s["score"])\nprint(f"Top student: {top[\'name\']} ({top[\'score\']})")\n\n# CSV via StringIO\ncsv_data = "name,dept,salary\\nAlice,Eng,90000\\nBob,HR,70000\\nCarol,Eng,95000\\n"\nreader = csv.DictReader(io.StringIO(csv_data))\neng = [r for r in reader if r["dept"] == "Eng"]\nprint(f"Engineering staff: {[r[\'name\'] for r in eng]}")\n',
+    tasks:[
+      {id:'t1', text:'Use <code>json.loads()</code> and <code>json.dumps()</code>', check:(code,out)=>/json\.loads\(/.test(code)&&/json\.dumps\(/.test(code)},
+      {id:'t2', text:'Use <code>csv.DictReader</code> with <code>io.StringIO</code>', check:(code,out)=>/csv\.DictReader/.test(code)||/csv\.reader/.test(code)},
+      {id:'t3', text:'Compute an aggregate (avg, max, min, sum) from a collection', check:(code,out)=>/(avg|average|max|min|sum)\s*=/.test(code)||(/(sum|max|min)\(/.test(code))},
+    ],
+    hint:'json.loads(str) → dict | json.dumps(dict) → str | csv.DictReader(io.StringIO(csv_str)) | max(list, key=lambda x: x["field"])'
+  },
+];
+
+// ─── Cheatsheet data ──────────────────────────────────────────────────────────
+const CHEATSHEET = [
+  { title:'Variables & Types', items:[
+    {cmd:'x = 10', desc:'integer'},
+    {cmd:'y = 3.14', desc:'float'},
+    {cmd:'s = "hello"', desc:'string'},
+    {cmd:'b = True', desc:'bool'},
+    {cmd:'n = None', desc:'None type'},
+    {cmd:'type(x)', desc:'get type'},
+    {cmd:'int("42")', desc:'cast to int'},
+    {cmd:'str(42)', desc:'cast to string'},
+  ]},
+  { title:'Strings', items:[
+    {cmd:'f"Hi {name}"', desc:'f-string interpolation'},
+    {cmd:'s.upper() / .lower()', desc:'case conversion'},
+    {cmd:'s.strip()', desc:'remove whitespace'},
+    {cmd:'s.split(",")', desc:'split to list'},
+    {cmd:'",".join(lst)', desc:'join list to string'},
+    {cmd:'s.replace("a","b")', desc:'replace substring'},
+    {cmd:'len(s)', desc:'string length'},
+    {cmd:'s[0] / s[-1]', desc:'indexing'},
+    {cmd:'s[1:4]', desc:'slicing'},
+  ]},
+  { title:'Lists & Tuples', items:[
+    {cmd:'lst = [1,2,3]', desc:'list literal'},
+    {cmd:'lst.append(x)', desc:'add to end'},
+    {cmd:'lst.pop()', desc:'remove last'},
+    {cmd:'lst.insert(0,x)', desc:'insert at index'},
+    {cmd:'sorted(lst)', desc:'returns sorted copy'},
+    {cmd:'lst.sort()', desc:'sort in-place'},
+    {cmd:'len(lst)', desc:'length'},
+    {cmd:'x in lst', desc:'membership test'},
+    {cmd:'lst[::-1]', desc:'reverse slice'},
+  ]},
+  { title:'Dicts & Sets', items:[
+    {cmd:'d = {"k": "v"}', desc:'dict literal'},
+    {cmd:'d["key"]', desc:'get value'},
+    {cmd:'d.get("k", default)', desc:'safe get'},
+    {cmd:'d.keys() / .values()', desc:'keys or values'},
+    {cmd:'d.items()', desc:'key-value pairs'},
+    {cmd:'d.update(other)', desc:'merge dicts'},
+    {cmd:'s = {1,2,3}', desc:'set literal'},
+    {cmd:'s.add(x) / .discard(x)', desc:'add/remove'},
+    {cmd:'s1 & s2 / s1 | s2', desc:'intersection / union'},
+  ]},
+  { title:'Control Flow', items:[
+    {cmd:'if x > 0:', desc:'conditional'},
+    {cmd:'elif x == 0:', desc:'else if'},
+    {cmd:'else:', desc:'fallback'},
+    {cmd:'for i in range(n):', desc:'range loop'},
+    {cmd:'for k,v in d.items():', desc:'dict loop'},
+    {cmd:'while condition:', desc:'while loop'},
+    {cmd:'break / continue', desc:'exit / skip iteration'},
+    {cmd:'x if cond else y', desc:'ternary expression'},
+  ]},
+  { title:'Functions', items:[
+    {cmd:'def f(x, y=0):', desc:'define with default'},
+    {cmd:'return value', desc:'return value'},
+    {cmd:'*args / **kwargs', desc:'variadic args'},
+    {cmd:'lambda x: x*2', desc:'anonymous function'},
+    {cmd:'map(fn, lst)', desc:'apply fn to each item'},
+    {cmd:'filter(fn, lst)', desc:'keep where fn is True'},
+    {cmd:'sorted(lst, key=fn)', desc:'sort by key function'},
+  ]},
+  { title:'Comprehensions', items:[
+    {cmd:'[x for x in lst]', desc:'list comp'},
+    {cmd:'[x for x in lst if x>0]', desc:'with filter'},
+    {cmd:'{k:v for k,v in d}', desc:'dict comp'},
+    {cmd:'{x for x in lst}', desc:'set comp'},
+    {cmd:'(x for x in lst)', desc:'generator expr'},
+  ]},
+  { title:'OOP', items:[
+    {cmd:'class Foo:', desc:'class definition'},
+    {cmd:'def __init__(self, x):', desc:'constructor'},
+    {cmd:'self.attr = x', desc:'instance attribute'},
+    {cmd:'class Bar(Foo):', desc:'inheritance'},
+    {cmd:'super().__init__(x)', desc:'call parent init'},
+    {cmd:'@staticmethod', desc:'static method'},
+    {cmd:'@classmethod', desc:'class method'},
+    {cmd:'@property', desc:'property decorator'},
+  ]},
+  { title:'Error Handling', items:[
+    {cmd:'try:', desc:'try block'},
+    {cmd:'except ValueError as e:', desc:'catch specific error'},
+    {cmd:'except (A, B):', desc:'catch multiple'},
+    {cmd:'else:', desc:'run if no exception'},
+    {cmd:'finally:', desc:'always runs'},
+    {cmd:'raise ValueError("msg")', desc:'raise exception'},
+  ]},
+  { title:'stdlib Essentials', items:[
+    {cmd:'import json', desc:'JSON encode/decode'},
+    {cmd:'json.dumps(obj)', desc:'dict → JSON string'},
+    {cmd:'json.loads(s)', desc:'JSON string → dict'},
+    {cmd:'import math', desc:'math functions'},
+    {cmd:'math.sqrt / .floor / .ceil', desc:'common math'},
+    {cmd:'import random', desc:'random numbers'},
+    {cmd:'random.randint(a,b)', desc:'random integer'},
+    {cmd:'from datetime import datetime', desc:'date/time'},
+    {cmd:'datetime.now()', desc:'current datetime'},
+    {cmd:'import os', desc:'OS interactions'},
+  ]},
+];
+
+// ─── Snippets ─────────────────────────────────────────────────────────────────
+const SNIPPETS = [
+  { title:'Read & Write JSON', code:'import json\n\ndata = {"name": "Alice", "scores": [95, 87, 92]}\n\n# Serialize\nj = json.dumps(data, indent=2)\nprint(j)\n\n# Deserialize\nobj = json.loads(j)\nprint(f"Name: {obj[\'name\']}, Best: {max(obj[\'scores\'])}")\n' },
+  { title:'Flatten & Unique', code:'nested = [[1,2,3],[2,3,4],[4,5,6]]\n\n# Flatten\nflat = [x for sub in nested for x in sub]\nprint("Flat:", flat)\n\n# Unique preserving order\nseen = set()\nunique = [x for x in flat if not (x in seen or seen.add(x))]\nprint("Unique:", unique)\n' },
+  { title:'Class with Properties', code:'class Circle:\n    def __init__(self, radius):\n        self._radius = radius\n\n    @property\n    def radius(self):\n        return self._radius\n\n    @radius.setter\n    def radius(self, r):\n        if r < 0:\n            raise ValueError("Radius must be non-negative")\n        self._radius = r\n\n    @property\n    def area(self):\n        import math\n        return round(math.pi * self._radius ** 2, 4)\n\nc = Circle(5)\nprint(f"Area: {c.area}")\nc.radius = 10\nprint(f"New area: {c.area}")\n' },
+  { title:'Generator Pipeline', code:'def read_data():\n    data = [10, -3, 42, 0, 7, -1, 99, 5]\n    for x in data:\n        yield x\n\ndef positive(seq):\n    return (x for x in seq if x > 0)\n\ndef doubled(seq):\n    return (x * 2 for x in seq)\n\n# Pipeline\nresult = list(doubled(positive(read_data())))\nprint(result)\nprint(f"Sum: {sum(result)}")\n' },
+  { title:'Retry Decorator', code:'import time\nimport functools\nimport random\n\ndef retry(times=3, delay=0.1):\n    def decorator(func):\n        @functools.wraps(func)\n        def wrapper(*args, **kwargs):\n            for attempt in range(1, times + 1):\n                try:\n                    return func(*args, **kwargs)\n                except Exception as e:\n                    print(f"Attempt {attempt} failed: {e}")\n                    if attempt < times:\n                        time.sleep(delay)\n            raise RuntimeError(f"All {times} attempts failed")\n        return wrapper\n    return decorator\n\n@retry(times=3, delay=0)\ndef flaky():\n    if random.random() < 0.6:\n        raise ValueError("Random failure")\n    return "Success!"\n\nprint(flaky())\n' },
+  { title:'CSV Processing', code:'import csv, io\n\ncsv_text = """name,department,salary\nAlice,Engineering,95000\nBob,Marketing,72000\nCarol,Engineering,88000\nDave,HR,65000\nEve,Engineering,102000\n"""\n\nreader = csv.DictReader(io.StringIO(csv_text))\nrows = list(reader)\n\nby_dept = {}\nfor r in rows:\n    dept = r["department"]\n    by_dept.setdefault(dept, []).append(int(r["salary"]))\n\nfor dept, salaries in sorted(by_dept.items()):\n    print(f"{dept}: avg=${sum(salaries)//len(salaries):,} ({len(salaries)} people)")\n' },
+  { title:'Dataclass', code:'from dataclasses import dataclass, field\nfrom typing import List\n\n@dataclass\nclass Student:\n    name: str\n    grades: List[float] = field(default_factory=list)\n\n    @property\n    def average(self):\n        return sum(self.grades) / len(self.grades) if self.grades else 0\n\n    def __post_init__(self):\n        if not self.name:\n            raise ValueError("Name cannot be empty")\n\nstudents = [\n    Student("Alice", [92, 88, 95, 91]),\n    Student("Bob",   [74, 81, 69, 78]),\n    Student("Carol", [98, 95, 99, 97]),\n]\n\nfor s in sorted(students, key=lambda s: s.average, reverse=True):\n    print(f"{s.name}: {s.average:.1f}")\n' },
+];
+
+// ─── Pyodide state ────────────────────────────────────────────────────────────
+let pyodide = null;
+let pyReady = false;
+let currentExercise = null;
+let exDone = {};
+let replHistory = [];
+let replHistoryIdx = -1;
+let editorMode = true; // true = editor, false = REPL
+
+async function loadPyodide_() {
+  try {
+    pyodide = await loadPyodide();
+    // Set up stdout/stderr capture
+    await pyodide.runPythonAsync(`
+import sys, io
+class _CapOut:
+    def __init__(self): self.data = []
+    def write(self, s): self.data.append(s)
+    def flush(self): pass
+    def getvalue(self): return ''.join(self.data)
+    def clear(self): self.data = []
+sys.stdout = _CapOut()
+sys.stderr = _CapOut()
+`);
+    pyReady = true;
+    const el = document.getElementById('py-status');
+    el.textContent = 'Python 3 Ready';
+    el.className = 'py-status ready';
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('repl-input').disabled = false;
+  } catch(e) {
+    const el = document.getElementById('py-status');
+    el.textContent = 'Failed to load Python';
+    el.className = 'py-status';
+  }
+}
+loadPyodide_();
+
+// ─── Run code ─────────────────────────────────────────────────────────────────
+async function runCode() {
+  if (!pyReady) return;
+  const code = document.getElementById('code-editor').value;
+  if (!code.trim()) return;
+
+  const runBtn = document.getElementById('run-btn');
+  runBtn.disabled = true;
+  runBtn.textContent = '⏳ Running...';
+
+  const out = document.getElementById('output-scroll');
+  out.innerHTML = '<div class="out-info">Running...</div>';
+
+  try {
+    const t0 = performance.now();
+    await pyodide.runPythonAsync('sys.stdout.clear(); sys.stderr.clear()');
+
+    let resultVal = undefined;
+    try {
+      resultVal = await pyodide.runPythonAsync(code);
+    } catch(e) {
+      // Execution error — capture it
+    }
+
+    const stdout = pyodide.runPython('sys.stdout.getvalue()');
+    const stderr = pyodide.runPython('sys.stderr.getvalue()');
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(3);
+
+    document.getElementById('exec-time').textContent = `${elapsed}s`;
+
+    let html = '';
+    if (stdout) html += `<div class="out-stdout">${escHtml(stdout)}</div>`;
+    if (stderr) html += `<div class="out-stderr">${escHtml(stderr)}</div>`;
+    if (!stdout && !stderr && resultVal !== undefined && resultVal !== null) {
+      html += `<div class="out-result">${escHtml(String(resultVal))}</div>`;
+    }
+    if (!html) html = '<div class="out-empty">No output</div>';
+
+    out.innerHTML = html;
+
+    // Check exercise tasks
+    if (currentExercise) {
+      checkTasksLive(code, stdout + stderr);
+    }
+  } catch(e) {
+    out.innerHTML = `<div class="out-stderr">${escHtml(e.message||String(e))}</div>`;
+  }
+
+  runBtn.disabled = false;
+  runBtn.innerHTML = '&#x25B6; Run &nbsp;<kbd style="font-size:9px;opacity:.7">Ctrl+Enter</kbd>';
+}
+
+// ─── REPL ─────────────────────────────────────────────────────────────────────
+async function replRun(line) {
+  if (!pyReady || !line.trim()) return;
+  const hist = document.getElementById('repl-history');
+
+  // Echo input
+  const inDiv = document.createElement('div');
+  inDiv.innerHTML = '<span class="repl-in">&gt;&gt;&gt; </span>' + escHtml(line);
+  hist.appendChild(inDiv);
+
+  await pyodide.runPythonAsync('sys.stdout.clear(); sys.stderr.clear()');
+  let resultVal = undefined;
+  try {
+    resultVal = await pyodide.runPythonAsync(line);
+  } catch(e) {}
+
+  const stdout = pyodide.runPython('sys.stdout.getvalue()');
+  const stderr = pyodide.runPython('sys.stderr.getvalue()');
+
+  if (stdout) { const d=document.createElement('div'); d.className='repl-out'; d.textContent=stdout; hist.appendChild(d); }
+  if (stderr) { const d=document.createElement('div'); d.className='repl-err'; d.textContent=stderr; hist.appendChild(d); }
+  if (!stdout && !stderr && resultVal !== undefined && resultVal !== null) {
+    const d=document.createElement('div'); d.className='repl-res'; d.textContent=String(resultVal); hist.appendChild(d);
+  }
+
+  hist.scrollTop = hist.scrollHeight;
+  replHistory.unshift(line);
+  replHistoryIdx = -1;
+}
+
+function handleReplKey(e) {
+  const input = document.getElementById('repl-input');
+  if (e.key === 'Enter') {
+    const val = input.value;
+    input.value = '';
+    replRun(val);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (replHistoryIdx < replHistory.length - 1) { replHistoryIdx++; input.value = replHistory[replHistoryIdx]; }
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (replHistoryIdx > 0) { replHistoryIdx--; input.value = replHistory[replHistoryIdx]; }
+    else if (replHistoryIdx === 0) { replHistoryIdx=-1; input.value=''; }
+  }
+}
+
+// ─── Mode toggle ──────────────────────────────────────────────────────────────
+function toggleMode() {
+  editorMode = !editorMode;
+  document.getElementById('editor-mode').style.display = editorMode ? 'flex' : 'none';
+  document.getElementById('repl-mode').style.display = editorMode ? 'none' : 'flex';
+  document.getElementById('run-btn').style.display = editorMode ? '' : 'none';
+  const btn = document.getElementById('mode-toggle');
+  btn.textContent = editorMode ? 'REPL Mode' : 'Editor Mode';
+  btn.classList.toggle('active', !editorMode);
+  if (!editorMode) document.getElementById('repl-input').focus();
+}
+
+// ─── Editor helpers ───────────────────────────────────────────────────────────
+function handleEditorKey(e) {
+  const ta = document.getElementById('code-editor');
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = ta.selectionStart, end = ta.selectionEnd;
+    ta.value = ta.value.substring(0, s) + '    ' + ta.value.substring(end);
+    ta.selectionStart = ta.selectionEnd = s + 4;
+    updateLineNums();
+  } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    runCode();
+  } else if (e.key === 'Enter') {
+    // Auto-indent
+    setTimeout(() => {
+      const pos = ta.selectionStart;
+      const lines = ta.value.substring(0, pos).split('\n');
+      const prevLine = lines[lines.length - 2] || '';
+      const indent = prevLine.match(/^(\s*)/)[1];
+      const extraIndent = /:\s*$/.test(prevLine.trimEnd()) ? '    ' : '';
+      if (indent || extraIndent) {
+        const ins = indent + extraIndent;
+        ta.value = ta.value.substring(0, pos) + ins + ta.value.substring(pos);
+        ta.selectionStart = ta.selectionEnd = pos + ins.length;
+      }
+      updateLineNums();
+    }, 0);
+  }
+}
+
+function updateLineNums() {
+  const ta = document.getElementById('code-editor');
+  const lines = ta.value.split('\n').length;
+  const nums = Array.from({length: lines}, (_, i) => i+1).join('\n');
+  document.getElementById('line-nums').textContent = nums;
+  // Sync scroll
+  const ln = document.getElementById('line-nums');
+  ln.scrollTop = ta.scrollTop;
+}
+
+// Sync line number scroll with textarea scroll
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('code-editor');
+  ta.addEventListener('scroll', () => {
+    document.getElementById('line-nums').scrollTop = ta.scrollTop;
+  });
+});
+
+function clearAll() {
+  if (editorMode) {
+    document.getElementById('code-editor').value = '';
+    document.getElementById('output-scroll').innerHTML = '<div class="out-empty">Output cleared.</div>';
+    document.getElementById('exec-time').textContent = '';
+    updateLineNums();
+  } else {
+    document.getElementById('repl-history').innerHTML = '<div class="out-info">REPL cleared.</div>';
+  }
+}
+
+// ─── Exercises ────────────────────────────────────────────────────────────────
+function renderExercises() {
+  const total = EXERCISES.length;
+  const done = Object.keys(exDone).length;
+  document.getElementById('prog-text').textContent = `${done} / ${total} done`;
+  document.getElementById('prog-fill').style.width = `${Math.round(done/total*100)}%`;
+
+  const container = document.getElementById('ex-list');
+  container.innerHTML = EXERCISES.map(ex => {
+    const isDone = exDone[ex.id];
+    const isActive = currentExercise && currentExercise.id === ex.id;
+    return `<div class="ex-item${isActive?' active':''}${isDone?' done':''}" onclick="selectExercise('${ex.id}')">
+      <div class="ex-title">
+        ${isDone ? '<span style="color:var(--green)">&#x2714;</span>' : ''}
+        ${ex.title}
+        <span class="ex-badge badge-${ex.badge}">${ex.badge}</span>
+      </div>
+      <div class="ex-desc">${ex.desc}</div>
+      ${isActive ? `<div class="ex-tasks">${ex.tasks.map(t=>`<div class="ex-task${exDone[ex.id+'.'+t.id]?' done':''}" id="task-${ex.id}-${t.id}"><span class="ex-task-icon">${exDone[ex.id+'.'+t.id]?'&#x2705;':'&#x25A1;'}</span><span>${t.text}</span></div>`).join('')}<button class="load-ex-btn" onclick="loadStarter(event,'${ex.id}')">Load Starter Code</button></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function selectExercise(id) {
+  const ex = EXERCISES.find(e => e.id === id);
+  if (!ex) return;
+  currentExercise = ex;
+  renderExercises();
+
+  const bar = document.getElementById('challenge-bar');
+  bar.style.display = '';
+  document.getElementById('chal-title').textContent = `Exercise: ${ex.title}`;
+  document.getElementById('chal-text').textContent = ex.desc;
+  document.getElementById('chal-hint').style.display = 'none';
+  document.getElementById('chal-hint').classList.remove('visible');
+  renderChalTasks(ex);
+}
+
+function renderChalTasks(ex) {
+  const container = document.getElementById('chal-tasks');
+  container.innerHTML = ex.tasks.map(t => {
+    const done = exDone[ex.id + '.' + t.id];
+    return `<div class="challenge-task${done?' done':''}" id="ctask-${ex.id}-${t.id}">
+      <span style="flex-shrink:0">${done ? '&#x2705;' : '&#x25A1;'}</span>
+      <span>${t.text}</span>
+    </div>`;
+  }).join('');
+}
+
+function loadStarter(e, id) {
+  e.stopPropagation();
+  const ex = EXERCISES.find(x => x.id === id);
+  if (!ex) return;
+  document.getElementById('code-editor').value = ex.starter;
+  document.getElementById('editor-title').textContent = `exercise-${id.replace('ex','')}.py`;
+  updateLineNums();
+  document.getElementById('output-scroll').innerHTML = '<div class="out-info">Starter code loaded. Press Run to execute.</div>';
+  // Switch to editor mode if in REPL
+  if (!editorMode) toggleMode();
+}
+
+function checkTasksLive(code, output) {
+  if (!currentExercise) return;
+  let anyNewDone = false;
+  currentExercise.tasks.forEach(t => {
+    const key = currentExercise.id + '.' + t.id;
+    if (!exDone[key] && t.check(code, output)) {
+      exDone[key] = true;
+      anyNewDone = true;
+    }
+  });
+  const allDone = currentExercise.tasks.every(t => exDone[currentExercise.id + '.' + t.id]);
+  if (allDone && !exDone[currentExercise.id]) {
+    exDone[currentExercise.id] = true;
+    document.getElementById('output-scroll').innerHTML +=
+      '<div class="out-success">&#x2705; All tasks complete! Exercise done.</div>';
+  }
+  if (anyNewDone) {
+    renderExercises();
+    renderChalTasks(currentExercise);
+  }
+  saveProg();
+}
+
+function checkExercise() {
+  const code = document.getElementById('code-editor').value;
+  const out = document.getElementById('output-scroll').textContent;
+  checkTasksLive(code, out);
+}
+
+function showHint() {
+  if (!currentExercise) return;
+  const h = document.getElementById('chal-hint');
+  h.textContent = currentExercise.hint;
+  h.classList.add('visible');
+}
+
+function skipExercise() {
+  if (!currentExercise) return;
+  const idx = EXERCISES.findIndex(e => e.id === currentExercise.id);
+  if (idx < EXERCISES.length - 1) selectExercise(EXERCISES[idx+1].id);
+}
+
+function saveProg() {
+  try { localStorage.setItem('py_lab_progress', JSON.stringify(exDone)); } catch(e) {}
+}
+function loadProg() {
+  try { const s = localStorage.getItem('py_lab_progress'); if(s) exDone = JSON.parse(s); } catch(e) {}
+}
+
+// ─── Cheatsheet render ────────────────────────────────────────────────────────
+function renderCheatsheet() {
+  const container = document.getElementById('cheatsheet-content');
+  container.innerHTML = CHEATSHEET.map(section => `
+    <div class="cs-section">
+      <div class="cs-title">${section.title}</div>
+      ${section.items.map(item => `
+        <div class="cs-cmd" onclick="insertSnippet(${JSON.stringify(item.cmd)})">
+          <span class="cs-cmd-name">${escHtml(item.cmd)}</span>
+          <span class="cs-cmd-desc">${item.desc}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function renderSnippets() {
+  const container = document.getElementById('snippets-content');
+  container.innerHTML = SNIPPETS.map((s, i) => `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--py-blue);margin-bottom:6px;">${s.title}</div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:8px;cursor:pointer;transition:all .2s;"
+           onclick="loadSnippet(${i})"
+           onmouseover="this.style.borderColor='var(--py-blue)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <pre style="font-size:10px;color:var(--gray);line-height:1.5;overflow:hidden;max-height:60px;font-family:monospace;">${escHtml(s.code.split('\n').slice(0,4).join('\n'))}${s.code.split('\n').length>4?'\n...':''}</pre>
+        <div style="font-size:10px;color:var(--py-blue);margin-top:4px;font-weight:600;">Click to load in editor</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadSnippet(i) {
+  const s = SNIPPETS[i];
+  document.getElementById('code-editor').value = s.code;
+  document.getElementById('editor-title').textContent = s.title.toLowerCase().replace(/\s+/g,'-') + '.py';
+  updateLineNums();
+  document.getElementById('output-scroll').innerHTML = '<div class="out-info">Snippet loaded. Press Run to execute.</div>';
+  if (!editorMode) toggleMode();
+  showTab('exercises', document.querySelector('.stab'));
+}
+
+function insertSnippet(code) {
+  const ta = document.getElementById('code-editor');
+  const s = ta.selectionStart;
+  ta.value = ta.value.substring(0, s) + code + ta.value.substring(ta.selectionEnd);
+  ta.selectionStart = ta.selectionEnd = s + code.length;
+  ta.focus();
+  updateLineNums();
+  if (!editorMode) toggleMode();
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function showTab(name, el) {
+  ['exercises','cheatsheet','snippets'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? '' : 'none';
+  });
+  document.querySelectorAll('.stab').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else document.querySelectorAll('.stab').forEach((s,i) => {
+    if(['exercises','cheatsheet','snippets'][i]===name) s.classList.add('active');
+  });
+}
+
+// ─── Util ─────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── User / Auth ──────────────────────────────────────────────────────────────
+function initUser() {
+  onAuthReady(function(user) {
+    if (!user) return;
+    // User is logged in — could use user.displayName for personalised progress later
+  });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+loadProg();
+renderExercises();
+renderCheatsheet();
+renderSnippets();
+initUser();
+updateLineNums();
+</script>
+</body>
+</html>

@@ -195,6 +195,26 @@ nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.96);backdrop-fil
         <span class="lcard-link">Launch Lab &#x2192;</span>
       </div>
     </a>
+    <a href="../learning_lab/python-terminal.html" class="lcard pinned" data-category="Cloud Labs" data-title="Python Lab">
+      <span class="pinned-badge">&#x1F4CC; Pinned</span>
+      <div class="lcard-header">
+        <div class="lcard-icon" style="background:linear-gradient(135deg,#1a2e4a,#2a4a6e);">&#x1F40D;</div>
+        <div>
+          <div class="lcard-title" style="color:#4B8BBE;">Python Lab — Interactive Coding Environment</div>
+          <div class="lcard-sub">Real Python 3 in your browser via Pyodide — 10 exercises from basics to decorators, REPL mode, cheatsheet, and reusable snippets.</div>
+        </div>
+      </div>
+      <div class="lcard-tags">
+        <span class="lcard-tag" style="background:#1a2e4a;color:#4B8BBE;border:1px solid #4B8BBE;">Python 3</span>
+        <span class="lcard-tag">10 Exercises</span>
+        <span class="lcard-tag">Real Execution</span>
+        <span class="lcard-tag">REPL + Editor</span>
+      </div>
+      <div class="lcard-footer">
+        <span class="lcard-status s-active">&#x1F7E2; Active</span>
+        <span class="lcard-link">Launch Lab &#x2192;</span>
+      </div>
+    </a>
     <a href="../learning_lab/linux-terminal.html" class="lcard pinned" data-category="Cloud Labs" data-title="Linux Terminal Lab">
       <span class="pinned-badge">&#x1F4CC; Pinned</span>
       <div class="lcard-header">
@@ -517,24 +537,21 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavAuth();
 });
 
-// Auth guard — redirect to login if not signed in
+// Auth guard — redirect to login if no user confirmed within 3s
+var _authTimer = setTimeout(function() {
+  window.location.replace('login.html?next=learning.html');
+}, 3000);
 try {
-  onAuthReady(user => {
-    if (!user) {
-      window.location.replace('login.html?next=learning.html');
-    } else {
+  onAuthReady(function(user) {
+    if (user) {
+      clearTimeout(_authTimer);
       document.body.style.visibility = 'visible';
     }
+    // Don't redirect on null — Firebase fires null first, then the real user
   });
 } catch(e) {
   window.location.replace('login.html?next=learning.html');
 }
-// Fallback: if auth doesn't resolve in 4s, redirect anyway
-setTimeout(() => {
-  if (document.body.style.visibility === 'hidden' || getComputedStyle(document.body).visibility === 'hidden') {
-    window.location.replace('login.html?next=learning.html');
-  }
-}, 4000);
 </script>
 </body>
 </html>
