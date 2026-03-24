@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terraform Playground — Interactive HCL Lab</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --bg:#0D1117;--bg2:#161B22;--bg3:#21262D;--border:#30363D;
+  --tf:#7B42BC;--tf-light:#C4B5FD;--tf-dim:#2d1a50;
+  --green:#3FB950;--green2:#2EA043;--cyan:#79C0FF;--yellow:#E3B341;
+  --orange:#F0883E;--red:#FF7B72;--purple:#D2A8FF;
+  --white:#C9D1D9;--gray:#8B949E;--header-bg:#1f0f47;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--white);}
+
+.site-header{background:var(--header-bg);color:white;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0;border-bottom:2px solid var(--tf);}
+.site-header h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.site-header p{font-size:11px;color:var(--tf-light);margin-top:1px;}
+.tf-badge{background:var(--tf);color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.nav-link{font-size:11px;padding:3px 10px;border-radius:5px;background:rgba(255,255,255,.1);color:var(--tf-light);text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.2);color:white;}
+
+.app{display:flex;height:calc(100vh - 56px);overflow:hidden;}
+
+/* Sidebar */
+.sidebar{width:280px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+.stab{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--gray);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.stab.active{color:var(--tf-light);border-bottom-color:var(--tf);}
+.stab:hover{color:var(--white);}
+.sidebar-content{flex:1;overflow-y:auto;padding:10px;}
+.sidebar-content::-webkit-scrollbar{width:4px;}
+.sidebar-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* Progress */
+.prog-wrap{margin-bottom:12px;}
+.prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.prog-label{font-size:11px;font-weight:700;}
+.prog-count{font-size:10px;color:var(--green);}
+.prog-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--tf),var(--tf-light));border-radius:99px;transition:width .4s;}
+
+/* Exercises */
+.ex-section{margin-bottom:14px;}
+.ex-section-hdr{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.ex-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.ex-item:hover{border-color:var(--tf);background:#1c1030;}
+.ex-item.active{border-color:var(--tf);background:#1c1030;}
+.ex-item.done{border-color:var(--green2);}
+.ex-title{font-size:12px;font-weight:600;color:var(--white);display:flex;align-items:center;gap:6px;}
+.ex-badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:700;}
+.badge-easy{background:#1a3a1a;color:var(--green);}
+.badge-medium{background:#3a2a0a;color:var(--yellow);}
+.badge-hard{background:#3a0a0a;color:var(--red);}
+.ex-desc{font-size:11px;color:var(--gray);margin-top:4px;line-height:1.5;}
+.ex-tasks{margin-top:8px;display:none;}
+.ex-item.active .ex-tasks{display:block;}
+.ex-task{font-size:11px;color:var(--gray);padding:2px 0;display:flex;gap:6px;align-items:flex-start;line-height:1.5;}
+.ex-task.done{color:var(--green);}
+.load-ex-btn{font-size:10px;padding:4px 10px;border-radius:5px;border:1px solid var(--tf);background:transparent;color:var(--tf-light);cursor:pointer;font-weight:700;margin-top:8px;transition:all .2s;width:100%;}
+.load-ex-btn:hover{background:var(--tf);color:white;}
+
+/* Cheatsheet sidebar */
+.cs-sec{margin-bottom:14px;}
+.cs-sec-title{font-size:10px;font-weight:700;color:var(--tf-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.cs-row{display:flex;gap:8px;margin-bottom:4px;padding:4px 6px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.cs-row:hover{background:var(--bg3);}
+.cs-name{font-family:'Cascadia Code','Fira Code',monospace;font-size:11px;color:var(--yellow);min-width:100px;flex-shrink:0;line-height:1.5;}
+.cs-info{font-size:11px;color:var(--gray);line-height:1.4;}
+
+/* Snippets */
+.snip-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:8px;cursor:pointer;transition:all .2s;}
+.snip-item:hover{border-color:var(--tf);}
+.snip-title{font-size:11px;font-weight:700;color:var(--tf-light);margin-bottom:4px;}
+.snip-pre{font-family:'Cascadia Code','Fira Code',monospace;font-size:10px;color:var(--gray);white-space:pre;overflow:hidden;max-height:60px;line-height:1.5;}
+
+/* Main editor area */
+.editor-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Toolbar */
+.toolbar{background:var(--bg3);border-bottom:1px solid var(--border);padding:7px 12px;display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;}
+.toolbar-dots{display:flex;gap:4px;margin-right:4px;}
+.dot{width:11px;height:11px;border-radius:50%;}
+.dot-r{background:#FF5F57;}.dot-y{background:#FFBD2E;}.dot-g{background:#28CA41;}
+.cmd-btn{font-size:11px;font-weight:700;padding:4px 12px;border-radius:5px;border:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:4px;}
+.cmd-btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-init{background:#1a4a1a;color:var(--green);}
+.btn-init:hover:not(:disabled){background:#2a6a2a;}
+.btn-validate{background:#1a2a4a;color:var(--cyan);}
+.btn-validate:hover:not(:disabled){background:#2a3a6a;}
+.btn-plan{background:#2d1a50;color:var(--tf-light);}
+.btn-plan:hover:not(:disabled){background:#3d2a60;}
+.btn-apply{background:#1a3a1a;color:var(--green);}
+.btn-apply:hover:not(:disabled){background:#2a5a2a;}
+.btn-destroy{background:#3a1010;color:var(--red);}
+.btn-destroy:hover:not(:disabled){background:#5a2020;}
+.btn-fmt{background:#1a1a2a;color:var(--gray);}
+.btn-fmt:hover:not(:disabled){background:#2a2a3a;color:var(--white);}
+.btn-output{background:#2a2010;color:var(--yellow);}
+.btn-output:hover:not(:disabled){background:#3a3010;}
+.tf-status{font-size:10px;margin-left:auto;display:flex;align-items:center;gap:5px;color:var(--gray);}
+.tf-status.init{color:var(--green);}
+.tf-status.running{color:var(--yellow);}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+/* Split pane */
+.split-pane{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.editor-pane{flex:0 0 52%;display:flex;flex-direction:column;overflow:hidden;border-bottom:2px solid var(--tf);}
+.terminal-pane{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Code editor */
+.editor-titlebar{background:var(--bg2);border-bottom:1px solid var(--border);padding:5px 14px;font-size:11px;color:var(--gray);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.editor-file{color:var(--tf-light);font-family:monospace;font-size:11px;}
+.code-editor-wrap{flex:1;position:relative;overflow:hidden;}
+.line-nums{position:absolute;left:0;top:0;bottom:0;width:36px;background:var(--bg2);border-right:1px solid var(--border);padding:14px 4px;font-family:'Cascadia Code','Fira Code',monospace;font-size:13px;line-height:1.7;color:#444;text-align:right;pointer-events:none;overflow:hidden;user-select:none;}
+.code-editor{width:100%;height:100%;background:var(--bg);border:none;outline:none;color:var(--white);font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.7;padding:14px 14px 14px 48px;resize:none;tab-size:2;}
+.code-editor::-webkit-scrollbar{width:6px;}
+.code-editor::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* Terminal output */
+.term-titlebar{background:var(--bg2);border-bottom:1px solid var(--border);padding:5px 14px;font-size:11px;color:var(--gray);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.term-clear{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--gray);cursor:pointer;transition:all .2s;}
+.term-clear:hover{border-color:var(--red);color:var(--red);}
+.term-scroll{flex:1;overflow-y:auto;padding:12px 16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:12px;line-height:1.7;}
+.term-scroll::-webkit-scrollbar{width:6px;}
+.term-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.t-white{color:var(--white);}
+.t-green{color:var(--green);}
+.t-red{color:var(--red);}
+.t-yellow{color:var(--yellow);}
+.t-cyan{color:var(--cyan);}
+.t-gray{color:var(--gray);}
+.t-purple{color:var(--purple);}
+.t-tf{color:var(--tf-light);}
+.t-bold{font-weight:700;}
+.t-dim{opacity:.6;}
+.t-line{display:block;white-space:pre-wrap;word-break:break-all;}
+.t-prompt{color:var(--tf);font-weight:700;}
+.t-add{color:var(--green);}
+.t-change{color:var(--yellow);}
+.t-destroy{color:var(--red);}
+.t-blank{display:block;height:4px;}
+.cursor-blink{display:inline-block;width:8px;height:14px;background:var(--white);animation:blink 1s step-end infinite;vertical-align:text-bottom;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* Challenge bar */
+.challenge-bar{background:var(--bg2);border-top:1px solid var(--border);padding:8px 14px;flex-shrink:0;display:none;}
+.challenge-bar.visible{display:block;}
+.challenge-title{font-size:10px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.challenge-text{font-size:12px;color:var(--white);line-height:1.5;}
+.challenge-tasks-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:5px;}
+.ch-task{font-size:11px;color:var(--gray);display:flex;gap:5px;align-items:center;}
+.ch-task.done{color:var(--green);}
+.ch-btns{display:flex;gap:6px;margin-top:6px;}
+.chbtn{font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-weight:600;background:var(--bg3);color:var(--gray);transition:all .2s;}
+.chbtn:hover{color:var(--white);}
+.chbtn-hint{color:var(--purple);border-color:var(--purple);}
+.chbtn-check{color:var(--green);border-color:var(--green);}
+.hint-box{font-size:11px;color:var(--gray);margin-top:5px;background:var(--bg3);padding:6px 10px;border-radius:5px;border-left:3px solid var(--tf);display:none;}
+.hint-box.visible{display:block;}
+
+@media(max-width:768px){.sidebar{width:220px;}.site-header h1{font-size:13px;}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <h1><span class="tf-badge">TF</span> Terraform Playground — Interactive HCL Lab</h1>
+    <p>Simulated Terraform CLI &middot; Write HCL &middot; init / validate / plan / apply / destroy &middot; Track State</p>
+  </div>
+  <div class="nav-links">
+    <a href="../personal_site/index.html" class="nav-link">Home</a>
+    <a href="../personal_site/learning.html" class="nav-link">Learning Hub</a>
+    <a href="terraform.html" class="nav-link">&#x1F7E3; Lab Tracker</a>
+    <a href="ansible.html" class="nav-link">Ansible</a>
+    <a href="pulumi.html" class="nav-link">Pulumi</a>
+    <span id="user-chip" class="nav-link" style="cursor:pointer;">&#x1F464; <span id="user-name">...</span></span>
+  </div>
+</header>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="stab active" onclick="showTab('exercises',this)">Exercises</div>
+      <div class="stab" onclick="showTab('cheatsheet',this)">Cheatsheet</div>
+      <div class="stab" onclick="showTab('snippets',this)">Snippets</div>
+    </div>
+
+    <!-- Exercises tab -->
+    <div class="sidebar-content" id="tab-exercises">
+      <div class="prog-wrap">
+        <div class="prog-top"><span class="prog-label">Progress</span><span class="prog-count" id="prog-text">0 / 8 done</span></div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div id="ex-list"></div>
+    </div>
+
+    <!-- Cheatsheet tab -->
+    <div class="sidebar-content" id="tab-cheatsheet" style="display:none;">
+      <div class="cs-sec">
+        <div class="cs-sec-title">&#x26A1; Core Commands</div>
+        <div class="cs-row" onclick="insertSnippet('terraform init\n')"><span class="cs-name">terraform init</span><span class="cs-info">Download providers &amp; init backend</span></div>
+        <div class="cs-row" onclick="insertSnippet('terraform validate\n')"><span class="cs-name">terraform validate</span><span class="cs-info">Syntax check (no API calls)</span></div>
+        <div class="cs-row" onclick="insertSnippet('terraform fmt\n')"><span class="cs-name">terraform fmt</span><span class="cs-info">Auto-format HCL</span></div>
+        <div class="cs-row" onclick="insertSnippet('terraform plan -out=tfplan\n')"><span class="cs-name">terraform plan</span><span class="cs-info">Preview changes</span></div>
+        <div class="cs-row" onclick="insertSnippet('terraform apply -auto-approve\n')"><span class="cs-name">terraform apply</span><span class="cs-info">Create / update resources</span></div>
+        <div class="cs-row" onclick="insertSnippet('terraform destroy\n')"><span class="cs-name">terraform destroy</span><span class="cs-info">Destroy all resources</span></div>
+        <div class="cs-row" onclick="insertSnippet('terraform output\n')"><span class="cs-name">terraform output</span><span class="cs-info">Show output values</span></div>
+      </div>
+      <div class="cs-sec">
+        <div class="cs-sec-title">&#x1F5C4; State Commands</div>
+        <div class="cs-row"><span class="cs-name">state list</span><span class="cs-info">List managed resources</span></div>
+        <div class="cs-row"><span class="cs-name">state show &lt;addr&gt;</span><span class="cs-info">Show resource attributes</span></div>
+        <div class="cs-row"><span class="cs-name">state mv A B</span><span class="cs-info">Rename resource in state</span></div>
+        <div class="cs-row"><span class="cs-name">state rm &lt;addr&gt;</span><span class="cs-info">Remove from state (not cloud)</span></div>
+        <div class="cs-row"><span class="cs-name">import &lt;addr&gt; &lt;id&gt;</span><span class="cs-info">Import existing resource</span></div>
+      </div>
+      <div class="cs-sec">
+        <div class="cs-sec-title">&#x1F9EA; Functions</div>
+        <div class="cs-row"><span class="cs-name">toset(list)</span><span class="cs-info">Convert to set (dedup)</span></div>
+        <div class="cs-row"><span class="cs-name">merge(m1,m2)</span><span class="cs-info">Merge maps</span></div>
+        <div class="cs-row"><span class="cs-name">lookup(map,key,def)</span><span class="cs-info">Safe map lookup</span></div>
+        <div class="cs-row"><span class="cs-name">flatten(list)</span><span class="cs-info">Flatten nested lists</span></div>
+        <div class="cs-row"><span class="cs-name">length(val)</span><span class="cs-info">Count items</span></div>
+        <div class="cs-row"><span class="cs-name">format(fmt,...)</span><span class="cs-info">String formatting</span></div>
+      </div>
+    </div>
+
+    <!-- Snippets tab -->
+    <div class="sidebar-content" id="tab-snippets" style="display:none;">
+      <div id="snip-list"></div>
+    </div>
+  </div>
+
+  <!-- Main editor + terminal -->
+  <div class="editor-wrap">
+    <div class="toolbar">
+      <div class="toolbar-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      <button class="cmd-btn btn-init" onclick="runCmd('init')" id="btn-init">&#x2699; init</button>
+      <button class="cmd-btn btn-validate" onclick="runCmd('validate')" id="btn-validate" disabled>&#x2714; validate</button>
+      <button class="cmd-btn btn-plan" onclick="runCmd('plan')" id="btn-plan" disabled>&#x1F4CB; plan</button>
+      <button class="cmd-btn btn-apply" onclick="runCmd('apply')" id="btn-apply" disabled>&#x25B6; apply</button>
+      <button class="cmd-btn btn-destroy" onclick="runCmd('destroy')" id="btn-destroy" disabled>&#x1F4A5; destroy</button>
+      <button class="cmd-btn btn-fmt" onclick="runCmd('fmt')">&#x2728; fmt</button>
+      <button class="cmd-btn btn-output" onclick="runCmd('output')" id="btn-output" disabled>&#x1F4E4; output</button>
+      <div class="tf-status" id="tf-status"><div class="status-dot"></div> Not initialized</div>
+    </div>
+
+    <div class="split-pane">
+      <div class="editor-pane">
+        <div class="editor-titlebar">
+          <div class="editor-file">&#x1F4C4; main.tf</div>
+          <span style="font-size:10px;color:var(--gray);margin-left:auto;">HCL &middot; Terraform</span>
+        </div>
+        <div class="code-editor-wrap">
+          <div class="line-nums" id="line-nums">1</div>
+          <textarea class="code-editor" id="code-editor" spellcheck="false" placeholder="# Write your HCL here..."></textarea>
+        </div>
+        <div class="challenge-bar" id="challenge-bar">
+          <div class="challenge-title" id="ch-title"></div>
+          <div class="challenge-text" id="ch-text"></div>
+          <div class="challenge-tasks-row" id="ch-tasks"></div>
+          <div class="ch-btns">
+            <button class="chbtn chbtn-hint" onclick="toggleHint()">&#x1F4A1; Hint</button>
+            <button class="chbtn chbtn-check" onclick="checkExercise()">&#x2714; Check</button>
+            <button class="chbtn" onclick="loadSolution()">&#x1F511; Solution</button>
+          </div>
+          <div class="hint-box" id="hint-box"></div>
+        </div>
+      </div>
+      <div class="terminal-pane">
+        <div class="term-titlebar">
+          <span>&#x1F5A5; Terminal — Simulated Terraform CLI</span>
+          <button class="term-clear" onclick="clearTerminal()">&#x2715; Clear</button>
+        </div>
+        <div class="term-scroll" id="terminal"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);
+  onAuthReady(function(user){
+    if(user){
+      clearTimeout(t);
+      document.body.style.visibility='visible';
+      document.getElementById('user-name').textContent=user.displayName||user.email||'User';
+      document.getElementById('user-chip').onclick=()=>{
+        if(confirm('Sign out?'))firebase.auth().signOut().then(()=>window.location.href='../personal_site/login.html');
+      };
+    } else {
+      window.location.href='../personal_site/login.html';
+    }
+  });
+})();
+
+/* ───── EXERCISES ───── */
+const EXERCISES=[
+  {
+    id:'ex1',title:'Your First Resource',diff:'easy',
+    desc:'Create an S3 bucket — the classic Terraform hello world.',
+    tasks:['Define required_providers for AWS','Write an aws_s3_bucket resource','Run init → plan → apply'],
+    hint:'Use: resource "aws_s3_bucket" "demo" { bucket = "my-unique-bucket-name" }',
+    starter:`terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+# TODO: Create an aws_s3_bucket resource named "demo"
+# with bucket = "my-demo-bucket-123"
+`,
+    solution:`terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_s3_bucket" "demo" {
+  bucket = "my-demo-bucket-123"
+}
+`,
+    check:(hcl,st)=>[
+      {ok:/resource\s+"aws_s3_bucket"/.test(hcl), msg:'aws_s3_bucket resource defined'},
+      {ok:/required_providers/.test(hcl), msg:'required_providers block present'},
+      {ok:Object.keys(st).some(k=>k.startsWith('aws_s3_bucket.')), msg:'Bucket applied (run apply)'},
+    ]
+  },
+  {
+    id:'ex2',title:'Variables & Outputs',diff:'easy',
+    desc:'Parameterize bucket name with a variable and expose the ARN as an output.',
+    tasks:['Define variable "bucket_name" with a default','Use var.bucket_name in the resource','Add output "bucket_arn" with the ARN'],
+    hint:'output "bucket_arn" { value = aws_s3_bucket.demo.arn }',
+    starter:`provider "aws" { region = "us-east-1" }
+
+# TODO: Define variable "bucket_name"
+
+# TODO: Create aws_s3_bucket "demo" using var.bucket_name
+
+# TODO: Output the bucket ARN
+`,
+    solution:`provider "aws" { region = "us-east-1" }
+
+variable "bucket_name" {
+  type    = string
+  default = "my-parameterised-bucket"
+  description = "Name of the S3 bucket"
+}
+
+resource "aws_s3_bucket" "demo" {
+  bucket = var.bucket_name
+}
+
+output "bucket_arn" {
+  value       = aws_s3_bucket.demo.arn
+  description = "The ARN of the S3 bucket"
+}
+`,
+    check:(hcl,st)=>[
+      {ok:/variable\s+"bucket_name"/.test(hcl), msg:'variable "bucket_name" defined'},
+      {ok:/var\.bucket_name/.test(hcl), msg:'var.bucket_name referenced in resource'},
+      {ok:/output\s+"bucket_arn"/.test(hcl), msg:'output "bucket_arn" defined'},
+    ]
+  },
+  {
+    id:'ex3',title:'Locals & DRY Tagging',diff:'easy',
+    desc:'Use a locals block for common tags and apply them to a resource.',
+    tasks:['Create a locals block with common_tags (Env, Owner)','Apply local.common_tags to your resource tags','Add resource-specific tags using merge()'],
+    hint:'tags = merge(local.common_tags, { Name = "my-bucket" })',
+    starter:`provider "aws" { region = "us-east-1" }
+
+# TODO: locals block with common_tags
+# { Environment = "dev", Owner = "platform-team", Project = "demo" }
+
+resource "aws_s3_bucket" "app" {
+  bucket = "app-bucket-demo-001"
+
+  # TODO: tags using merge(local.common_tags, { Name = "app-bucket" })
+}
+`,
+    solution:`provider "aws" { region = "us-east-1" }
+
+locals {
+  common_tags = {
+    Environment = "dev"
+    Owner       = "platform-team"
+    Project     = "demo"
+  }
+}
+
+resource "aws_s3_bucket" "app" {
+  bucket = "app-bucket-demo-001"
+  tags   = merge(local.common_tags, { Name = "app-bucket" })
+}
+`,
+    check:(hcl,st)=>[
+      {ok:/locals\s*\{/.test(hcl), msg:'locals block defined'},
+      {ok:/local\.common_tags/.test(hcl), msg:'local.common_tags referenced'},
+      {ok:/merge\s*\(/.test(hcl), msg:'merge() used for tag composition'},
+    ]
+  },
+  {
+    id:'ex4',title:'for_each — Multiple Resources',diff:'medium',
+    desc:'Create 3 S3 buckets from a set using for_each.',
+    tasks:['Define a variable with a set of bucket names','Use for_each = toset(var.bucket_names)','Reference each.key in the bucket name','Apply and confirm 3 buckets created'],
+    hint:'resource "aws_s3_bucket" "multi" { for_each = toset(var.buckets); bucket = each.key }',
+    starter:`provider "aws" { region = "us-east-1" }
+
+# TODO: variable "bucket_names" of type set(string)
+# with default = ["logs-bucket", "assets-bucket", "backup-bucket"]
+
+# TODO: aws_s3_bucket "buckets" using for_each
+`,
+    solution:`provider "aws" { region = "us-east-1" }
+
+variable "bucket_names" {
+  type    = set(string)
+  default = ["logs-bucket", "assets-bucket", "backup-bucket"]
+}
+
+resource "aws_s3_bucket" "buckets" {
+  for_each = toset(var.bucket_names)
+  bucket   = each.key
+
+  tags = {
+    Name = each.key
+  }
+}
+
+output "bucket_ids" {
+  value = { for k, v in aws_s3_bucket.buckets : k => v.id }
+}
+`,
+    check:(hcl,st)=>[
+      {ok:/for_each\s*=/.test(hcl), msg:'for_each used'},
+      {ok:/toset\s*\(/.test(hcl), msg:'toset() wrapping the collection'},
+      {ok:/each\.key/.test(hcl), msg:'each.key referenced in resource'},
+      {ok:Object.keys(st).filter(k=>k.startsWith('aws_s3_bucket.')).length>=3, msg:'3+ buckets applied'},
+    ]
+  },
+  {
+    id:'ex5',title:'count & Conditionals',diff:'medium',
+    desc:'Use count to conditionally create a resource and create N identical resources.',
+    tasks:['Define variable "create_logs_bucket" of type bool','Use count = var.create_logs_bucket ? 1 : 0','Create 2 IAM users using count = 2, name = "dev-${count.index}"'],
+    hint:'count.index starts at 0. Reference specific instance: aws_iam_user.devs[0].arn',
+    starter:`provider "aws" { region = "us-east-1" }
+
+# TODO: bool variable "create_logs_bucket" default true
+
+# TODO: aws_s3_bucket "logs" with count conditional
+
+# TODO: aws_iam_user "devs" with count = 2
+#       name = "dev-\${count.index}"
+`,
+    solution:`provider "aws" { region = "us-east-1" }
+
+variable "create_logs_bucket" {
+  type    = bool
+  default = true
+}
+
+resource "aws_s3_bucket" "logs" {
+  count  = var.create_logs_bucket ? 1 : 0
+  bucket = "my-logs-bucket-001"
+}
+
+resource "aws_iam_user" "devs" {
+  count = 2
+  name  = "dev-\${count.index}"
+}
+
+output "iam_users" {
+  value = aws_iam_user.devs[*].name
+}
+`,
+    check:(hcl,st)=>[
+      {ok:/count\s*=/.test(hcl), msg:'count meta-argument used'},
+      {ok:/\?\s*1\s*:\s*0/.test(hcl), msg:'Ternary conditional for count'},
+      {ok:/count\.index/.test(hcl), msg:'count.index used in naming'},
+      {ok:Object.keys(st).some(k=>k.includes('aws_iam_user.')), msg:'IAM users applied'},
+    ]
+  },
+  {
+    id:'ex6',title:'Data Sources',diff:'medium',
+    desc:'Use data sources to reference existing resources without managing them.',
+    tasks:['Add data "aws_caller_identity" "current"','Use data.aws_caller_identity.current.account_id in a resource name','Add data "aws_region" "current" and use its name'],
+    hint:'data "aws_caller_identity" "current" {} — then: data.aws_caller_identity.current.account_id',
+    starter:`provider "aws" { region = "us-east-1" }
+
+# TODO: data source for aws_caller_identity "current"
+# TODO: data source for aws_region "current"
+
+# TODO: Create an aws_s3_bucket whose name includes the account_id
+# bucket = "my-bucket-\${data.aws_caller_identity.current.account_id}"
+`,
+    solution:`provider "aws" { region = "us-east-1" }
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+resource "aws_s3_bucket" "account_bucket" {
+  bucket = "my-bucket-\${data.aws_caller_identity.current.account_id}"
+  tags = {
+    Region = data.aws_region.current.name
+  }
+}
+
+output "account_id" {
+  value = data.aws_caller_identity.current.account_id
+}
+
+output "region" {
+  value = data.aws_region.current.name
+}
+`,
+    check:(hcl,st)=>[
+      {ok:/data\s+"aws_caller_identity"/.test(hcl), msg:'aws_caller_identity data source defined'},
+      {ok:/data\.aws_caller_identity/.test(hcl), msg:'Data source referenced in config'},
+      {ok:/data\s+"aws_region"/.test(hcl), msg:'aws_region data source defined'},
+    ]
+  },
+  {
+    id:'ex7',title:'Lifecycle Rules',diff:'medium',
+    desc:'Protect a critical resource from deletion and ignore drift on specified attributes.',
+    tasks:['Add lifecycle { prevent_destroy = true } to a bucket','Add ignore_changes = [tags] to ignore tag drift','Add create_before_destroy = true to a second resource'],
+    hint:'lifecycle block goes inside the resource block: resource "..." "..." { ... lifecycle { ... } }',
+    starter:`provider "aws" { region = "us-east-1" }
+
+resource "aws_s3_bucket" "critical" {
+  bucket = "critical-data-bucket-prod"
+
+  # TODO: lifecycle block with prevent_destroy = true
+  # and ignore_changes = [tags]
+}
+
+resource "aws_iam_user" "app_user" {
+  name = "app-service-user"
+
+  # TODO: lifecycle block with create_before_destroy = true
+}
+`,
+    solution:`provider "aws" { region = "us-east-1" }
+
+resource "aws_s3_bucket" "critical" {
+  bucket = "critical-data-bucket-prod"
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [tags]
+  }
+}
+
+resource "aws_iam_user" "app_user" {
+  name = "app-service-user"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+`,
+    check:(hcl,st)=>[
+      {ok:/lifecycle\s*\{/.test(hcl), msg:'lifecycle block defined'},
+      {ok:/prevent_destroy\s*=\s*true/.test(hcl), msg:'prevent_destroy = true set'},
+      {ok:/ignore_changes\s*=/.test(hcl), msg:'ignore_changes defined'},
+      {ok:/create_before_destroy\s*=\s*true/.test(hcl), msg:'create_before_destroy = true set'},
+    ]
+  },
+  {
+    id:'ex8',title:'Remote Backend & Modules',diff:'hard',
+    desc:'Configure an S3 remote backend with DynamoDB locking, and call a local module.',
+    tasks:['Configure S3 backend in terraform block','Add DynamoDB table for state locking','Call a module "vpc" from ./modules/vpc with a vpc_cidr variable','Access the module output module.vpc.vpc_id'],
+    hint:'backend "s3" { bucket = "..." key = "prod/terraform.tfstate" region = "us-east-1" dynamodb_table = "tf-lock" encrypt = true }',
+    starter:`terraform {
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+  }
+  # TODO: backend "s3" block
+}
+
+provider "aws" { region = "us-east-1" }
+
+# TODO: module "vpc" call from "./modules/vpc"
+# Pass vpc_cidr = "10.0.0.0/16" and environment = "prod"
+
+# TODO: output "vpc_id" from module.vpc.vpc_id
+`,
+    solution:`terraform {
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+  }
+  backend "s3" {
+    bucket         = "my-terraform-state-bucket"
+    key            = "prod/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "tf-state-lock"
+    encrypt        = true
+  }
+}
+
+provider "aws" { region = "us-east-1" }
+
+module "vpc" {
+  source      = "./modules/vpc"
+  vpc_cidr    = "10.0.0.0/16"
+  environment = "prod"
+}
+
+output "vpc_id" {
+  value = module.vpc.vpc_id
+}
+`,
+    check:(hcl,st)=>[
+      {ok:/backend\s+"s3"/.test(hcl), msg:'S3 backend configured'},
+      {ok:/dynamodb_table/.test(hcl), msg:'DynamoDB locking table specified'},
+      {ok:/module\s+"vpc"/.test(hcl), msg:'module "vpc" call present'},
+      {ok:/module\.vpc\./.test(hcl), msg:'Module output referenced'},
+    ]
+  },
+];
+
+const SNIPPETS=[
+  {title:'Provider — AWS',code:`provider "aws" {
+  region = "us-east-1"
+}`},
+  {title:'Provider — Azure',code:`provider "azurerm" {
+  features {}
+}`},
+  {title:'Variable with validation',code:`variable "instance_type" {
+  type        = string
+  default     = "t3.micro"
+  description = "EC2 instance type"
+  validation {
+    condition     = contains(["t3.micro","t3.small","t3.medium"], var.instance_type)
+    error_message = "Must be t3.micro, t3.small, or t3.medium."
+  }
+}`},
+  {title:'Locals — common tags',code:`locals {
+  common_tags = {
+    Environment = var.environment
+    Project     = var.project
+    Owner       = "platform-team"
+    ManagedBy   = "terraform"
+  }
+}`},
+  {title:'S3 Bucket',code:`resource "aws_s3_bucket" "example" {
+  bucket = "my-unique-bucket-name"
+  tags   = local.common_tags
+}`},
+  {title:'EC2 Instance',code:`resource "aws_instance" "web" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = var.instance_type
+  tags          = merge(local.common_tags, { Name = "web-server" })
+}`},
+  {title:'VPC + Subnet',code:`resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  tags = { Name = "main-vpc" }
+}
+
+resource "aws_subnet" "public" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.1.0/24"
+  tags       = { Name = "public-subnet" }
+}`},
+  {title:'for_each from map',code:`variable "buckets" {
+  default = {
+    logs    = "Standard_LRS"
+    assets  = "Standard_LRS"
+    backups = "Premium_LRS"
+  }
+}
+
+resource "aws_s3_bucket" "multi" {
+  for_each = var.buckets
+  bucket   = each.key
+  tags     = { Tier = each.value }
+}`},
+  {title:'Lifecycle block',code:`lifecycle {
+  create_before_destroy = true
+  prevent_destroy       = true
+  ignore_changes        = [tags, user_data]
+}`},
+  {title:'S3 Backend',code:`terraform {
+  backend "s3" {
+    bucket         = "my-tf-state"
+    key            = "prod/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "tf-state-lock"
+    encrypt        = true
+  }
+}`},
+  {title:'Output',code:`output "bucket_arn" {
+  value       = aws_s3_bucket.example.arn
+  description = "S3 bucket ARN"
+}`},
+  {title:'Module call',code:`module "vpc" {
+  source      = "./modules/vpc"
+  vpc_cidr    = "10.0.0.0/16"
+  environment = var.environment
+}`},
+];
+
+/* ───── STATE ───── */
+const LS_KEY='tf_playground_progress';
+let tfState={};      // resource address -> { id, attrs }
+let tfInitialized=false;
+let tfPlan=null;     // last plan result
+let currentExIdx=null;
+let exDone=JSON.parse(localStorage.getItem(LS_KEY)||'{}');
+
+/* ───── UTILS ───── */
+const hex=(n)=>[...Array(n)].map(()=>Math.floor(Math.random()*16).toString(16)).join('');
+const r=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const shortId=()=>Math.random().toString(36).slice(2,8);
+
+const sleep=ms=>new Promise(res=>setTimeout(res,ms));
+
+/* ───── HCL PARSER ───── */
+function extractBlock(code,start){
+  let d=1,i=start;
+  while(i<code.length&&d>0){
+    if(code[i]==='{')d++;
+    else if(code[i]==='}'){d--;if(d===0)return code.slice(start,i+1);}
+    i++;
+  }
+  return code.slice(start);
+}
+
+function parseAttrs(body){
+  const a={};
+  // key = "value" or key = value
+  const re=/^\s*(\w+)\s*=\s*(.+?)(?=\n\s*\w|\n\s*}|$)/gm;
+  let m;
+  while((m=re.exec(body))!==null){
+    const k=m[1].trim();
+    let v=m[2].trim().replace(/\s*#.*$/,'');
+    // strip surrounding quotes
+    if(/^".*"$/.test(v))v=v.slice(1,-1);
+    if(k&&v)a[k]=v;
+  }
+  return a;
+}
+
+function parseHCL(code){
+  const cleaned=code.replace(/#[^\n]*/g,'').replace(/\/\/[^\n]*/g,'');
+  const result={resources:[],variables:{},outputs:{},providers:[],terraform:{},data:[],modules:[]};
+  const re=/(\w+)(?:\s+"([^"]*)")?(?:\s+"([^"]*)")?\s*\{/g;
+  let m;
+  while((m=re.exec(cleaned))!==null){
+    const kw=m[1],l1=m[2],l2=m[3];
+    const bodyStart=m.index+m[0].length;
+    const fullBlock=extractBlock(cleaned,bodyStart-1);
+    const body=fullBlock.slice(1,fullBlock.length-1);
+    const attrs=parseAttrs(body);
+    if(kw==='resource'&&l1&&l2)result.resources.push({type:l1,name:l2,addr:`${l1}.${l2}`,attrs,body});
+    else if(kw==='variable'&&l1)result.variables[l1]=attrs;
+    else if(kw==='output'&&l1)result.outputs[l1]=attrs;
+    else if(kw==='provider'&&l1)result.providers.push({name:l1,attrs});
+    else if(kw==='module'&&l1)result.modules.push({name:l1,attrs,body});
+    else if(kw==='data'&&l1&&l2)result.data.push({type:l1,name:l2,addr:`data.${l1}.${l2}`,attrs});
+    else if(kw==='terraform')result.terraform=attrs;
+    else if(kw==='locals')Object.assign(result.variables,{_locals:attrs});
+  }
+  return result;
+}
+
+function resolveVal(val,parsed){
+  if(!val)return val;
+  // resolve var.x
+  val=val.replace(/var\.(\w+)/g,(_,n)=>{
+    const v=parsed.variables[n];
+    if(v&&v.default)return v.default;
+    return n;
+  });
+  // resolve local.x / local.common_tags.x (simplified)
+  val=val.replace(/local\.\w+/g,'(local_value)');
+  // resolve data.x.y.z
+  val=val.replace(/data\.\w+\.\w+\.\w+/g,(_)=>{
+    if(_.includes('aws_caller_identity'))return '123456789012';
+    if(_.includes('aws_region'))return 'us-east-1';
+    return '(data_value)';
+  });
+  return val;
+}
+
+/* ───── RESOURCE MOCK ───── */
+const MOCK={
+  'aws_s3_bucket':(n,a)=>{const b=a.bucket||n;return{id:b,arn:`arn:aws:s3:::${b}`,bucket:b,region:'us-east-1',bucket_domain_name:`${b}.s3.amazonaws.com`};},
+  'aws_vpc':(n,a)=>{const id=`vpc-${hex(8)}`;return{id,cidr_block:a.cidr_block||'10.0.0.0/16',default_route_table_id:`rtb-${hex(8)}`,dhcp_options_id:`dopt-${hex(8)}`};},
+  'aws_subnet':(n,a)=>({id:`subnet-${hex(8)}`,availability_zone:'us-east-1a',cidr_block:a.cidr_block||'10.0.1.0/24'}),
+  'aws_security_group':(n,a)=>({id:`sg-${hex(8)}`,name:a.name||n}),
+  'aws_instance':(n,a)=>({id:`i-0${hex(16)}`,public_ip:`54.${r(1,254)}.${r(1,254)}.${r(1,254)}`,private_ip:`10.0.0.${r(2,254)}`,instance_type:a.instance_type||'t3.micro'}),
+  'aws_iam_user':(n,a)=>({id:a.name||n,arn:`arn:aws:iam::123456789012:user/${a.name||n}`,name:a.name||n}),
+  'aws_iam_role':(n,a)=>({id:a.name||n,arn:`arn:aws:iam::123456789012:role/${a.name||n}`}),
+  'aws_dynamodb_table':(n,a)=>({id:a.name||n,arn:`arn:aws:dynamodb:us-east-1:123456789012:table/${a.name||n}`}),
+  'aws_lambda_function':(n,a)=>({id:a.function_name||n,arn:`arn:aws:lambda:us-east-1:123456789012:function:${a.function_name||n}`}),
+  'azurerm_resource_group':(n,a)=>({id:`/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/${a.name||n}`,location:a.location||'eastus'}),
+  'azurerm_storage_account':(n,a)=>({id:`/subscriptions/00000000-sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/${a.name||n}`,primary_blob_endpoint:`https://${a.name||n}.blob.core.windows.net/`}),
+  'azurerm_virtual_network':(n,a)=>({id:`/subscriptions/00000000-sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/${a.name||n}`}),
+  'google_storage_bucket':(n,a)=>({id:a.name||n,url:`gs://${a.name||n}`,self_link:`https://www.googleapis.com/storage/v1/b/${a.name||n}`}),
+  '*':(n)=>({id:`${n}-${shortId()}`}),
+};
+
+function mockAttrs(type,name,attrs){
+  const fn=MOCK[type]||MOCK['*'];
+  return fn(name,attrs);
+}
+
+function resolveForEach(res,parsed){
+  // If resource has for_each, expand into multiple instances
+  if(!res.body)return[res];
+  const feMatch=res.body.match(/for_each\s*=\s*toset\s*\(\s*var\.(\w+)\s*\)/);
+  const feMapMatch=res.body.match(/for_each\s*=\s*var\.(\w+)/);
+  const feInlineMatch=res.body.match(/for_each\s*=\s*toset\s*\(\s*\[([^\]]+)\]\s*\)/);
+
+  let keys=null;
+  if(feInlineMatch){
+    keys=feInlineMatch[1].split(',').map(s=>s.trim().replace(/^"|"$/g,''));
+  } else if(feMatch){
+    const varName=feMatch[1];
+    const v=parsed.variables[varName];
+    if(v&&v.default){
+      const dm=v.default.match(/\[([^\]]+)\]/);
+      if(dm)keys=dm[1].split(',').map(s=>s.trim().replace(/^"|"$/g,''));
+    }
+  } else if(feMapMatch){
+    const varName=feMapMatch[1];
+    const v=parsed.variables[varName];
+    if(v&&v.default){
+      const km=v.default.match(/"(\w+)"/g);
+      if(km)keys=km.map(k=>k.replace(/"/g,''));
+    }
+  }
+  if(keys)return keys.map(k=>({...res,addr:`${res.type}.${res.name}["${k}"]`,_key:k}));
+
+  // count
+  const countMatch=res.body.match(/count\s*=\s*(\d+)/);
+  if(countMatch){
+    const n=parseInt(countMatch[1]);
+    return Array.from({length:n},(_,i)=>({...res,addr:`${res.type}.${res.name}[${i}]`,_index:i}));
+  }
+  // count = var.x ? 1 : 0
+  const countTern=res.body.match(/count\s*=\s*var\.\w+\s*\?\s*(\d+)\s*:\s*(\d+)/);
+  if(countTern){
+    const val=parseInt(countTern[1]);
+    if(val===0)return[];
+    return Array.from({length:val},(_,i)=>({...res,addr:`${res.type}.${res.name}[${i}]`,_index:i}));
+  }
+  return[res];
+}
+
+/* ───── DATA SOURCE MOCK ───── */
+function mockDataSources(dataList){
+  const ds={};
+  dataList.forEach(d=>{
+    if(d.type==='aws_caller_identity')ds[d.addr]={account_id:'123456789012',arn:'arn:aws:iam::123456789012:root',user_id:'AIDEXAMPLEID'};
+    else if(d.type==='aws_region')ds[d.addr]={name:'us-east-1',description:'US East (N. Virginia)'};
+    else if(d.type==='aws_availability_zones')ds[d.addr]={names:['us-east-1a','us-east-1b','us-east-1c']};
+    else if(d.type==='aws_ami')ds[d.addr]={id:`ami-${hex(8)}`,name:'ubuntu-22.04',owner_id:'099720109477'};
+    else ds[d.addr]={id:`${d.name}-${shortId()}`};
+  });
+  return ds;
+}
+
+/* ───── TERMINAL ───── */
+const term=document.getElementById('terminal');
+function t(cls,text){
+  const s=document.createElement('span');
+  s.className=`t-line ${cls}`;
+  s.textContent=text;
+  term.appendChild(s);
+  term.scrollTop=term.scrollHeight;
+}
+function tb(){const s=document.createElement('span');s.className='t-blank';term.appendChild(s);}
+function clearTerminal(){term.innerHTML='';}
+
+function prompt(cmd){
+  tb();
+  const s=document.createElement('span');
+  s.className='t-line';
+  s.innerHTML=`<span class="t-prompt">$ terraform</span> <span class="t-white">${cmd}</span>`;
+  term.appendChild(s);
+  term.scrollTop=term.scrollHeight;
+}
+
+/* ───── COMMAND RUNNER ───── */
+let running=false;
+async function runCmd(cmd){
+  if(running)return;
+  const ed=document.getElementById('code-editor');
+  const hcl=ed.value.trim();
+  if(!hcl&&cmd!=='destroy'){t('t-red','Error: editor is empty.');return;}
+
+  running=true;
+  setStatus('running','Running…');
+  disableCmds(true);
+
+  try{
+    if(cmd==='init') await cmdInit();
+    else if(cmd==='validate') await cmdValidate(hcl);
+    else if(cmd==='plan') await cmdPlan(hcl);
+    else if(cmd==='apply') await cmdApply(hcl);
+    else if(cmd==='destroy') await cmdDestroy();
+    else if(cmd==='fmt') cmdFmt(hcl);
+    else if(cmd==='output') cmdOutput(hcl);
+  }catch(e){t('t-red','Internal error: '+e.message);}
+
+  running=false;
+  disableCmds(false);
+  if(tfInitialized)setStatus('init','Initialized');
+  else setStatus('','Not initialized');
+}
+
+async function cmdInit(){
+  prompt('init');
+  await sleep(100);
+  t('t-white','Initializing the backend...');
+  await sleep(200);
+  t('t-white','');
+  t('t-white','Initializing provider plugins...');
+  await sleep(150);
+  const hcl=document.getElementById('code-editor').value;
+  const parsed=parseHCL(hcl);
+  const providers=parsed.providers.map(p=>p.name);
+  if(parsed.terraform&&parsed.terraform.source)providers.push(parsed.terraform.source);
+  const hasAWS=hcl.includes('"aws"')||hcl.includes('hashicorp/aws');
+  const hasAzure=hcl.includes('azurerm')||hcl.includes('hashicorp/azurerm');
+  const hasGCP=hcl.includes('"google"')||hcl.includes('hashicorp/google');
+  if(hasAWS){t('t-white','- Finding hashicorp/aws versions matching "~> 5.0"...');await sleep(120);t('t-white','- Installing hashicorp/aws v5.31.0...');await sleep(100);t('t-green','- Installed hashicorp/aws v5.31.0 (signed by HashiCorp)');}
+  if(hasAzure){t('t-white','- Finding hashicorp/azurerm versions matching "~> 3.0"...');await sleep(120);t('t-white','- Installing hashicorp/azurerm v3.85.0...');await sleep(100);t('t-green','- Installed hashicorp/azurerm v3.85.0 (signed by HashiCorp)');}
+  if(hasGCP){t('t-white','- Finding hashicorp/google versions matching "~> 5.0"...');await sleep(100);t('t-green','- Installed hashicorp/google v5.10.0 (signed by HashiCorp)');}
+  if(!hasAWS&&!hasAzure&&!hasGCP){t('t-yellow','- No providers found in configuration.');}
+  await sleep(150);
+  tb();
+  if(hcl.includes('backend "s3"')){t('t-white','Initializing backend...');await sleep(100);t('t-green','Successfully configured the backend "s3"!');}
+  tb();
+  t('t-green','Terraform has been successfully initialized!');
+  tb();
+  t('t-gray','You may now begin working with Terraform. Try running "terraform plan"');
+  tfInitialized=true;
+  tfPlan=null;
+  document.getElementById('btn-validate').disabled=false;
+  document.getElementById('btn-plan').disabled=false;
+  document.getElementById('btn-apply').disabled=false;
+  document.getElementById('btn-destroy').disabled=false;
+  document.getElementById('btn-output').disabled=false;
+}
+
+async function cmdValidate(hcl){
+  if(!tfInitialized){t('t-red','Error: directory not initialized. Run "terraform init" first.');return;}
+  prompt('validate');
+  await sleep(80);
+  const errors=validateHCL(hcl);
+  if(errors.length===0){
+    tb();
+    t('t-green','Success! The configuration is valid.');
+  } else {
+    errors.forEach(e=>t('t-red','Error: '+e));
+  }
+}
+
+function validateHCL(hcl){
+  const errors=[];
+  // balance braces
+  let d=0;
+  for(const c of hcl){if(c==='{')d++;else if(c==='}')d--;}
+  if(d!==0)errors.push('Unbalanced braces in configuration');
+  // check for unclosed strings
+  const lines=hcl.split('\n');
+  lines.forEach((ln,i)=>{
+    const noComments=ln.replace(/#.*/,'');
+    const quotes=(noComments.match(/"/g)||[]).length;
+    if(quotes%2!==0)errors.push(`Line ${i+1}: possible unclosed string`);
+  });
+  return errors;
+}
+
+async function cmdPlan(hcl){
+  if(!tfInitialized){t('t-red','Error: Run "terraform init" first.');return;}
+  prompt('plan');
+  await sleep(100);
+  const parsed=parseHCL(hcl);
+  const errors=validateHCL(hcl);
+  if(errors.length){errors.forEach(e=>t('t-red','Error: '+e));return;}
+  tb();
+  t('t-white','Terraform used the selected providers to generate the following execution plan.');
+  t('t-white','Resource actions are indicated with the following symbols:');
+  t('t-add','  + create');
+  const toDestroy=Object.keys(tfState).filter(addr=>{
+    const stillExists=parsed.resources.some(r=>{
+      const exp=resolveForEach(r,parsed);
+      return exp.some(e=>e.addr===addr);
+    });
+    return !stillExists;
+  });
+  if(toDestroy.length)t('t-destroy','  - destroy');
+  tb();
+  t('t-white','Terraform will perform the following actions:');
+  tb();
+
+  let toCreate=[];
+  for(const res of parsed.resources){
+    const expanded=resolveForEach(res,parsed);
+    for(const inst of expanded){
+      if(!tfState[inst.addr])toCreate.push(inst);
+    }
+  }
+
+  // data sources
+  if(parsed.data.length){
+    parsed.data.forEach(d=>{
+      t('t-gray',`  # ${d.addr} will be read during apply`);
+    });
+    tb();
+  }
+
+  toCreate.forEach(inst=>{
+    t('t-add',`  # ${inst.addr} will be created`);
+    t('t-add',`  + resource "${inst.type}" "${inst.name}" {`);
+    const attrs=inst.attrs;
+    Object.entries(attrs).slice(0,4).forEach(([k,v])=>{
+      t('t-add',`      + ${k.padEnd(28)} = "${resolveVal(v,parsed)}"`);
+    });
+    t('t-add',`      + id                           = (known after apply)`);
+    t('t-add',`    }`);
+    tb();
+  });
+  toDestroy.forEach(addr=>{
+    t('t-destroy',`  - # ${addr} will be destroyed`);
+    tb();
+  });
+  if(!toCreate.length&&!toDestroy.length){
+    t('t-green','No changes. Your infrastructure matches the configuration.');
+    t('t-gray','Terraform has compared your real infrastructure against your configuration');
+    t('t-gray','and found no differences, so no changes are needed.');
+    tfPlan={toCreate:[],toDestroy,parsed};
+    return;
+  }
+  tb();
+  t('t-white',`Plan: ${toCreate.length} to add, 0 to change, ${toDestroy.length} to destroy.`);
+  tb();
+  t('t-gray','Note: You didn\'t use the -out option to save this plan.');
+  tfPlan={toCreate,toDestroy,parsed};
+}
+
+async function cmdApply(hcl){
+  if(!tfInitialized){t('t-red','Error: Run "terraform init" first.');return;}
+  prompt('apply');
+  await sleep(80);
+  const parsed=parseHCL(hcl);
+  const errors=validateHCL(hcl);
+  if(errors.length){errors.forEach(e=>t('t-red','Error: '+e));return;}
+
+  // build create list
+  let toCreate=[];
+  for(const res of parsed.resources){
+    const expanded=resolveForEach(res,parsed);
+    for(const inst of expanded){
+      if(!tfState[inst.addr])toCreate.push(inst);
+    }
+  }
+  const toDestroy=Object.keys(tfState).filter(addr=>{
+    return !parsed.resources.some(r=>{
+      const exp=resolveForEach(r,parsed);
+      return exp.some(e=>e.addr===addr);
+    });
+  });
+
+  if(!toCreate.length&&!toDestroy.length){
+    tb();
+    t('t-green','Apply complete! Resources: 0 added, 0 changed, 0 destroyed.');
+    return;
+  }
+
+  // mock data sources
+  const dsData=mockDataSources(parsed.data);
+
+  tb();
+  t('t-white','Terraform will perform the following actions. Do you want to perform these actions?');
+  t('t-yellow','  Terraform will perform the following actions as shown in the plan above.');
+  tb();
+  t('t-white','  Enter a value: ');
+  await sleep(120);
+  t('t-white','yes');
+  tb();
+
+  for(const inst of toCreate){
+    const delay=r(400,1200);
+    t('t-yellow',`${inst.addr}: Creating...`);
+    await sleep(delay);
+    const attrs=mockAttrs(inst.type,inst.name,inst.attrs);
+    tfState[inst.addr]=attrs;
+    const sec=(delay/1000).toFixed(0);
+    t('t-green',`${inst.addr}: Creation complete after ${sec}s [id=${attrs.id}]`);
+  }
+  for(const addr of toDestroy){
+    t('t-yellow',`${addr}: Destroying...`);
+    await sleep(r(300,800));
+    delete tfState[addr];
+    t('t-green',`${addr}: Destruction complete after 1s`);
+  }
+
+  tb();
+  t('t-green',`Apply complete! Resources: ${toCreate.length} added, 0 changed, ${toDestroy.length} destroyed.`);
+
+  // outputs
+  const outEntries=Object.entries(parsed.outputs);
+  if(outEntries.length){
+    tb();
+    t('t-white','Outputs:');
+    tb();
+    outEntries.forEach(([name,def])=>{
+      let val=def.value||'(known after apply)';
+      // try to resolve resource references
+      val=val.replace(/([\w]+)\.([\w]+)\.([\w]+)/g,(_,type,rname,attr)=>{
+        const addr=`${type}.${rname}`;
+        if(tfState[addr]&&tfState[addr][attr])return tfState[addr][attr];
+        // for_each
+        const found=Object.entries(tfState).find(([k])=>k.startsWith(addr+'['));
+        if(found&&found[1][attr])return found[1][attr];
+        return `(${attr}_value)`;
+      });
+      // resolve data references
+      val=val.replace(/data\.([\w]+)\.([\w]+)\.([\w]+)/g,(_,type,name,attr)=>{
+        const dAddr=`data.${type}.${name}`;
+        if(dsData[dAddr]&&dsData[dAddr][attr])return dsData[dAddr][attr];
+        return `(${attr})`;
+      });
+      t('t-tf',`${name} = "${val}"`);
+    });
+  }
+
+  // check exercise completion
+  if(currentExIdx!==null)checkExercise(true);
+}
+
+async function cmdDestroy(){
+  if(!tfInitialized){t('t-red','Error: Run "terraform init" first.');return;}
+  prompt('destroy');
+  await sleep(80);
+  const addrs=Object.keys(tfState);
+  if(!addrs.length){
+    tb();
+    t('t-yellow','No resources in state to destroy.');
+    return;
+  }
+  tb();
+  t('t-white','Terraform will destroy all your managed infrastructure, as shown above.');
+  t('t-red','  There is no undo. Only "yes" will be accepted to confirm.');
+  tb();
+  t('t-white','  Enter a value: ');
+  await sleep(120);
+  t('t-white','yes');
+  tb();
+  for(const addr of addrs){
+    t('t-yellow',`${addr}: Destroying...`);
+    await sleep(r(200,600));
+    t('t-green',`${addr}: Destruction complete after 1s`);
+    delete tfState[addr];
+  }
+  tb();
+  t('t-green',`Destroy complete! Resources: ${addrs.length} destroyed.`);
+  tfPlan=null;
+}
+
+function cmdFmt(hcl){
+  prompt('fmt');
+  const formatted=formatHCL(hcl);
+  document.getElementById('code-editor').value=formatted;
+  updateLineNums();
+  t('t-green','main.tf');
+}
+
+function cmdOutput(hcl){
+  if(!tfInitialized){t('t-red','Error: Run "terraform init" first.');return;}
+  prompt('output');
+  const parsed=parseHCL(hcl);
+  const entries=Object.entries(parsed.outputs);
+  if(!entries.length){tb();t('t-yellow','No outputs defined in configuration.');return;}
+  if(!Object.keys(tfState).length){tb();t('t-yellow','No state found. Run "terraform apply" first.');return;}
+  tb();
+  entries.forEach(([name,def])=>{
+    let val=def.value||'(unknown)';
+    val=val.replace(/([\w]+)\.([\w]+)\.([\w]+)/g,(_,type,rname,attr)=>{
+      const addr=`${type}.${rname}`;
+      if(tfState[addr]&&tfState[addr][attr])return tfState[addr][attr];
+      return `(${attr})`;
+    });
+    t('t-tf',`${name} = "${val}"`);
+  });
+}
+
+/* ───── FORMATTER ───── */
+function formatHCL(code){
+  const lines=code.split('\n');
+  let indent=0;
+  return lines.map(ln=>{
+    const trimmed=ln.trim();
+    if(!trimmed)return '';
+    if(trimmed==='}')indent=Math.max(0,indent-1);
+    const out=' '.repeat(indent*2)+trimmed;
+    if(trimmed.endsWith('{'))indent++;
+    return out;
+  }).join('\n');
+}
+
+/* ───── STATUS ───── */
+function setStatus(cls,text){
+  const el=document.getElementById('tf-status');
+  el.className='tf-status '+(cls||'');
+  el.innerHTML=`<div class="status-dot"></div> ${text}`;
+}
+function disableCmds(v){
+  ['btn-init','btn-validate','btn-plan','btn-apply','btn-destroy','btn-fmt','btn-output'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b)b.disabled=v;
+  });
+}
+
+/* ───── LINE NUMBERS ───── */
+function updateLineNums(){
+  const ed=document.getElementById('code-editor');
+  const lines=ed.value.split('\n').length;
+  document.getElementById('line-nums').textContent=Array.from({length:lines},(_,i)=>i+1).join('\n');
+}
+
+/* ───── SIDEBAR TABS ───── */
+function showTab(name,el){
+  ['exercises','cheatsheet','snippets'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===name?'block':'none';
+  });
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ───── EXERCISES ───── */
+function renderExercises(){
+  const list=document.getElementById('ex-list');
+  list.innerHTML='';
+  const done=Object.values(exDone).filter(Boolean).length;
+  document.getElementById('prog-text').textContent=`${done} / ${EXERCISES.length} done`;
+  document.getElementById('prog-fill').style.width=`${Math.round(done/EXERCISES.length*100)}%`;
+
+  EXERCISES.forEach((ex,i)=>{
+    const div=document.createElement('div');
+    div.className='ex-item'+(currentExIdx===i?' active':'')+(exDone[ex.id]?' done':'');
+    div.id='ex-item-'+i;
+    const doneIcon=exDone[ex.id]?'✅ ':'';
+    div.innerHTML=`
+      <div class="ex-title">${doneIcon}<span>${i+1}. ${ex.title}</span><span class="ex-badge badge-${ex.diff}">${ex.diff}</span></div>
+      <div class="ex-desc">${ex.desc}</div>
+      <div class="ex-tasks">${ex.tasks.map(t=>`<div class="ex-task">&#x25A1; ${t}</div>`).join('')}</div>
+      <button class="load-ex-btn" onclick="loadExercise(${i})">&#x25B6; Load Exercise</button>`;
+    div.onclick=(e)=>{if(e.target.classList.contains('load-ex-btn'))return;div.classList.toggle('active');};
+    list.appendChild(div);
+  });
+}
+
+function loadExercise(i){
+  currentExIdx=i;
+  const ex=EXERCISES[i];
+  document.getElementById('code-editor').value=ex.starter;
+  updateLineNums();
+  clearTerminal();
+  t('t-tf',`# Exercise ${i+1}: ${ex.title}`);
+  t('t-gray',`# ${ex.desc}`);
+  tb();
+  t('t-gray','# Tasks:');
+  ex.tasks.forEach((task,ti)=>t('t-gray',`#   ${ti+1}. ${task}`));
+  tb();
+  t('t-gray','# Start by clicking "init", then write your HCL and "apply".');
+
+  // show challenge bar
+  const bar=document.getElementById('challenge-bar');
+  bar.classList.add('visible');
+  document.getElementById('ch-title').textContent=`Exercise ${i+1}: ${ex.title}`;
+  document.getElementById('ch-text').textContent=ex.desc;
+  document.getElementById('ch-tasks').innerHTML=ex.tasks.map((tk,ti)=>`<div class="ch-task" id="cht-${i}-${ti}">&#x25A1; ${tk}</div>`).join('');
+  document.getElementById('hint-box').classList.remove('visible');
+  document.getElementById('hint-box').textContent=ex.hint;
+
+  // reset state for fresh exercise
+  tfState={};
+  tfInitialized=false;
+  tfPlan=null;
+  document.getElementById('btn-validate').disabled=true;
+  document.getElementById('btn-plan').disabled=true;
+  document.getElementById('btn-apply').disabled=true;
+  document.getElementById('btn-destroy').disabled=true;
+  document.getElementById('btn-output').disabled=true;
+  setStatus('','Not initialized');
+
+  renderExercises();
+}
+
+function toggleHint(){
+  const box=document.getElementById('hint-box');
+  box.classList.toggle('visible');
+}
+
+function loadSolution(){
+  if(currentExIdx===null)return;
+  if(!confirm('Load solution? This will replace your current code.'))return;
+  document.getElementById('code-editor').value=EXERCISES[currentExIdx].solution;
+  updateLineNums();
+}
+
+function checkExercise(silent){
+  if(currentExIdx===null){if(!silent)t('t-yellow','No exercise loaded.');return;}
+  const ex=EXERCISES[currentExIdx];
+  const hcl=document.getElementById('code-editor').value;
+  const checks=ex.check(hcl,tfState);
+  const allOk=checks.every(c=>c.ok);
+
+  // update task display
+  checks.forEach((c,ci)=>{
+    const el=document.getElementById(`cht-${currentExIdx}-${ci}`);
+    if(el)el.className='ch-task'+(c.ok?' done':'');
+    if(el)el.innerHTML=(c.ok?'&#x2714;':'&#x25A1;')+' '+ex.tasks[ci];
+  });
+
+  if(!silent){
+    tb();
+    t('t-white','━━━ Exercise Check ━━━');
+    checks.forEach(c=>t(c.ok?'t-green':'t-red',(c.ok?'  ✔ ':'  ✗ ')+c.msg));
+    if(allOk){
+      tb();
+      t('t-green','🎉 Exercise complete! Great work.');
+    } else {
+      tb();
+      t('t-yellow','Some tasks not yet complete — keep going!');
+    }
+  }
+
+  if(allOk&&!exDone[ex.id]){
+    exDone[ex.id]=true;
+    localStorage.setItem(LS_KEY,JSON.stringify(exDone));
+    renderExercises();
+  }
+}
+
+function insertSnippet(code){
+  const ed=document.getElementById('code-editor');
+  const pos=ed.selectionStart;
+  const val=ed.value;
+  ed.value=val.slice(0,pos)+code+val.slice(pos);
+  ed.focus();
+  ed.selectionStart=ed.selectionEnd=pos+code.length;
+  updateLineNums();
+}
+
+/* ───── SNIPPETS RENDER ───── */
+function renderSnippets(){
+  const list=document.getElementById('snip-list');
+  SNIPPETS.forEach(s=>{
+    const div=document.createElement('div');
+    div.className='snip-item';
+    div.innerHTML=`<div class="snip-title">&#x1F4C4; ${s.title}</div><pre class="snip-pre">${s.code.slice(0,120)}</pre>`;
+    div.onclick=()=>{insertSnippet('\n'+s.code+'\n');};
+    list.appendChild(div);
+  });
+}
+
+/* ───── EDITOR SETUP ───── */
+const editor=document.getElementById('code-editor');
+editor.addEventListener('input',updateLineNums);
+editor.addEventListener('keydown',e=>{
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const s=editor.selectionStart,end=editor.selectionEnd;
+    editor.value=editor.value.slice(0,s)+'  '+editor.value.slice(end);
+    editor.selectionStart=editor.selectionEnd=s+2;
+    updateLineNums();
+  }
+  // Ctrl+Enter = apply
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();runCmd('apply');}
+  // Ctrl+Shift+F = fmt
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='F'){e.preventDefault();runCmd('fmt');}
+});
+// sync scroll line numbers
+editor.addEventListener('scroll',()=>{
+  document.getElementById('line-nums').scrollTop=editor.scrollTop;
+});
+
+/* ───── INIT PAGE ───── */
+renderExercises();
+renderSnippets();
+updateLineNums();
+// Welcome message
+t('t-tf','# Welcome to the Terraform Playground');
+t('t-gray','# Write HCL in the editor, use the toolbar buttons to run Terraform commands.');
+t('t-gray','# Pick an exercise from the sidebar to get started.');
+tb();
+t('t-gray','# Keyboard shortcuts:');
+t('t-gray','#   Ctrl+Enter  →  terraform apply');
+t('t-gray','#   Ctrl+Shift+F  →  terraform fmt');
+tb();
+t('t-dim','Ready.');
+
+// Load first exercise by default
+loadExercise(0);
+</script>
+</body>
+</html>
