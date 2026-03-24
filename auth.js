@@ -65,6 +65,11 @@ function signInWithYahoo() {
   return auth.signInWithPopup(provider).catch(_handleError);
 }
 
+function signInAsGuest() {
+  const auth = _getAuth();
+  return auth.signInAnonymously().catch(_handleError);
+}
+
 function signOut() {
   const auth = _getAuth();
   if (auth) auth.signOut();
@@ -92,20 +97,22 @@ function initNavAuth(loginUrl) {
     if (!el) return;
 
     if (user) {
-      const initial = (user.displayName || user.email || 'U')[0].toUpperCase();
+      const isGuest = user.isAnonymous;
+      const initial = isGuest ? '👤' : (user.displayName || user.email || 'U')[0].toUpperCase();
       const photo   = user.photoURL;
+      const label   = isGuest ? 'Guest' : (user.displayName || user.email);
       el.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;">
           ${photo
             ? `<img src="${photo}" referrerpolicy="no-referrer"
                     style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.35);">`
-            : `<div style="width:28px;height:28px;border-radius:50%;background:#7C3AED;
+            : `<div style="width:28px;height:28px;border-radius:50%;background:${isGuest ? '#6B7280' : '#7C3AED'};
                            display:flex;align-items:center;justify-content:center;
-                           font-size:12px;font-weight:700;color:white;">${initial}</div>`
+                           font-size:${isGuest ? '14px' : '12px'};font-weight:700;color:white;">${initial}</div>`
           }
           <span style="font-size:12px;color:rgba(255,255,255,.8);max-width:130px;
                        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            ${user.displayName || user.email}
+            ${label}
           </span>
           <button onclick="signOut()"
                   style="font-size:11px;padding:4px 10px;border-radius:6px;

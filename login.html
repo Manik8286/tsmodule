@@ -55,6 +55,11 @@ nav{background:rgba(15,23,42,.6);backdrop-filter:blur(12px);
 /* Yahoo */
 .btn-yahoo .provider-icon{background:#F5F3FF;}
 
+/* Guest */
+.btn-guest{border-style:dashed;border-color:#D1D5DB;color:var(--gray);}
+.btn-guest:hover{border-color:#9CA3AF;background:#F9FAFB;color:var(--dark);}
+.btn-guest .provider-icon{background:#F3F4F6;font-size:16px;}
+
 .divider{display:flex;align-items:center;gap:10px;margin:20px 0;color:var(--gray);font-size:12px;}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:#E5E7EB;}
 
@@ -127,6 +132,13 @@ nav{background:rgba(15,23,42,.6);backdrop-filter:blur(12px);
         Continue with Yahoo
       </button>
 
+      <div class="divider">or</div>
+
+      <button class="provider-btn btn-guest" onclick="doSignIn('guest')">
+        <span class="provider-icon">👤</span>
+        Continue as Guest
+      </button>
+
       <div class="spinner" id="spinner"></div>
       <div class="status-msg" id="status-msg"></div>
 
@@ -157,13 +169,14 @@ onAuthReady(user => {
     document.getElementById('signin-view').style.display = 'none';
     const box = document.getElementById('signedin-view');
     box.style.display = 'block';
+    const isGuest = user.isAnonymous;
     const photo = user.photoURL;
-    const initial = (user.displayName || user.email || 'U')[0].toUpperCase();
-    document.getElementById('av-lg').innerHTML = photo
-      ? `<img src="${photo}" referrerpolicy="no-referrer">`
-      : initial;
-    document.getElementById('av-name').textContent = user.displayName || 'Welcome';
-    document.getElementById('av-email').textContent = user.email || '';
+    const initial = isGuest ? '👤' : (user.displayName || user.email || 'U')[0].toUpperCase();
+    const avEl = document.getElementById('av-lg');
+    avEl.innerHTML = photo ? `<img src="${photo}" referrerpolicy="no-referrer">` : initial;
+    if (isGuest) avEl.style.background = '#6B7280';
+    document.getElementById('av-name').textContent = isGuest ? 'Guest' : (user.displayName || 'Welcome');
+    document.getElementById('av-email').textContent = isGuest ? 'Browsing without an account' : (user.email || '');
   }
 });
 
@@ -187,6 +200,7 @@ async function doSignIn(provider) {
     if (provider === 'github')    result = await signInWithGitHub();
     if (provider === 'microsoft') result = await signInWithMicrosoft();
     if (provider === 'yahoo')     result = await signInWithYahoo();
+    if (provider === 'guest')     result = await signInAsGuest();
 
     if (result && result.user) {
       showStatus('Signed in! Redirecting…', 'ok');
