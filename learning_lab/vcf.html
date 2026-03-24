@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VMware Cloud Foundation Lab Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --vcf:#56B146;--vcf-dark:#3a8a2e;--vcf-light:#F0FFF0;
+  --azure:#0078D4;--azure-light:#EFF6FF;
+  --dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;
+  --green:#16A34A;--green-light:#F0FDF4;
+  --header-bg:#1b3d2a;--header-accent:#56B146;
+  --white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#EEF4EE;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#A7F3A0;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#A7F3A0;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.stat-block.p1 .num{color:#15803D;}
+.stat-block.p2 .num{color:#166534;}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--header-bg),var(--vcf));transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#A7F3A0;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#4ADE80;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.vcf-lab{border-left:4px solid var(--vcf);background:var(--vcf-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.vcf-badge{background:var(--vcf-dark);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.vcf-btn{color:var(--vcf-dark);}
+.lab-toggle.vcf-btn:hover{background:var(--vcf-dark);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--vcf);color:var(--vcf-dark);}
+.detail-btn.open{background:var(--vcf-light);border-color:var(--vcf);color:var(--vcf-dark);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#F0FFF0;border-left:3px solid var(--vcf);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--vcf-dark);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#DCFCE7;padding:1px 4px;border-radius:3px;color:#166534;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;background:#FFFDF5;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#F0FDF4;}
+.val-row:hover{background:#DCFCE7;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #86EFAC;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--vcf);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#A7F3A0;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#F0FFF0;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:var(--vcf);background:#F0FFF0;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--vcf-dark);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;align-items:center;justify-content:center;}
+.user-overlay.open{display:flex;}
+.user-card{background:white;border-radius:16px;padding:36px 40px;max-width:420px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.3);text-align:center;}
+.user-card .u-icon{font-size:48px;margin-bottom:12px;}
+.user-card h3{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.user-card p{font-size:12px;color:var(--gray);margin-bottom:20px;line-height:1.6;}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+/* Refs */
+.refs-section{margin-top:14px;padding:12px 14px;background:#F5F3FF;border-left:3px solid #7C3AED;border-radius:0 8px 8px 0;}
+.refs-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.refs-title{font-size:10px;font-weight:700;color:#5B21B6;text-transform:uppercase;letter-spacing:.6px;}
+.refs-toggle{font-size:10px;color:#7C3AED;font-weight:700;}
+.refs-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
+.ref-item{display:flex;align-items:flex-start;gap:6px;font-size:12px;}
+.ref-icon{flex-shrink:0;font-size:12px;margin-top:1px;}
+.ref-item a{color:#4F46E5;text-decoration:none;line-height:1.4;}
+.ref-item a:hover{text-decoration:underline;color:#3730A3;}
+/* Leaderboard */
+.lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1500;align-items:center;justify-content:center;}
+.lb-overlay.open{display:flex;}
+.lb-card{background:white;border-radius:16px;padding:28px 32px;max-width:580px;width:95%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.lb-card h3{font-size:17px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.lb-sub{font-size:12px;color:var(--gray);margin-bottom:18px;}
+.lb-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.lb-table th{background:var(--header-bg);color:white;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:.4px;}
+.lb-table th:first-child{border-radius:8px 0 0 8px;}.lb-table th:last-child{border-radius:0 8px 8px 0;}
+.lb-table td{padding:9px 12px;border-bottom:1px solid var(--light);}
+.lb-table tr:hover td{background:#F0FFF0;}.lb-table tr.me td{background:#DCFCE7;font-weight:700;}
+.lb-rank{font-size:16px;text-align:center;}
+.lb-bar-wrap{background:var(--light);border-radius:99px;height:8px;width:80px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:99px;background:var(--vcf-dark);transition:width .4s;}
+.lb-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.lb-btn:hover{background:rgba(255,255,255,.25);}
+.lb-close{margin-top:18px;padding:8px 24px;border-radius:8px;border:none;background:var(--light);color:var(--dark);font-size:12px;font-weight:700;cursor:pointer;}
+.lb-close:hover{background:#E5E7EB;}.lb-loading{text-align:center;padding:24px;color:var(--gray);font-size:13px;}
+/* Quiz */
+.quiz-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;}
+.quiz-overlay.open{display:flex;}
+.quiz-modal{background:white;border-radius:18px;max-width:660px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3);overflow:hidden;}
+.quiz-header{background:var(--header-bg);color:white;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.quiz-header h3{font-size:16px;font-weight:800;margin:0;}.quiz-header p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+.quiz-close{background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.quiz-close:hover{background:rgba(255,255,255,.28);}.quiz-body{padding:24px;}
+.phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.phase-tile{background:#F8FAFC;border:2px solid #E5E7EB;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .2s;}
+.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#F0FFF0;}.phase-tile.all-tile{border-style:dashed;}
+.pt-num{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
+.pt-name{font-size:12px;font-weight:700;color:var(--header-bg);margin-top:3px;line-height:1.3;}
+.pt-score{font-size:10px;color:#16A34A;margin-top:4px;font-weight:700;}
+.quiz-start-btn{width:100%;padding:12px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.quiz-start-btn:hover{filter:brightness(1.1);}.quiz-start-btn:disabled{opacity:.4;cursor:not-allowed;}
+.quiz-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.quiz-prog-bar{flex:1;background:var(--light);border-radius:99px;height:8px;overflow:hidden;}
+.quiz-prog-fill{height:100%;border-radius:99px;background:var(--header-bg);transition:width .4s;}
+.quiz-prog-txt{font-size:11px;font-weight:700;color:var(--gray);min-width:48px;text-align:right;}
+.quiz-question{font-size:15px;font-weight:700;color:var(--dark);line-height:1.5;margin-bottom:18px;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.quiz-option{padding:12px 16px;border-radius:10px;border:2px solid #E5E7EB;background:#FAFAFA;cursor:pointer;font-size:13px;line-height:1.4;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px;}
+.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#F0FFF0;}.quiz-option:disabled{cursor:default;}
+.quiz-option.correct{border-color:#16A34A;background:#F0FDF4;color:#16A34A;}
+.quiz-option.wrong{border-color:#EF4444;background:#FFF1F2;color:#DC2626;}
+.quiz-option.reveal{border-color:#16A34A;background:#F0FDF4;opacity:.7;}
+.quiz-option.correct .opt-letter,.quiz-option.reveal .opt-letter{background:#16A34A;color:white;}
+.quiz-option.wrong .opt-letter{background:#EF4444;color:white;}
+.opt-letter{width:22px;height:22px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.quiz-explanation{background:#F0FFF0;border-left:3px solid var(--vcf);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}
+.quiz-explanation.show{display:block;}
+.quiz-next-btn{width:100%;padding:10px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}
+.quiz-next-btn.show{display:block;}
+.quiz-score-screen{text-align:center;padding:10px 0;}
+.score-circle{width:90px;height:90px;border-radius:50%;background:var(--header-bg);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:14px;}
+.sc-num{font-size:22px;font-weight:800;color:white;line-height:1;}.sc-lbl{font-size:11px;color:rgba(255,255,255,.75);}
+.quiz-score-msg{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.quiz-score-sub{font-size:12px;color:var(--gray);margin-bottom:20px;}
+.quiz-review{text-align:left;margin-bottom:16px;max-height:200px;overflow-y:auto;}
+.review-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:12px;line-height:1.4;}
+.review-item.bad{color:#DC2626;}.review-item.ok{color:#16A34A;}.review-icon{flex-shrink:0;}
+.quiz-score-btns{display:flex;gap:10px;}
+.quiz-score-btns button{flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;}
+.qsb-retry{background:var(--header-bg);color:white;}.qsb-back{background:var(--light);color:var(--dark);}
+.quiz-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.quiz-btn:hover{background:rgba(255,255,255,.25);}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F7E2; VMware Cloud Foundation Lab Tracker</h1>
+      <p>VCF 5.x &middot; 6-Phase Deep Dive &middot; SDDC Manager, NSX-T, vSAN, vCenter, LCM &amp; Identity</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="index.html" class="nav-link">&#x2601;&#xFE0F; IaaS Labs</a>
+      <a href="az500.html" class="nav-link">&#x1F6E1;&#xFE0F; AZ-500</a>
+      <a href="az700.html" class="nav-link">&#x1F310; AZ-700</a>
+      <a href="iam.html" class="nav-link">&#x1F512; IAM</a>
+      <span id="user-chip" class="user-chip" onclick="changeUser()" title="Logged in user">&#x1F464; <span id="user-name-display">...</span></span>
+      <button class="quiz-btn" onclick="openQuiz()">&#x1F9E0; Quiz</button>
+      <button class="lb-btn" onclick="openLeaderboard()">&#x1F3C6; Leaderboard</button>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="user-overlay" id="user-overlay"></div>
+
+<!-- Leaderboard -->
+<div class="lb-overlay" id="lb-overlay" onclick="if(event.target===this)closeLb()">
+  <div class="lb-card">
+    <h3>&#x1F3C6; Team Leaderboard</h3>
+    <p class="lb-sub">Live VCF progress across all teammates &mdash; auto-refreshes on open</p>
+    <div id="lb-body"><div class="lb-loading">&#x21BB; Loading&hellip;</div></div>
+    <button class="lb-close" onclick="closeLb()">Close</button>
+  </div>
+</div>
+
+<!-- Quiz Modal -->
+<div class="quiz-overlay" id="quiz-overlay" onclick="if(event.target===this)closeQuiz()">
+  <div class="quiz-modal">
+    <div class="quiz-header">
+      <div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your VMware Cloud Foundation knowledge</p></div>
+      <button class="quiz-close" onclick="closeQuiz()">&#x2715; Close</button>
+    </div>
+    <div class="quiz-body" id="quiz-body"></div>
+  </div>
+</div>
+
+<!-- Firebase Config Panel -->
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Connect Firebase Realtime Database to sync VCF lab progress across all your devices.</p>
+    <div class="fb-steps"><b>Quick setup:</b><br>1. Go to console.firebase.google.com &rarr; Create project<br>2. Build &rarr; Realtime Database &rarr; Create database (test mode)<br>3. Project Settings &rarr; Web app &rarr; copy config<br>4. Paste values below and click Connect</div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey  (e.g. AIzaSy...)" />
+    <input class="fb-input" id="fb-databaseURL" placeholder="databaseURL  (e.g. https://my-project-default-rtdb.firebaseio.com)" />
+    <input class="fb-input" id="fb-projectId" placeholder="projectId  (e.g. my-project-12345)" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions">
+      <button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button>
+      <button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button>
+      <button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- Congrats modal -->
+<div id="congrats">
+  <div class="card">
+    <span class="emoji">&#x1F3C6;</span>
+    <h2>VCF Expert!</h2>
+    <p>You've completed all VMware Cloud Foundation labs!</p>
+    <button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button>
+  </div>
+</div>
+
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
+  <div class="big-bar-wrap">
+    <div class="big-bar-label"><span>Overall VCF Progress</span><span id="stat-pct">0%</span></div>
+    <div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab" onclick="filterTab('vcf',this)">&#x1F7E2; VCF Labs</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+// ─── Auth Guard ────────────────────────────────────────────────────────────────
+(function(){
+  var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);
+  onAuthReady(function(user){
+    if(user){clearTimeout(t);document.body.style.visibility='visible';}
+    else{window.location.href='../personal_site/login.html';}
+  });
+})();
+
+// ─── Lab Data ─────────────────────────────────────────────────────────────────
+const PHASES = [
+  {
+    id:'p1', badge:'PHASE 1', title:'VCF Architecture & Planning', week:'Week 1',
+    labs:[
+      {
+        id:'p1-arch', cloud:'vcf', title:'VCF Architecture Overview & Planning',
+        meta:'Understand VCF components, sizing, BOM, and deployment prerequisites',
+        steps:[
+          {id:'p1-arch-s1', text:'Review VCF architecture: understand the relationship between SDDC Manager, Cloud Builder, vCenter, NSX-T, and vSAN', details:['VCF is a full SDDC stack: vSphere (compute), vSAN (storage), NSX-T (networking), vCenter, SDDC Manager', 'Cloud Builder: used for initial greenfield deployment of the Management Domain', 'SDDC Manager: day-2 lifecycle orchestrator — automates LCM, Workload Domain creation, patching', 'Management Domain: first domain deployed, runs vCenter, NSX-T Manager, SDDC Manager on dedicated hosts', 'VI Workload Domains: additional vSphere/vSAN/NSX-T clusters for tenant workloads']},
+          {id:'p1-arch-s2', text:'Review VCF Bill of Materials (BOM) and component version dependencies', details:['Download the VCF BOM from VMware Compatibility Guide: support.broadcom.com', 'BOM defines compatible versions of: vSphere (ESXi + vCenter), vSAN, NSX-T, SDDC Manager', 'All components within a VCF instance must match the BOM version — no mixing allowed', 'Current VCF 5.x BOM includes: vSphere 8.0, NSX 4.x, vSAN 8.0, SDDC Manager 5.x', 'Note: VCF 5.2+ rebranded NSX-T to NSX']},
+          {id:'p1-arch-s3', text:'Complete the VCF sizing exercise using VMware VCF Sizing Tool', details:['Open VCF Sizer: vcf.vmware.com/sizing-tool (or equivalent on Broadcom portal)', 'Input workload requirements: vCPU, RAM, storage (raw capacity, policy overhead)', 'Select host profile: number of hosts, CPU/RAM/NIC specs', 'Review output: minimum host count, vSAN capacity, network bandwidth', 'Note the minimum Management Domain requirement: 4 hosts (3 for vSAN, 1 for witness or stretched cluster)']},
+          {id:'p1-arch-s4', text:'Review hardware and network prerequisites for VCF deployment', details:['Compute: minimum 4 hosts per domain; hosts must be VCF-certified (HCL)', 'CPU: 2 sockets recommended; RAM: 512GB+ per host for management domain', 'Networking: 2x 10/25GbE NICs; VLANs for management, vMotion, vSAN, host TEP (Tunnel Endpoint), edge TEP, uplink', 'DNS: all FQDN entries pre-created before deployment (forward and reverse)', 'NTP: all hosts and VMs time-synced (drift <30s)', 'Ensure VLAN tagging configured on ToR switches']},
+          {id:'p1-arch-s5', text:'Fill in the VCF Planning & Preparation Workbook for your deployment', details:['Download: VCF Planning and Preparation Workbook from Broadcom portal', 'Section 1: Physical infrastructure (hosts, VLANs, IPs, DNS names)', 'Section 2: Network topology (uplinks, TEPs, edge nodes)', 'Section 3: Component passwords (SDDC Manager admin, SSO admin, etc.)', 'Section 4: Licenses (vSphere, vSAN, NSX-T licenses)', 'Validated planning workbook is the input to Cloud Builder']},
+        ],
+        validation:[
+          {id:'p1-arch-v1', text:'VCF BOM reviewed and component versions documented'},
+          {id:'p1-arch-v2', text:'Hardware meets minimum VCF requirements (4+ hosts, NIC, VLAN)'},
+          {id:'p1-arch-v3', text:'DNS entries (forward + reverse) pre-created for all VCF components'},
+          {id:'p1-arch-v4', text:'Planning & Preparation Workbook completed'},
+          {id:'p1-arch-v5', text:'All host licenses (vSphere, vSAN, NSX) available'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p2', badge:'PHASE 2', title:'Management Domain Deployment', week:'Week 2',
+    labs:[
+      {
+        id:'p2-cloud-builder', cloud:'vcf', title:'Cloud Builder — Management Domain Bringup',
+        meta:'Deploy the Management Domain using Cloud Builder, validate the environment with pre-check',
+        steps:[
+          {id:'p2-cb-s1', text:'Deploy the Cloud Builder OVA to your first ESXi host (bootstrap host)', details:['Download Cloud Builder OVA from Broadcom portal (requires account)', 'Deploy to one of the VCF hosts using vSphere client or ovftool', 'Cloud Builder VM settings: 2 vCPU, 8GB RAM, thin-provisioned disk', 'Configure networking: management VLAN, static IP, hostname, DNS, NTP', 'Cloud Builder access: https://<cloud-builder-ip> (admin / <password>)']},
+          {id:'p2-cb-s2', text:'Import the Planning & Preparation Workbook JSON into Cloud Builder', details:['Cloud Builder > Deploy SDDC', 'Import the JSON-formatted Planning Workbook (exported from VMware Workbook tool)', 'Alternatively fill in the Cloud Builder UI wizard step-by-step', 'Review all sections: Hosts, Network, vSAN, NSX-T, vCenter, SDDC Manager', 'Ensure all hostnames resolve via DNS before proceeding']},
+          {id:'p2-cb-s3', text:'Run the VCF Pre-check validation in Cloud Builder', details:['Cloud Builder > Pre-check (automatically validates all inputs)', 'Pre-checks include: DNS resolution, NTP sync, host reachability, VLAN connectivity, vSAN disk validation', 'Common failures: missing reverse DNS, NTP drift, VLAN mismatch, insufficient disk groups', 'Fix all FAILED items before proceeding — WARNINGs can optionally be acknowledged', 'Pre-check passes when all checks show SUCCESS or acknowledged WARNINGs']},
+          {id:'p2-cb-s4', text:'Execute the Management Domain deployment and monitor progress', details:['Click Deploy — process takes 2-4 hours depending on hardware', 'Steps: Configure ESXi hosts → Deploy vCenter → Create vSAN datastore → Deploy NSX-T Managers → Deploy SDDC Manager', 'Monitor each workflow task in Cloud Builder UI', 'SDDC Manager deploys last — credentials from planning workbook', 'On success: vCenter URL and SDDC Manager URL are displayed']},
+          {id:'p2-cb-s5', text:'Validate Management Domain post-deployment health', details:['Access SDDC Manager: https://<sddc-manager-fqdn>', 'Workload Domains > Management Domain > View clusters, hosts, and datastores', 'vCenter: verify all 4 management hosts are connected and healthy', 'NSX Manager: verify 3-node NSX Manager cluster (Active/Active/Active)', 'vSAN: all-flash or hybrid datastore healthy; check disk groups in vCenter > Cluster > Configure > vSAN']},
+        ],
+        validation:[
+          {id:'p2-cb-v1', text:'Cloud Builder pre-check passes all required validations'},
+          {id:'p2-cb-v2', text:'Management Domain vCenter deployed and all 4 hosts connected'},
+          {id:'p2-cb-v3', text:'3-node NSX Manager cluster healthy in SDDC Manager'},
+          {id:'p2-cb-v4', text:'vSAN datastore created with correct capacity tier'},
+          {id:'p2-cb-v5', text:'SDDC Manager UI accessible and shows Management Domain as healthy'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p3', badge:'PHASE 3', title:'NSX-T Networking', week:'Week 2-3',
+    labs:[
+      {
+        id:'p3-overlay', cloud:'vcf', title:'NSX-T Overlay Networking — Segments, T0 & T1 Gateways',
+        meta:'Configure NSX-T overlay transport zones, logical segments, Tier-0 and Tier-1 gateways with BGP uplinks',
+        steps:[
+          {id:'p3-overlay-s1', text:'Review NSX-T logical topology deployed by VCF and understand transport zones', details:['SDDC Manager automatically creates: NSX-T Manager cluster, TEP VLANs, Transport Node Profiles', 'Transport Zones: VLAN Transport Zone (for uplinks), Overlay Transport Zone (for logical segments)', 'Host Transport Nodes: each ESXi host has a VDS configured by VCF with TEP vmkernels in the host TEP VLAN', 'Edge Transport Nodes: separate VMs deployed with uplink VLANs for N-S routing', 'Review NSX Manager > System > Fabric > Transport Nodes — all should show "Tunnel Up"']},
+          {id:'p3-overlay-s2', text:'Create an NSX-T Tier-0 Gateway and configure BGP with physical routers', details:['NSX Manager > Networking > Tier-0 Gateways > Add', 'Name: T0-VCF-Prod; HA mode: Active-Active', 'Link interfaces: add uplink interfaces on Edge nodes (from edge uplink VLAN)', 'Configure BGP: Routing > BGP; Local AS: 65001; Neighbor: ToR switch IP, Remote AS', 'Enable BGP route redistribution: Connected routes, Static routes', 'Verify BGP session comes up (check NSX or ToR switch)']},
+          {id:'p3-overlay-s3', text:'Create a Tier-1 Gateway and connect it to Tier-0 for tenant routing', details:['NSX Manager > Networking > Tier-1 Gateways > Add', 'Name: T1-WebTier; Linked T0: T0-VCF-Prod; Edge cluster: edge-cluster-01', 'Enable route advertisement: Connected Segments, LB VIP', 'T1 acts as distributed router — each host runs a Local Router instance', 'Connect T1 to T0 creates a router-link (automatically assigned /31 subnet)']},
+          {id:'p3-overlay-s4', text:'Create overlay logical segments and attach VMs', details:['NSX Manager > Networking > Segments > Add Segment', 'Name: seg-web-prod; Transport zone: Overlay-TZ; Subnet: 192.168.10.1/24; Gateway: T1-WebTier', 'Similarly create: seg-app-prod (192.168.20.1/24), seg-db-prod (192.168.30.1/24)', 'Attach VMs to segments via vCenter: Edit Settings > Network Adapter > Browse to segment name', 'Test East-West connectivity: VM in seg-web ping VM in seg-app (should work via T1 distributed routing)']},
+          {id:'p3-overlay-s5', text:'Configure Distributed Firewall (DFW) micro-segmentation rules', details:['NSX Manager > Security > Distributed Firewall', 'Create Security Group: sg-web (membership: VMs with tag=web)', 'Create DFW policy: Web-Tier-Policy', 'Rule 1: Allow HTTP/HTTPS from any to sg-web', 'Rule 2: Allow web-to-app: sg-web → sg-app on TCP/8080', 'Rule 3: Allow app-to-db: sg-app → sg-db on TCP/3306', 'Default rule: Block all (change existing Default allow to Drop)', 'Test: SSH into web VM, curl app VM port 8080 — should succeed; other traffic blocked']},
+        ],
+        validation:[
+          {id:'p3-overlay-v1', text:'All ESXi and Edge transport nodes show Tunnel Up'},
+          {id:'p3-overlay-v2', text:'T0-T1 gateways created and route advertisement enabled'},
+          {id:'p3-overlay-v3', text:'BGP session established between T0 and physical ToR switch'},
+          {id:'p3-overlay-v4', text:'VMs attached to overlay segments communicate East-West via T1'},
+          {id:'p3-overlay-v5', text:'DFW micro-segmentation rules enforced (tested and validated)'},
+        ]
+      },
+      {
+        id:'p3-edge', cloud:'vcf', title:'NSX-T Edge Cluster & Load Balancing',
+        meta:'Deploy Edge nodes in VCF, configure Edge cluster, enable NSX-T Load Balancer',
+        steps:[
+          {id:'p3-edge-s1', text:'Review Edge Node deployment in SDDC Manager (commissioned via VCF)', details:['SDDC Manager > Networking > NSX Edge Clusters', 'VCF deploys Edge nodes as part of the Management Domain or Workload Domain onboarding', 'Edge nodes: 2 VMs per cluster (Active/Standby or Active/Active for T0)', 'Edge VM sizes: Small (2vCPU/4GB), Medium (4/8), Large (8/16) — Large recommended for LB workloads', 'Verify Edge cluster in NSX Manager > System > Fabric > Edge Clusters']},
+          {id:'p3-edge-s2', text:'Configure NSX Load Balancer on a Tier-1 Gateway', details:['NSX Manager > Networking > Load Balancing', 'Attach LB to T1-WebTier; Size: Small (dev/test)', 'Create Server Pool: pool-web-app; Algorithm: Round Robin', 'Add Pool Members: web-vm-01 (IP 192.168.10.11), web-vm-02 (IP 192.168.10.12); Port: 80', 'Create Virtual Server: vs-http; IP: 192.168.10.100; Protocol: HTTP/80; Pool: pool-web-app', 'Test: curl http://192.168.10.100 — should load balance between VMs']},
+          {id:'p3-edge-s3', text:'Configure NAT rules on Tier-0 for external connectivity', details:['NSX Manager > Networking > NAT', 'Source NAT (SNAT): T0-VCF-Prod; Action: SNAT; Source: 192.168.0.0/16; Translated: <public-IP>', 'Destination NAT (DNAT) for inbound: T0; Action: DNAT; Destination: <public-IP>:443; Translated: 192.168.10.100:443', 'Test SNAT: from a VM, curl https://ifconfig.me — should show the SNAT public IP', 'View active NAT translations: NSX Manager > Policy > Edge > NAT > Active']},
+          {id:'p3-edge-s4', text:'Review NSX-T BGP route table and validate traffic flow', details:['NSX Manager > Networking > Tier-0 Gateways > T0 > Routing > BGP', 'Check routes learned from ToR switch (should include default route or upstream subnets)', 'Check routes advertised to ToR (should include overlay segment prefixes 192.168.10.0/24, etc.)', 'Verify forwarding table: NSX CLI on Edge node: get logical-router; get logical-router <uuid> forwarding', 'Use NSX Traceflow to validate packet path: NSX Manager > Tools > Traceflow']},
+        ],
+        validation:[
+          {id:'p3-edge-v1', text:'Edge cluster deployed and all Edge transport nodes healthy'},
+          {id:'p3-edge-v2', text:'NSX Load Balancer serving traffic across pool members'},
+          {id:'p3-edge-v3', text:'NAT rules configured and tested (SNAT and DNAT)'},
+          {id:'p3-edge-v4', text:'BGP routes learned and advertised correctly via T0 gateway'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p4', badge:'PHASE 4', title:'Workload Domains & vSAN', week:'Week 3-4',
+    labs:[
+      {
+        id:'p4-wld', cloud:'vcf', title:'Create a VI Workload Domain',
+        meta:'Commission new hosts, create a Virtual Infrastructure Workload Domain with vSAN and NSX-T',
+        steps:[
+          {id:'p4-wld-s1', text:'Commission new ESXi hosts in SDDC Manager for use in a Workload Domain', details:['SDDC Manager > Hosts > Commission', 'Hosts must already have ESXi installed matching the current VCF BOM version', 'Enter host FQDN and credentials; SDDC Manager validates: DNS, NTP, vSphere version', 'Commission at least 4 hosts (3 for vSAN minimum; 4+ recommended)', 'Commissioning installs VCF required VIBs and configures management networking', 'Status changes from Available → Commissioned']},
+          {id:'p4-wld-s2', text:'Create a Workload Domain using SDDC Manager', details:['SDDC Manager > Workload Domains > Add Domain', 'Domain name: prod-workload-01; Type: VI (Virtual Infrastructure)', 'Select commissioned hosts (min 3-4)', 'vSAN configuration: capacity tier (flash/disk groups), deduplication & compression toggle', 'NSX-T: create new NSX instance or use existing Management Domain NSX (VCF 4.3+ supports shared NSX)', 'vCenter: new vCenter FQDN and SSO domain, or link to existing PSC', 'Review summary and deploy — takes 60-90 minutes']},
+          {id:'p4-wld-s3', text:'Configure vSAN policies for the Workload Domain', details:['Access the Workload Domain vCenter', 'VM Storage Policies > Create: Policy name: VCF-FTT1-RAID1', 'vSAN rules: Failures to tolerate (FTT): 1; RAID method: RAID-1 (Mirroring)', 'Space efficiency: Deduplication and Compression: Enabled', 'Apply policy to test VMs and verify compliance', 'Create another policy: VCF-FTT1-RAID5 (erasure coding for capacity efficiency)']},
+          {id:'p4-wld-s4', text:'Verify vSAN health and fix any warnings', details:['vCenter > Cluster > Monitor > vSAN > Health', 'Review all health checks: Network, Physical disk, Data, Performance', 'Common items to check: Disk format version, vSAN build recommendation, Controller firmware', 'Enable vSAN Proactive Rebalance: vCenter > Cluster > Configure > vSAN > Advanced Options', 'Review vSAN Capacity: vCenter > Monitor > vSAN > Capacity > ensure no capacity alarm', 'Check vSAN performance service is enabled for monitoring IOPs/throughput/latency']},
+          {id:'p4-wld-s5', text:'Enable vSAN Encryption (Data-at-Rest) for the Workload Domain cluster', details:['Requires: Key Management Server (KMS) or Native Key Provider (NKP) in vCenter', 'Add Native Key Provider: vCenter > Manage > Key Providers > Add Native Key Provider', 'Backup the NKP key material (required for recovery)', 'Enable encryption: vCenter > Cluster > Configure > vSAN > Data Services > Data-at-rest encryption: On', 'Warning: encryption causes full disk re-key — schedule maintenance window', 'Verify: vSAN Health > Data-at-rest encryption: Healthy']},
+        ],
+        validation:[
+          {id:'p4-wld-v1', text:'VI Workload Domain created with 4+ hosts in SDDC Manager'},
+          {id:'p4-wld-v2', text:'vSAN datastore healthy with correct disk groups'},
+          {id:'p4-wld-v3', text:'VM storage policies (RAID-1, RAID-5) created and applied'},
+          {id:'p4-wld-v4', text:'vSAN health shows no Critical/Warning items'},
+          {id:'p4-wld-v5', text:'vSAN data-at-rest encryption enabled with NKP backup completed'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p5', badge:'PHASE 5', title:'Identity & Certificate Management', week:'Week 4',
+    labs:[
+      {
+        id:'p5-identity', cloud:'vcf', title:'vCenter SSO, Roles & Permissions',
+        meta:'Configure vSphere SSO, create custom roles, set permissions hierarchy, integrate with Active Directory',
+        steps:[
+          {id:'p5-identity-s1', text:'Integrate vCenter SSO with Active Directory (LDAP/LDAPS)', details:['vCenter > Administration > Single Sign On > Configuration > Identity Sources', 'Add Identity Source: Type: Active Directory over LDAP', 'Primary server URL: ldaps://dc01.corp.local:636 (use LDAPS for security)', 'Domain name: corp.local; Username: svc-vcenter@corp.local (read-only bind account)', 'Test connection — should succeed', 'Browse users: confirm AD users appear in SSO identity sources']},
+          {id:'p5-identity-s2', text:'Create custom vSphere RBAC roles for different personas', details:['vCenter > Administration > Roles > New', 'VM Operator role: Power VM on/off, Console access, View performance data', 'Network Operator role: Manage port groups, Assign networks to VMs', 'Storage Operator role: Browse datastores, Manage snapshots', 'Read-Only Auditor: Global > Read-only (built-in, but assign explicitly)', 'Verify roles appear in vCenter > Global Permissions > Manage']},
+          {id:'p5-identity-s3', text:'Assign permissions using the principle of least privilege', details:['vCenter > Hosts and Clusters > Select object > Permissions > Add', 'Assign AD group Domain-Admins → Administrator role at vCenter level', 'Assign AD group VM-Operators → VM Operator role at Datacenter level (propagate)', 'Assign AD group Storage-Ops → Storage Operator role at Cluster/Datastore level only', 'Never assign permissions at root (/) unless absolutely required', 'Test: log in as a VM-Operator user and verify they can power VMs but not delete them']},
+          {id:'p5-identity-s4', text:'Configure SDDC Manager role-based access and review built-in roles', details:['SDDC Manager > Administration > Users and Groups', 'Built-in SDDC Manager roles: ADMIN, OPERATOR, VIEWER', 'Add AD group Infrastructure-Admins → ADMIN role', 'Add AD group Infrastructure-Viewers → VIEWER role', 'OPERATOR: can run workflows but cannot change configuration', 'Review: SDDC Manager > Audit > Audit Logs to track who made what changes']},
+          {id:'p5-identity-s5', text:'Configure NSX-T RBAC with AD integration', details:['NSX Manager > System > User Management > LDAP', 'Add LDAP server: corp.local on LDAPS 636', 'Create role bindings: NSX Manager > System > User Management > Role Assignments', 'Assign AD group NSX-Admins → Enterprise Admin role', 'Assign AD group NSX-Operators → Network Operator role (read + change network objects)', 'Assign AD group Security-Admins → Security Admin role (DFW only)', 'Test: log in as network-operator — should see networks but not security policies']},
+        ],
+        validation:[
+          {id:'p5-identity-v1', text:'Active Directory LDAPS integrated with vCenter SSO'},
+          {id:'p5-identity-v2', text:'Custom RBAC roles created for VM, Network, and Storage operators'},
+          {id:'p5-identity-v3', text:'Permissions assigned at correct hierarchy levels with least privilege'},
+          {id:'p5-identity-v4', text:'SDDC Manager AD integration and role bindings configured'},
+          {id:'p5-identity-v5', text:'NSX-T RBAC with AD group bindings configured and tested'},
+        ]
+      },
+      {
+        id:'p5-certs', cloud:'vcf', title:'Certificate Management in VCF',
+        meta:'Replace VMCA self-signed certs with CA-signed certificates using SDDC Manager certificate workflow',
+        steps:[
+          {id:'p5-certs-s1', text:'Review the default VCF certificate architecture (VMCA)', details:['By default VCF uses VMware Certificate Authority (VMCA) for all component certificates', 'VMCA is a CA embedded in vCenter; all ESXi hosts, NSX managers, etc. get VMCA-signed certs', 'SDDC Manager > Administration > Certificate Management shows all component certs', 'Limitation: VMCA root is not trusted by browsers — causes security warnings', 'Solution options: 1) Make VMCA a subordinate CA of enterprise CA (recommended), 2) Replace all certs with enterprise CA-signed certs']},
+          {id:'p5-certs-s2', text:'Generate CSRs for SDDC Manager components using SDDC Manager', details:['SDDC Manager > Certificate Management > Generate CSRs', 'Select all components: SDDC Manager, vCenter, NSX Manager nodes', 'Fill in: Organization, OU, Locality, Country, Key size: 2048 or 4096', 'SDDC Manager generates and stores CSRs; download as ZIP', 'Submit CSRs to your enterprise CA (Windows CA: certreq, OpenSSL CA, or internal PKI)']},
+          {id:'p5-certs-s3', text:'Sign the CSRs using your enterprise CA and upload signed certs back to SDDC Manager', details:['Submit each CSR to enterprise CA via web enrollment or CLI', 'Download PEM-format signed certificates for each component', 'Upload: SDDC Manager > Certificate Management > Upload Certificates', 'Also upload the CA root chain (root CA + any intermediate CAs) as trusted bundle', 'SDDC Manager validates cert chain before installation']},
+          {id:'p5-certs-s4', text:'Install certificates across all VCF components via SDDC Manager workflow', details:['SDDC Manager > Certificate Management > Install Certificates', 'SDDC Manager automates: cert installation → service restart → validation for each component', 'Order: ESXi hosts first → NSX Managers → vCenter → SDDC Manager (last)', 'Monitor workflow in SDDC Manager > Operations > Task Monitor', 'After completion: browse to vCenter FQDN — should show CA-signed cert (padlock green, no warning)', 'Verify NSX Manager also shows CA cert in browser']},
+        ],
+        validation:[
+          {id:'p5-certs-v1', text:'CSRs generated for all VCF components via SDDC Manager'},
+          {id:'p5-certs-v2', text:'Enterprise CA-signed certificates uploaded to SDDC Manager'},
+          {id:'p5-certs-v3', text:'Certificate installation workflow completed successfully'},
+          {id:'p5-certs-v4', text:'vCenter and NSX Manager accessible with trusted CA certificate (no browser warning)'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p6', badge:'PHASE 6', title:'Lifecycle Management & Operations', week:'Week 5-6',
+    labs:[
+      {
+        id:'p6-lcm', cloud:'vcf', title:'SDDC Manager LCM — Bundle Downloads & Updates',
+        meta:'Use SDDC Manager Lifecycle Manager to download update bundles and patch VCF components',
+        steps:[
+          {id:'p6-lcm-s1', text:'Configure SDDC Manager depot connection for bundle downloads', details:['SDDC Manager > Lifecycle Management > Depot Settings', 'Online depot: enter VMware Customer Connect credentials (or Broadcom portal creds)', 'Or configure Offline Depot: internal web server hosting downloaded bundles', 'Test connectivity: SDDC Manager must reach depot URL (check proxy if behind corporate firewall)', 'After successful connection: SDDC Manager > Lifecycle Management > Bundle Management shows available updates']},
+          {id:'p6-lcm-s2', text:'Download update bundles and review the upgrade sequence', details:['SDDC Manager > Lifecycle Management > Bundle Management', 'Download bundles for current VCF version upgrade (e.g., VCF 5.1 → 5.2)', 'Bundle types: NSX, vCenter, ESXi, SDDC Manager itself', 'VCF upgrade sequence is strict: check Upgrade Sequence in VCF documentation', 'Typical order: 1) SDDC Manager, 2) NSX Manager, 3) ESXi hosts (via vLCM), 4) vCenter', 'Always review Pre-check results before starting upgrade']},
+          {id:'p6-lcm-s3', text:'Run the VCF Pre-check before upgrading and remediate issues', details:['SDDC Manager > Lifecycle Management > Upgrade > Run Precheck', 'Pre-checks validate: host health, vSAN health, NSX health, snapshots, DRS, HA settings', 'Common blockers: VMs with snapshots (remove before upgrade), DRS disabled (enable for vMotion during ESXi rolling upgrade), host in maintenance mode', 'Fix all CRITICAL findings; review and acknowledge WARNINGs', 'Re-run pre-check until all checks pass']},
+          {id:'p6-lcm-s4', text:'Execute a patch/update for a VCF component (NSX or vCenter)', details:['SDDC Manager > Lifecycle Management > Upgrade > Start Upgrade', 'Select component: NSX Managers (Management Domain)', 'SDDC Manager orchestrates: rolling upgrade of 3 NSX Manager nodes one at a time', 'Monitor: Lifecycle Management > Operations > Active Tasks', 'Expected duration: 45-90 min per component', 'After completion: verify NSX Manager version updated in NSX UI > System > Upgrade']},
+          {id:'p6-lcm-s5', text:'Upgrade ESXi hosts using vSphere Lifecycle Manager (vLCM) managed by SDDC Manager', details:['SDDC Manager uses vLCM image-based management for ESXi hosts', 'SDDC Manager > Lifecycle Management > Upgrade > ESXi Hosts', 'SDDC Manager creates vLCM image with target ESXi version + required drivers', 'Rolling upgrade: places host in maintenance mode → upgrades via vLCM → exits maintenance mode', 'vSphere DRS vMotions VMs off host before entering maintenance', 'All hosts in cluster upgraded one by one; cluster stays operational throughout']},
+        ],
+        validation:[
+          {id:'p6-lcm-v1', text:'SDDC Manager depot connected and bundles visible'},
+          {id:'p6-lcm-v2', text:'LCM pre-check passes with no critical issues'},
+          {id:'p6-lcm-v3', text:'At least one VCF component patched via SDDC Manager LCM workflow'},
+          {id:'p6-lcm-v4', text:'ESXi hosts updated via vLCM image-based upgrade'},
+          {id:'p6-lcm-v5', text:'All VCF components show same BOM version post-upgrade'},
+        ]
+      },
+      {
+        id:'p6-ops', cloud:'vcf', title:'Operations — Monitoring, Backup & Troubleshooting',
+        meta:'Configure vRealize Operations (Aria), SDDC Manager backup, and common troubleshooting workflows',
+        steps:[
+          {id:'p6-ops-s1', text:'Configure SDDC Manager backup (SFTP-based backup of management components)', details:['SDDC Manager > Administration > Backup & Restore', 'Set backup schedule: SFTP endpoint (IP, port, path, credentials)', 'SDDC Manager backs up: SDDC Manager DB, NSX Manager config, vCenter config', 'Backup frequency: daily minimum; retention: at least 7 backups', 'Test restore: restore SDDC Manager to a test instance to validate backup integrity', 'Store backup credentials in a secrets manager, not plaintext config']},
+          {id:'p6-ops-s2', text:'Review SDDC Manager Operations Dashboard and audit logs', details:['SDDC Manager > Dashboard: shows overall health of all Workload Domains', 'Green/Yellow/Red status indicators for compute, storage, and networking', 'SDDC Manager > Operations > Audit Logs: every action with timestamp, user, and result', 'SDDC Manager > Operations > Tasks: view active and historical workflow tasks', 'Alert notifications: configure under Administration > Notifications (SMTP, Slack webhook)', 'Review resource utilization trends to plan capacity expansion']},
+          {id:'p6-ops-s3', text:'Set up VMware Aria Operations (vROps) for workload monitoring', details:['Deploy Aria Operations OVA into VCF Management Domain (or use SaaS version)', 'Add vCenter adapter: Administration > Solutions > Add Adapter > vCenter Server', 'Add NSX-T adapter: allows visualizing NSX objects in topology', 'Explore dashboards: Home > vSphere > Cluster — shows CPU/Memory/Storage utilization, ready time, contention', 'Create alert definition: if VM CPU ready > 5% for 15 min → critical alert', 'Run capacity analysis: how many more VMs can the cluster handle?']},
+          {id:'p6-ops-s4', text:'Troubleshoot common VCF issues: SDDC Manager connectivity, NSX transport node down', details:['SDDC Manager unreachable: check Management VM power state in vCenter, verify management VLAN connectivity', 'NSX transport node tunnel down: NSX Manager > System > Fabric > Transport Nodes > hover for tunnel status', 'Fix tunnel: check TEP VLAN reachability between hosts (ping between TEP IPs), check MTU (jumbo frames required: MTU 1600+ recommended)', 'vSAN health warning: vCenter > Cluster > Monitor > vSAN > Health; click warning for remediation steps', 'vCenter HA failover: verify vCenter HA cluster health in vCenter > Administration > vCenter HA']},
+          {id:'p6-ops-s5', text:'Test a simulated host failure and validate VCF resiliency', details:['Simulate host failure: power off (or place in maintenance) one ESXi host in Management Domain', 'Verify: vSphere HA restarts management VMs (SDDC Manager, NSX Manager) on remaining hosts', 'vSAN remains accessible (FTT=1 policy tolerates 1 failure)', 'NSX-T: one NSX Manager goes offline, cluster continues with 2 remaining managers', 'Restore the host and verify re-convergence: vSAN rebuilds redundancy, host re-joins cluster', 'Document RTO/RPO observed during the test']},
+        ],
+        validation:[
+          {id:'p6-ops-v1', text:'SDDC Manager backup configured to SFTP with daily schedule'},
+          {id:'p6-ops-v2', text:'Audit logs show recorded actions in SDDC Manager'},
+          {id:'p6-ops-v3', text:'Aria Operations deployed with vCenter and NSX-T adapters connected'},
+          {id:'p6-ops-v4', text:'Host failure simulation completed — HA restarted VMs successfully'},
+          {id:'p6-ops-v5', text:'vSAN rebuilt redundancy after host failure (all objects compliant)'},
+        ]
+      }
+    ]
+  }
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const APP_KEY = 'vcf_lab_tracker';
+let state = {};
+let currentUser = null;
+let db = null;
+let syncRef = null;
+
+// ─── Persist ──────────────────────────────────────────────────────────────────
+function loadState(){
+  const u = currentUser || 'default';
+  const raw = localStorage.getItem(APP_KEY+'_'+u);
+  state = raw ? JSON.parse(raw) : {steps:{},notes:{},labNotes:{},valChecks:{}};
+  if(!state.steps) state.steps={};
+  if(!state.notes) state.notes={};
+  if(!state.labNotes) state.labNotes={};
+  if(!state.valChecks) state.valChecks={};
+}
+function saveState(){
+  const u = currentUser || 'default';
+  localStorage.setItem(APP_KEY+'_'+u, JSON.stringify(state));
+  pushToFirebase();
+}
+
+// ─── Firebase ─────────────────────────────────────────────────────────────────
+function initFirebase(){
+  const cfg = JSON.parse(localStorage.getItem('vcf_fb_config')||'null');
+  if(!cfg) return;
+  try{
+    const existing = firebase.apps.find(a=>a.name==='vcf-tracker');
+    const app = existing || firebase.initializeApp(cfg,'vcf-tracker');
+    db = firebase.database(app);
+    syncRef = db.ref('vcf_progress');
+    listenFirebase();
+    setSyncStatus('ok','&#x2714; Synced');
+  } catch(e){ setSyncStatus('err','&#x26A0; Sync Error'); }
+}
+function listenFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).on('value', snap=>{
+    const data = snap.val();
+    if(data){
+      state = data;
+      if(!state.steps) state.steps={};
+      if(!state.notes) state.notes={};
+      if(!state.labNotes) state.labNotes={};
+      if(!state.valChecks) state.valChecks={};
+      saveState(); renderAll(); updateStats();
+    }
+  });
+}
+function pushToFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).set(state).then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Error'));
+}
+function setSyncStatus(type, html){
+  const el = document.getElementById('sync-status');
+  el.className='sync-status sync-'+type;
+  el.innerHTML=html;
+}
+function openFbPanel(){
+  const cfg = JSON.parse(localStorage.getItem('vcf_fb_config')||'null');
+  if(cfg){ document.getElementById('fb-apiKey').value=cfg.apiKey||''; document.getElementById('fb-databaseURL').value=cfg.databaseURL||''; document.getElementById('fb-projectId').value=cfg.projectId||''; }
+  document.getElementById('fb-overlay').classList.add('open');
+}
+function closeFbPanel(){ document.getElementById('fb-overlay').classList.remove('open'); }
+function saveFbConfig(){
+  const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};
+  if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){ showFbMsg('err','Please fill in all 3 fields.'); return; }
+  localStorage.setItem('vcf_fb_config',JSON.stringify(cfg));
+  showFbMsg('ok','Connecting...');
+  initFirebase();
+  setTimeout(closeFbPanel,1000);
+}
+function clearFbConfig(){ localStorage.removeItem('vcf_fb_config'); db=null; syncRef=null; setSyncStatus('none','&#x1F4BE; Local Only'); closeFbPanel(); }
+function showFbMsg(type,msg){ const el=document.getElementById('fb-msg'); el.className='fb-status-msg '+type; el.innerHTML=msg; }
+
+// ─── Leaderboard & Quiz ───────────────────────────────────────────────────────
+function _lbDb(){var app=(typeof firebase!=='undefined')?firebase.apps.find(function(a){return a.name==='mk-site';}):null;return app?firebase.database(app):null;}
+function openLeaderboard(){
+  document.getElementById('lb-overlay').classList.add('open');
+  document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x21BB; Loading&hellip;</div>';
+  var lbDb=_lbDb();
+  if(!lbDb){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x26A0; Firebase not connected.</div>';return;}
+  lbDb.ref('vcf_progress').once('value').then(function(snap){
+    var all=snap.val();
+    if(!all||!Object.keys(all).length){document.getElementById('lb-body').innerHTML='<div class="lb-loading">No data yet.</div>';return;}
+    var rows=Object.entries(all).map(function(e){
+      var name=e[0],u=e[1],tc=0,dc=0,dl=0;
+      PHASES.forEach(function(ph){ph.labs.forEach(function(lab){
+        var ts=lab.steps.length,tv=lab.validation.length;
+        var ds=lab.steps.filter(function(s){return u.steps&&u.steps[s.id];}).length;
+        var dv=lab.validation.filter(function(v){return u.valChecks&&u.valChecks[v.id];}).length;
+        tc+=ts+tv;dc+=ds+dv;if(ds+dv===ts+tv&&ts+tv>0)dl++;
+      });});
+      return{name:name,tc:tc,dc:dc,dl:dl,pct:tc>0?Math.round(dc/tc*100):0};
+    }).sort(function(a,b){return b.pct-a.pct||b.dl-a.dl;});
+    var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+    var html=rows.map(function(r,i){return '<tr class="'+(r.name===currentUser?'me':'')+'"><td class="lb-rank">'+(i<3?medals[i]:'#'+(i+1))+'</td><td><b>'+r.name+'</b>'+(r.name===currentUser?' <span style="font-size:10px">(you)</span>':'')+'</td><td><div style="display:flex;align-items:center;gap:6px"><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:'+r.pct+'%"></div></div><span style="font-size:11px;font-weight:700">'+r.pct+'%</span></div></td><td style="text-align:center">'+r.dl+'</td><td style="text-align:center">'+r.dc+'/'+r.tc+'</td></tr>';}).join('');
+    document.getElementById('lb-body').innerHTML='<table class="lb-table"><thead><tr><th>Rank</th><th>Name</th><th>Progress</th><th>Labs Done</th><th>Checks</th></tr></thead><tbody>'+html+'</tbody></table><p style="font-size:10px;color:var(--gray);margin-top:10px;text-align:right">'+rows.length+' teammate'+(rows.length!==1?'s':'')+'</p>';
+  }).catch(function(){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x2717; Failed to load.</div>';});
+}
+function closeLb(){document.getElementById('lb-overlay').classList.remove('open');}
+
+var ALL_QUIZ=[
+  {id:'q1',phase:1,question:'What is the role of Cloud Builder in VMware Cloud Foundation?',options:['Day-2 lifecycle orchestration and patch management','Deploys the initial Management Domain during greenfield bringup','Provides the vSAN datastore for management workloads','Acts as the NSX-T Manager for the Management Domain'],answer:1,explanation:'Cloud Builder is used only for the initial greenfield deployment of the Management Domain. After deployment it is no longer needed — SDDC Manager takes over for ongoing lifecycle management.'},
+  {id:'q2',phase:1,question:'What is the minimum number of ESXi hosts required for a VCF Management Domain?',options:['2 hosts','3 hosts','4 hosts','6 hosts'],answer:2,explanation:'VCF requires at minimum 4 hosts for the Management Domain: 3 contribute to vSAN (FTT=1) and the 4th provides additional capacity and avoids a "vSAN stretched" configuration requirement.'},
+  {id:'q3',phase:2,question:'Which VCF document is used as the primary input to Cloud Builder during Management Domain deployment?',options:['VCF Design Guide','VCF Bill of Materials (BOM)','VCF Planning and Preparation Workbook','VCF Compatibility Matrix'],answer:2,explanation:'The Planning and Preparation Workbook captures all deployment inputs (IPs, FQDNs, VLANs, passwords, licenses). It is exported as JSON and imported into Cloud Builder to drive the automated deployment.'},
+  {id:'q4',phase:2,question:'In what order should VCF components be upgraded using SDDC Manager LCM?',options:['vCenter → NSX → ESXi → SDDC Manager','SDDC Manager → NSX → ESXi (vLCM) → vCenter','ESXi → vCenter → NSX → SDDC Manager','NSX → vCenter → SDDC Manager → ESXi'],answer:1,explanation:'The VCF upgrade sequence is strictly: SDDC Manager first (it orchestrates the rest), then NSX Manager, then ESXi hosts via vLCM, then vCenter. Deviating from this order can cause failures.'},
+  {id:'q5',phase:3,question:'What is the function of a Tier-0 (T0) Gateway in NSX-T?',options:['Provides East-West routing between overlay segments','Provides North-South routing between logical networks and physical infrastructure','Enforces Distributed Firewall micro-segmentation rules','Acts as the NSX Manager API endpoint'],answer:1,explanation:'Tier-0 Gateways handle North-South (N-S) traffic between the NSX-T overlay and the physical underlay network. They connect to physical routers via BGP or static routes on Edge nodes.'},
+  {id:'q6',phase:3,question:'Which NSX-T component runs distributed on every ESXi host and provides East-West routing?',options:['Edge Transport Node','NSX Manager','Distributed Logical Router (T1 kernel module)','Central Control Plane (CCP)'],answer:2,explanation:'The Tier-1 Gateway Distributed Logical Router (DLR) runs as a kernel module on every hypervisor. This enables wire-speed East-West routing between overlay segments without sending traffic to Edge nodes.'},
+  {id:'q7',phase:4,question:'What does the vSAN FTT=1 RAID-1 storage policy mean?',options:['Data is written to 1 host only (no redundancy)','Data is mirrored across 2 hosts — can tolerate 1 host failure','Data is erasure-coded across 3 hosts with 1 parity block','Data requires 4 hosts minimum with 2 stripes'],answer:1,explanation:'FTT=1 RAID-1 (mirroring) means each object is written to 2 hosts — tolerating 1 failure. RAID-5/6 uses erasure coding for better capacity efficiency but requires more hosts.'},
+  {id:'q8',phase:4,question:'What is required before enabling vSAN data-at-rest encryption?',options:['vSAN All-Flash configuration','A Key Management Server (KMS) or Native Key Provider in vCenter','NSX-T encryption license','vSphere with Operations Management license'],answer:1,explanation:'vSAN encryption requires a key management solution: either an external KMIP-compatible KMS or the vCenter Native Key Provider (NKP). The key provider encrypts/decrypts data encryption keys.'},
+  {id:'q9',phase:5,question:'What is the recommended approach for replacing VCF self-signed certificates with CA-signed certificates?',options:['Manually SSH into each component and replace certs','Use SDDC Manager Certificate Management to generate CSRs, get them signed, and install via workflow','Re-deploy all VCF components with new certs','Use VMware Certificate Tool (vCT) from vCenter command line'],answer:1,explanation:'SDDC Manager Certificate Management provides a centralized workflow: generate CSRs for all components, have them signed by your enterprise CA, upload the signed certs, and SDDC Manager automates installation across all components.'},
+  {id:'q10',phase:5,question:'Which SDDC Manager built-in role allows running operational workflows but prevents configuration changes?',options:['VIEWER','OPERATOR','ADMIN','EXECUTOR'],answer:1,explanation:"The OPERATOR role in SDDC Manager allows running LCM workflows, pre-checks, and operational tasks but does NOT allow modifying system configuration. ADMIN has full access; VIEWER is read-only."},
+  {id:'q11',phase:6,question:'What is the correct upgrade sequence within NSX-T when upgrading via SDDC Manager LCM?',options:['All 3 NSX Managers upgraded simultaneously','NSX Managers upgraded one at a time in a rolling fashion (cluster stays active)','NSX Manager cluster must be shut down before upgrade','Only the active NSX Manager is upgraded — standbys inherit the update'],answer:1,explanation:'SDDC Manager upgrades NSX Manager nodes one at a time (rolling). With a 3-node cluster, at least 2 remain active throughout, ensuring no NSX management plane outage during the upgrade.'},
+  {id:'q12',phase:6,question:'Which VCF component is responsible for orchestrating ESXi host patching and uses image-based management?',options:['SDDC Manager (directly SSHing to hosts)','vSphere Lifecycle Manager (vLCM) integrated with SDDC Manager','Cloud Builder running post-deployment','NSX-T Host Transport Node Manager'],answer:1,explanation:'vSphere Lifecycle Manager (vLCM) provides image-based ESXi management. SDDC Manager creates vLCM images matching the target BOM version and triggers rolling upgrades. vLCM ensures hosts run the exact desired image.'}
+];
+var quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};
+var QUIZ_LS='vcf_quiz_scores';
+function openQuiz(){document.getElementById('quiz-overlay').classList.add('open');quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};renderQuiz();}
+function closeQuiz(){document.getElementById('quiz-overlay').classList.remove('open');}
+function getQuizScores(){try{return JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');}catch(e){return{};}}
+function saveQuizScore(ph,sc,tot){var s=getQuizScores();var k='p'+ph;if(!s[k]||sc>s[k].best)s[k]={best:sc,total:tot};localStorage.setItem(QUIZ_LS,JSON.stringify(s));}
+function renderQuiz(){
+  var body=document.getElementById('quiz-body');var scores=getQuizScores();
+  var phases=[...new Set(ALL_QUIZ.map(function(q){return q.phase;}))].sort(function(a,b){return a-b;});
+  var tiles=phases.map(function(p){return{phase:p,name:PHASES[p-1]?PHASES[p-1].title:'Phase '+p,count:ALL_QUIZ.filter(function(q){return q.phase===p;}).length};});
+  tiles.push({phase:'all',name:'All Phases',count:ALL_QUIZ.length});
+  if(quizState.screen==='select'){
+    body.innerHTML='<p style="font-size:12px;color:var(--gray);margin-bottom:14px">Select a phase to quiz on, or choose <b>All Phases</b>.</p><div class="phase-grid">'+
+    tiles.map(function(t){var sc=scores['p'+t.phase];var scH=sc?'<div class="pt-score">Best: '+sc.best+'/'+sc.total+'</div>':'';return '<div class="phase-tile'+(t.phase==='all'?' all-tile':'')+(quizState.selectedPhase===t.phase?' selected':'')+'" onclick="selectQuizPhase(\''+t.phase+'\')"><div class="pt-num">'+(t.phase==='all'?'ALL':'Phase '+t.phase)+'</div><div class="pt-name">'+t.name+'</div><div style="font-size:10px;color:var(--gray);margin-top:3px">'+t.count+' questions</div>'+scH+'</div>';}).join('')+
+    '</div><button class="quiz-start-btn" onclick="startQuiz()" '+(quizState.selectedPhase===null?'disabled':'')+'>&#x1F680; Start Quiz</button>';
+  } else if(quizState.screen==='question'){
+    var q=quizState.questions[quizState.current];var letters=['A','B','C','D'];var pct=Math.round(quizState.current/quizState.questions.length*100);
+    body.innerHTML='<div class="quiz-progress"><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:'+pct+'%"></div></div><span class="quiz-prog-txt">'+(quizState.current+1)+'/'+quizState.questions.length+'</span></div><div class="quiz-question">'+q.question+'</div><div class="quiz-options" id="quiz-opts">'+q.options.map(function(o,i){return '<button class="quiz-option" id="opt-'+i+'" onclick="answerQuiz('+i+')"><span class="opt-letter">'+letters[i]+'</span><span>'+o+'</span></button>';}).join('')+'</div><div class="quiz-explanation" id="quiz-exp"><b>&#x1F4A1;</b> '+q.explanation+'</div><button class="quiz-next-btn" id="quiz-next" onclick="nextQuestion()">'+(quizState.current+1<quizState.questions.length?'Next &#x2192;':'Results &#x1F3C6;')+'</button>';
+  } else if(quizState.screen==='score'){
+    var sc=quizState.score,tot=quizState.questions.length,pct2=Math.round(sc/tot*100);
+    var msg=pct2===100?'Perfect! &#x1F3C6;':pct2>=80?'Excellent! &#x1F44F;':pct2>=60?'Good Work! &#x1F44D;':pct2>=40?'Keep Practising &#x1F4AA;':'Review the material &#x1F4DA;';
+    var rev=quizState.questions.map(function(q,i){var ok=quizState.wrongs.indexOf(i)===-1;return '<div class="review-item '+(ok?'ok':'bad')+'"><span class="review-icon">'+(ok?'&#x2705;':'&#x274C;')+'</span><span>'+q.question+'</span></div>';}).join('');
+    body.innerHTML='<div class="quiz-score-screen"><div class="score-circle"><div class="sc-num">'+sc+'/'+tot+'</div><div class="sc-lbl">'+pct2+'%</div></div><div class="quiz-score-msg">'+msg+'</div><div class="quiz-score-sub">'+(pct2>=80?'Excellent knowledge!':'Review topics you missed and try again.')+'</div><div class="quiz-review">'+rev+'</div><div class="quiz-score-btns"><button class="qsb-retry" onclick="startQuiz()">&#x1F504; Retry</button><button class="qsb-back" onclick="quizState.screen=\'select\';renderQuiz()">&#x2190; Phases</button></div></div>';
+  }
+}
+function selectQuizPhase(p){quizState.selectedPhase=p==='all'?'all':parseInt(p);renderQuiz();}
+function startQuiz(){
+  var ph=quizState.selectedPhase;
+  var pool=ph==='all'?ALL_QUIZ.slice():ALL_QUIZ.filter(function(q){return q.phase===ph;});
+  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
+  pool=pool.slice(0,ph==='all'?12:Math.min(pool.length,6));
+  quizState=Object.assign({},quizState,{screen:'question',questions:pool,current:0,answered:false,score:0,wrongs:[]});
+  renderQuiz();
+}
+function answerQuiz(sel){
+  if(quizState.answered)return;quizState.answered=true;
+  var q=quizState.questions[quizState.current];var ok=q.answer===sel;
+  if(ok)quizState.score++;else quizState.wrongs.push(quizState.current);
+  q.options.forEach(function(_,i){var b=document.getElementById('opt-'+i);b.disabled=true;b.className='quiz-option '+(i===q.answer?'correct':i===sel&&!ok?'wrong':'reveal');});
+  document.getElementById('quiz-exp').classList.add('show');document.getElementById('quiz-next').classList.add('show');
+}
+function nextQuestion(){
+  quizState.current++;
+  if(quizState.current>=quizState.questions.length){saveQuizScore(quizState.selectedPhase,quizState.score,quizState.questions.length);quizState.screen='score';}
+  else{quizState.answered=false;}
+  renderQuiz();
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+function initUser(){
+  onAuthReady(function(user){
+    if(!user) return;
+    currentUser = user.displayName || user.email.split('@')[0];
+    localStorage.setItem('vcf_current_user', currentUser);
+    document.getElementById('user-name-display').textContent = currentUser;
+    loadState(); build(); updateStats(); initFirebase();
+  });
+}
+function confirmUser(){}
+function changeUser(){}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function countAll(){
+  let total=0,done=0,p1to3=0,p1to3Done=0,p4to6=0,p4to6Done=0;
+  PHASES.forEach((ph,idx)=>{
+    ph.labs.forEach(lab=>{
+      total++;
+      const labDone=lab.steps.every(s=>state.steps[s.id])&&lab.validation.every(v=>state.valChecks[v.id]);
+      if(idx<3){p1to3++;if(labDone)p1to3Done++;}
+      else{p4to6++;if(labDone)p4to6Done++;}
+      if(labDone)done++;
+    });
+  });
+  return{total,done,p1to3,p1to3Done,p4to6,p4to6Done};
+}
+function countPhase(ph){
+  let s=0,d=0;
+  ph.labs.forEach(lab=>{s+=lab.steps.length+lab.validation.length;d+=lab.steps.filter(x=>state.steps[x.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length;});
+  return{s,d};
+}
+function updateStats(){
+  const c=countAll();
+  document.getElementById('stat-total').textContent=c.total;
+  document.getElementById('stat-done').textContent=c.done;
+  document.getElementById('stat-p1').textContent=c.p1to3Done+'/'+c.p1to3;
+  document.getElementById('stat-p2').textContent=c.p4to6Done+'/'+c.p4to6;
+  const pct=c.total?Math.round(c.done/c.total*100):0;
+  document.getElementById('stat-pct').textContent=pct+'%';
+  document.getElementById('big-bar-fill').style.width=pct+'%';
+  PHASES.forEach(ph=>{
+    const{s,d}=countPhase(ph);
+    const fill=document.getElementById('ph-fill-'+ph.id);
+    if(fill)fill.style.width=(s?Math.round(d/s*100):0)+'%';
+  });
+  if(c.done===c.total&&c.total>0){document.getElementById('congrats').style.display='flex';}
+}
+function toggleStep(id){
+  state.steps[id]=!state.steps[id];
+  if(!state.steps[id])delete state.steps[id];
+  saveState();renderAll();updateStats();
+}
+function toggleVal(id){
+  state.valChecks[id]=!state.valChecks[id];
+  if(!state.valChecks[id])delete state.valChecks[id];
+  saveState();renderAll();updateStats();
+}
+function toggleDetail(btn){
+  const panel=btn.closest('.step-row').querySelector('.step-details');
+  if(!panel)return;
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Hide ▲':'Details ▼';
+}
+function toggleNote(btn){
+  const panel=btn.closest('.step-row').querySelector('.step-note-panel');
+  if(!panel)return;
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Note ▲':'Note ▼';
+}
+function saveNote(id,val){
+  if(val.trim())state.notes[id]=val;else delete state.notes[id];
+  const btn=document.querySelector('[data-note-btn="'+id+'"]');
+  if(btn)btn.classList.toggle('has-note',!!state.notes[id]);
+  saveState();
+}
+function saveLabNote(id,val){
+  if(val.trim())state.labNotes[id]=val;else delete state.labNotes[id];
+  saveState();
+}
+let activeFilter='all';
+function filterTab(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.lab-section').forEach(sec=>{
+    sec.style.display=(f==='all'||sec.dataset.cloud===f)?'block':'none';
+  });
+}
+function renderAll(){
+  document.querySelectorAll('.step-row').forEach(row=>{
+    const id=row.dataset.stepId;
+    if(id)row.classList.toggle('done',!!state.steps[id]);
+    const chk=row.querySelector('.step-check');
+    if(chk&&id)chk.innerHTML=state.steps[id]?'&#x2714;':'';
+  });
+  document.querySelectorAll('.val-row').forEach(row=>{
+    const id=row.dataset.valId;
+    if(id)row.classList.toggle('done',!!state.valChecks[id]);
+    const chk=row.querySelector('.val-check');
+    if(chk&&id)chk.innerHTML=state.valChecks[id]?'&#x2714;':'';
+  });
+  document.querySelectorAll('textarea[data-note-id]').forEach(ta=>{ta.value=state.notes[ta.dataset.noteId]||'';});
+  document.querySelectorAll('[data-note-btn]').forEach(btn=>{btn.classList.toggle('has-note',!!state.notes[btn.dataset.noteBtnId]);});
+  document.querySelectorAll('textarea[data-lab-note]').forEach(ta=>{ta.value=state.labNotes[ta.dataset.labNote]||'';});
+}
+function build(){
+  const content=document.getElementById('content');
+  content.innerHTML='';
+  PHASES.forEach(ph=>{
+    const card=document.createElement('div');
+    card.className='phase-card';
+    card.id='phase-'+ph.id;
+    const{s,d}=countPhase(ph);
+    const pct=s?Math.round(d/s*100):0;
+    card.innerHTML=`
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-header-left">
+          <span class="phase-badge">${ph.badge}</span>
+          <div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:#A7F3A0;min-width:32px;text-align:right">${pct}%</span>
+          <span class="chevron">&#x25BC;</span>
+        </div>
+      </div>
+      <div class="phase-body">${ph.labs.map(lab=>buildLab(lab)).join('')}</div>`;
+    content.appendChild(card);
+  });
+}
+function buildLab(lab){
+  const doneSteps=lab.steps.filter(s=>state.steps[s.id]).length;
+  const doneVals=lab.validation.filter(v=>state.valChecks[v.id]).length;
+  const total=lab.steps.length+lab.validation.length;
+  const done=doneSteps+doneVals;
+  const pct=total?Math.round(done/total*100):0;
+  return `<div class="lab-section" id="lab-${lab.id}" data-cloud="${lab.cloud}">
+    <div class="lab-header vcf-lab">
+      <span class="lab-cloud-badge vcf-badge">VCF</span>
+      <div class="lab-title-area">
+        <div class="lab-title">${lab.title}</div>
+        <div class="lab-meta">${lab.meta} &middot; ${done}/${total} steps</div>
+      </div>
+      <div class="lab-stats">
+        <div style="font-size:11px;font-weight:700;color:var(--gray)">${pct}%</div>
+        <button class="lab-toggle vcf-btn" onclick="toggleLab('lab-${lab.id}')">&#x25BC; Expand</button>
+      </div>
+    </div>
+    <div class="steps-list">
+      <div class="section-lbl">&#x1F527; Lab Steps</div>
+      ${lab.steps.map((s,i)=>buildStep(s,i+1)).join('')}
+      <div class="section-lbl" style="margin-top:14px">&#x2705; Validation Checks</div>
+      ${lab.validation.map(v=>buildVal(v)).join('')}
+      <div class="section-lbl" style="margin-top:14px">&#x1F4DD; Lab Notes</div>
+      <textarea class="notes-area" data-lab-note="${lab.id}" placeholder="Add any overall notes about this lab..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea>
+    </div>
+  </div>`;
+}
+function buildStep(s,num){
+  const done=!!state.steps[s.id];
+  const hasDetails=s.details&&s.details.length>0;
+  const hasNote=!!state.notes[s.id];
+  return `<div class="step-row${done?' done':''}" data-step-id="${s.id}">
+    <div class="step-check" onclick="toggleStep('${s.id}')">${done?'&#x2714;':''}</div>
+    <div class="step-main">
+      <div class="step-top">
+        <span class="step-num">${num}.</span>
+        <span class="step-text">${s.text}</span>
+        ${hasDetails?`<button class="detail-btn" onclick="toggleDetail(this)">Details &#x25BC;</button>`:''}
+        <button class="note-btn${hasNote?' has-note':''}" data-note-btn="${s.id}" onclick="toggleNote(this)">Note &#x25BC;</button>
+      </div>
+      ${hasDetails?`<div class="step-details">${s.details.map((d,i)=>`<div class="detail-item"><span class="di-num">${i+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}
+      <div class="step-note-panel">
+        <textarea class="note-textarea" data-note-id="${s.id}" placeholder="Your notes for this step..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea>
+        <div class="note-hint">&#x1F4A1; Notes are saved locally and synced if Firebase is connected.</div>
+      </div>
+    </div>
+  </div>`;
+}
+function buildVal(v){
+  const done=!!state.valChecks[v.id];
+  return `<div class="val-row${done?' done':''}" data-val-id="${v.id}" onclick="toggleVal('${v.id}')">
+    <div class="val-check">${done?'&#x2714;':''}</div>
+    <span class="step-text">&#x1F4CB; ${v.text}</span>
+  </div>`;
+}
+function togglePhase(header){header.closest('.phase-card').classList.toggle('open');}
+function toggleLab(id){
+  const sec=document.getElementById(id);
+  if(!sec)return;
+  sec.classList.toggle('open');
+  const btn=sec.querySelector('.lab-toggle');
+  if(btn)btn.innerHTML=sec.classList.contains('open')?'&#x25B2; Collapse':'&#x25BC; Expand';
+}
+function resetProgress(){
+  if(!confirm('Reset all VCF lab progress for '+currentUser+'? This cannot be undone.'))return;
+  state={steps:{},notes:{},labNotes:{},valChecks:{}};
+  saveState();build();updateStats();
+}
+function buildRefs(labId){return '';}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+initUser();
+</script>
+</body>
+</html>
