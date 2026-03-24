@@ -48,14 +48,20 @@ nav{background:var(--navy);color:white;padding:0 24px;height:54px;display:flex;a
 .fb-setup-section p{font-size:12px;color:var(--gray);margin-bottom:14px;line-height:1.6;}
 .fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:9px 12px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
 .fb-input:focus{outline:none;border-color:var(--purple);}
-.fb-input::placeholder{color:#9CA3AF;}
-.admin-email-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:9px 12px;font-size:12px;margin-bottom:16px;font-family:inherit;color:var(--dark);}
-.admin-email-input:focus{outline:none;border-color:var(--purple);}
 .connect-btn{width:100%;padding:11px;background:var(--purple);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
 .connect-btn:hover{filter:brightness(1.1);}
 .msg{font-size:11px;padding:8px 12px;border-radius:7px;margin-top:10px;display:none;}
 .msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
 .msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+.uid-box{display:flex;align-items:center;gap:8px;background:#F3F4F6;border:1.5px solid #E5E7EB;border-radius:8px;padding:10px 12px;margin:16px 0;text-align:left;}
+.uid-box code{font-family:'Cascadia Code','Fira Code',monospace;font-size:11px;color:var(--navy);word-break:break-all;flex:1;}
+.uid-copy-btn{flex-shrink:0;padding:5px 10px;border-radius:6px;border:1px solid #D1D5DB;background:white;font-size:11px;font-weight:700;cursor:pointer;color:var(--gray);transition:all .2s;}
+.uid-copy-btn:hover{border-color:var(--purple);color:var(--purple);}
+.setup-steps{text-align:left;background:#F5F3FF;border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:12px;line-height:1.9;color:var(--dark);}
+.setup-steps b{color:var(--navy);}
+.setup-steps code{font-family:monospace;background:#EDE9FE;padding:1px 5px;border-radius:4px;font-size:11px;color:#4C1D95;}
+.verify-btn{width:100%;padding:11px;background:var(--green);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.verify-btn:hover{filter:brightness(1.1);}
 
 /* ADMIN DASHBOARD */
 #admin-screen{display:none;padding:28px 24px 64px;max-width:1100px;margin:0 auto;}
@@ -176,32 +182,44 @@ tr:last-child td{border-bottom:none;}
   <div class="login-card">
     <div class="login-icon">&#x1F510;</div>
     <h2>Admin Panel</h2>
-    <p>Sign in to manage the Learning Hub and Blog. Only the configured admin email can access this panel.</p>
-
-    <div class="fb-setup-section" id="fb-setup">
-      <h3>Admin Email</h3>
-      <p style="margin-top:4px">Enter the email address that is allowed to access this admin panel.</p>
-      <input class="admin-email-input" id="admin-email-cfg" placeholder="your-email@gmail.com" />
-      <button class="connect-btn" onclick="saveConfig()">&#x2714; Save &amp; Connect</button>
-      <div id="cfg-msg" class="msg"></div>
-    </div>
-
-    <div class="login-divider" id="google-divider" style="display:none">Sign in with</div>
-    <div id="auth-btns" style="display:none">
-      <button class="provider-btn google-btn" onclick="signInWithGoogle()">
-        <span class="provider-icon">G</span> Continue with Google
-      </button>
-      <button class="provider-btn github-btn" onclick="signInWithGitHub()">
-        <span class="provider-icon" style="background:#1a1a2e;color:white;">&#9135;</span> Continue with GitHub
-      </button>
-      <button class="provider-btn microsoft-btn" onclick="signInWithMicrosoft()">
-        <span class="provider-icon" style="background:#EFF6FF;">&#x229E;</span> Continue with Microsoft
-      </button>
-      <button class="provider-btn yahoo-btn" onclick="signInWithYahoo()">
-        <span class="provider-icon" style="background:#F5F3FF;color:#7C3AED;">Y!</span> Continue with Yahoo
-      </button>
-    </div>
+    <p>Sign in to manage the Learning Hub and Blog. Access is restricted to the authorized admin account only.</p>
+    <div class="login-divider">Sign in with</div>
+    <button class="provider-btn google-btn" onclick="signInWithGoogle()">
+      <span class="provider-icon">G</span> Continue with Google
+    </button>
+    <button class="provider-btn github-btn" onclick="signInWithGitHub()">
+      <span class="provider-icon" style="background:#1a1a2e;color:white;">&#9135;</span> Continue with GitHub
+    </button>
+    <button class="provider-btn microsoft-btn" onclick="signInWithMicrosoft()">
+      <span class="provider-icon" style="background:#EFF6FF;">&#x229E;</span> Continue with Microsoft
+    </button>
+    <button class="provider-btn yahoo-btn" onclick="signInWithYahoo()">
+      <span class="provider-icon" style="background:#F5F3FF;color:#7C3AED;">Y!</span> Continue with Yahoo
+    </button>
     <div id="login-msg" class="msg"></div>
+  </div>
+</div>
+
+<!-- FIRST-TIME SETUP SCREEN -->
+<div id="setup-screen" style="display:none;min-height:calc(100vh - 54px);align-items:center;justify-content:center;padding:24px;">
+  <div class="login-card">
+    <div class="login-icon">&#x2699;&#xFE0F;</div>
+    <h2>First-time Setup</h2>
+    <p>No admin UID is set yet. Copy your UID below and add it to Firebase Database — then only your account can ever access this panel.</p>
+    <div class="uid-box">
+      <code id="uid-display">loading...</code>
+      <button class="uid-copy-btn" onclick="copyUID()">Copy</button>
+    </div>
+    <div class="setup-steps">
+      <b>Steps to authorize your account:</b><br>
+      1. Open <b>Firebase Console</b> → your project → <b>Realtime Database</b> → <b>Data</b> tab<br>
+      2. Click <b>+</b> to add a child: path = <code>admin_config</code><br>
+      3. Inside it, add child: key = <code>uid</code> , value = your UID above<br>
+      4. Click <b>Add</b> to save, then click the button below
+    </div>
+    <button class="verify-btn" onclick="verifySetup()">&#x2714; I've set it up — Verify Access</button>
+    <div id="setup-msg" class="msg"></div>
+    <button onclick="signOut()" style="margin-top:12px;background:none;border:none;font-size:12px;color:var(--gray);cursor:pointer;text-decoration:underline;">Sign out</button>
   </div>
 </div>
 
@@ -440,9 +458,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 // ── Config ──────────────────────────────────────────────────────────────────
-const CONFIG_KEY = 'mk_site_fb_config';
-const ADMIN_KEY  = 'mk_site_admin_email';
-let db = null, auth = null;
+let db = null, auth = null, _currentUser = null;
 let allItems = [], allPosts = [];
 let currentItemTags = [], currentBlogTags = [];
 let editingItemId = null, editingPostId = null;
@@ -479,46 +495,65 @@ const ADMIN_FIREBASE_CONFIG = {
   appId: "1:846824147799:web:78f31588eb6abe1d6b4c12"
 };
 
-function saveConfig(){
-  const adminEmail = document.getElementById('admin-email-cfg').value.trim().toLowerCase();
-  if(!adminEmail || !adminEmail.includes('@'))
-    return showMsg('cfg-msg','err','Please enter a valid admin email address.');
-  localStorage.setItem(ADMIN_KEY, adminEmail);
-  showMsg('cfg-msg','ok','Saved! Connecting...');
-  setTimeout(() => initFirebase(), 600);
-}
-
 function initFirebase(){
   try{
     const existing = firebase.apps.find(a => a.name === 'mk-site');
     const app = existing || firebase.initializeApp(ADMIN_FIREBASE_CONFIG, 'mk-site');
     db   = firebase.database(app);
     auth = firebase.auth(app);
-    const savedEmail = localStorage.getItem(ADMIN_KEY) || '';
-    document.getElementById('admin-email-cfg').value = savedEmail;
-    if(savedEmail){
-      document.getElementById('fb-setup').style.display = 'none';
-      document.getElementById('google-divider').style.display = 'flex';
-      document.getElementById('auth-btns').style.display = 'block';
-    }
     auth.onAuthStateChanged(user => {
-      if(user){
-        const adminEmail = (localStorage.getItem(ADMIN_KEY) || '').toLowerCase();
-        if(adminEmail && user.email.toLowerCase() !== adminEmail){
-          auth.signOut();
-          showMsg('login-msg','err','Access denied. Only the configured admin email can sign in.');
-          return;
-        }
-        showAdmin(user);
-      } else { showLogin(); }
+      if(user){ _currentUser = user; checkAdminAccess(user); }
+      else { _currentUser = null; showLogin(); }
     });
-  } catch(e){ showMsg('cfg-msg','err','Firebase init error: ' + e.message); }
+  } catch(e){ console.error('Firebase init error:', e); }
 }
 
-function _adminSignIn(provider) {
-  if(!auth){ showMsg('login-msg','err','Please save the Firebase config first.'); return; }
+function checkAdminAccess(user){
+  db.ref('admin_config/uid').once('value')
+    .then(snap => {
+      const adminUid = snap.val();
+      if(!adminUid){
+        showSetup(user);
+      } else if(adminUid === user.uid){
+        showAdmin(user);
+      } else {
+        auth.signOut();
+        showMsg('login-msg','err','Access denied. This account is not authorized.');
+      }
+    })
+    .catch(() => {
+      auth.signOut();
+      showMsg('login-msg','err','Could not verify admin access. Check Firebase rules.');
+    });
+}
+
+function showSetup(user){
+  document.getElementById('login-screen').style.display  = 'none';
+  document.getElementById('setup-screen').style.display  = 'flex';
+  document.getElementById('admin-screen').style.display  = 'none';
+  document.getElementById('user-info').style.display     = 'none';
+  document.getElementById('uid-display').textContent     = user.uid;
+}
+
+function verifySetup(){
+  if(!_currentUser) return;
+  document.getElementById('setup-msg').className = 'msg';
+  document.getElementById('setup-msg').textContent = '';
+  checkAdminAccess(_currentUser);
+}
+
+function copyUID(){
+  const uid = document.getElementById('uid-display').textContent;
+  navigator.clipboard.writeText(uid)
+    .then(() => showMsg('setup-msg','ok','UID copied to clipboard!'))
+    .catch(() => showMsg('setup-msg','err','Copy failed — select and copy manually.'));
+}
+
+function _adminSignIn(provider){
+  if(!auth) return;
   auth.signInWithPopup(provider).catch(e => {
-    if(e.code !== 'auth/popup-closed-by-user') showMsg('login-msg','err', e.message);
+    if(e.code !== 'auth/popup-closed-by-user')
+      showMsg('login-msg','err', e.message);
   });
 }
 function signInWithGoogle()    { _adminSignIn(new firebase.auth.GoogleAuthProvider()); }
@@ -530,16 +565,18 @@ function signOut(){ auth && auth.signOut(); }
 
 function showLogin(){
   document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('admin-screen').style.display = 'none';
-  document.getElementById('user-info').style.display = 'none';
+  document.getElementById('user-info').style.display    = 'none';
 }
 
 function showAdmin(user){
   document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('admin-screen').style.display = 'block';
-  document.getElementById('user-info').style.display = 'flex';
-  document.getElementById('user-email-display').textContent = user.email;
-  document.getElementById('user-avatar').textContent = user.email[0].toUpperCase();
+  document.getElementById('user-info').style.display    = 'flex';
+  document.getElementById('user-email-display').textContent = user.displayName || user.email;
+  document.getElementById('user-avatar').textContent = (user.email || 'A')[0].toUpperCase();
   loadItems();
   loadBlogPosts();
 }
