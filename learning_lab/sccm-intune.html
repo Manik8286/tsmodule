@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCCM / Intune Lab Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --sccm:#0078D4;--sccm-dark:#005a9e;--sccm-light:#EFF6FF;
+  --dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;
+  --green:#16A34A;--green-light:#F0FDF4;
+  --header-bg:#0F2A5C;--header-accent:#0078D4;
+  --white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#EEF3FF;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#93C5FD;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#93C5FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.stat-block.p1 .num{color:#1E40AF;}
+.stat-block.p2 .num{color:#1D4ED8;}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--header-bg),var(--sccm));transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#93C5FD;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#60A5FA;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.sccm-lab{border-left:4px solid var(--sccm);background:var(--sccm-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.sccm-badge{background:var(--sccm-dark);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.sccm-btn{color:var(--sccm-dark);}
+.lab-toggle.sccm-btn:hover{background:var(--sccm-dark);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--sccm);color:var(--sccm-dark);}
+.detail-btn.open{background:var(--sccm-light);border-color:var(--sccm);color:var(--sccm-dark);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#EFF6FF;border-left:3px solid var(--sccm);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--sccm-dark);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#DBEAFE;padding:1px 4px;border-radius:3px;color:#1e40af;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;background:#FFFDF5;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#EFF6FF;}
+.val-row:hover{background:#DBEAFE;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #93C5FD;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--sccm);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#93C5FD;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#EFF6FF;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:var(--sccm);background:#EFF6FF;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--sccm-dark);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;align-items:center;justify-content:center;}
+.user-overlay.open{display:flex;}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+.lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1500;align-items:center;justify-content:center;}
+.lb-overlay.open{display:flex;}
+.lb-card{background:white;border-radius:16px;padding:28px 32px;max-width:580px;width:95%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.lb-card h3{font-size:17px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.lb-sub{font-size:12px;color:var(--gray);margin-bottom:18px;}
+.lb-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.lb-table th{background:var(--header-bg);color:white;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:.4px;}
+.lb-table th:first-child{border-radius:8px 0 0 8px;}.lb-table th:last-child{border-radius:0 8px 8px 0;}
+.lb-table td{padding:9px 12px;border-bottom:1px solid var(--light);}
+.lb-table tr:hover td{background:#EFF6FF;}.lb-table tr.me td{background:#DBEAFE;font-weight:700;}
+.lb-rank{font-size:16px;text-align:center;}
+.lb-bar-wrap{background:var(--light);border-radius:99px;height:8px;width:80px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:99px;background:var(--sccm-dark);transition:width .4s;}
+.lb-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.lb-btn:hover{background:rgba(255,255,255,.25);}
+.lb-close{margin-top:18px;padding:8px 24px;border-radius:8px;border:none;background:var(--light);color:var(--dark);font-size:12px;font-weight:700;cursor:pointer;}
+.lb-close:hover{background:#E5E7EB;}.lb-loading{text-align:center;padding:24px;color:var(--gray);font-size:13px;}
+.quiz-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;}
+.quiz-overlay.open{display:flex;}
+.quiz-modal{background:white;border-radius:18px;max-width:660px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3);overflow:hidden;}
+.quiz-header{background:var(--header-bg);color:white;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.quiz-header h3{font-size:16px;font-weight:800;margin:0;}.quiz-header p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+.quiz-close{background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.quiz-close:hover{background:rgba(255,255,255,.28);}.quiz-body{padding:24px;}
+.phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.phase-tile{background:#F8FAFC;border:2px solid #E5E7EB;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .2s;}
+.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#EFF6FF;}.phase-tile.all-tile{border-style:dashed;}
+.pt-num{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
+.pt-name{font-size:12px;font-weight:700;color:var(--header-bg);margin-top:3px;line-height:1.3;}
+.pt-score{font-size:10px;color:#16A34A;margin-top:4px;font-weight:700;}
+.quiz-start-btn{width:100%;padding:12px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.quiz-start-btn:hover{filter:brightness(1.1);}.quiz-start-btn:disabled{opacity:.4;cursor:not-allowed;}
+.quiz-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.quiz-prog-bar{flex:1;background:var(--light);border-radius:99px;height:8px;overflow:hidden;}
+.quiz-prog-fill{height:100%;border-radius:99px;background:var(--header-bg);transition:width .4s;}
+.quiz-prog-txt{font-size:11px;font-weight:700;color:var(--gray);min-width:48px;text-align:right;}
+.quiz-question{font-size:15px;font-weight:700;color:var(--dark);line-height:1.5;margin-bottom:18px;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.quiz-option{padding:12px 16px;border-radius:10px;border:2px solid #E5E7EB;background:#FAFAFA;cursor:pointer;font-size:13px;line-height:1.4;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px;}
+.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#EFF6FF;}.quiz-option:disabled{cursor:default;}
+.quiz-option.correct{border-color:#16A34A;background:#F0FDF4;color:#16A34A;}
+.quiz-option.wrong{border-color:#EF4444;background:#FFF1F2;color:#DC2626;}
+.quiz-option.reveal{border-color:#16A34A;background:#F0FDF4;opacity:.7;}
+.quiz-option.correct .opt-letter,.quiz-option.reveal .opt-letter{background:#16A34A;color:white;}
+.quiz-option.wrong .opt-letter{background:#EF4444;color:white;}
+.opt-letter{width:22px;height:22px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.quiz-explanation{background:#EFF6FF;border-left:3px solid var(--sccm);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}
+.quiz-explanation.show{display:block;}
+.quiz-next-btn{width:100%;padding:10px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}
+.quiz-next-btn.show{display:block;}
+.quiz-score-screen{text-align:center;padding:10px 0;}
+.score-circle{width:90px;height:90px;border-radius:50%;background:var(--header-bg);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:14px;}
+.sc-num{font-size:22px;font-weight:800;color:white;line-height:1;}.sc-lbl{font-size:11px;color:rgba(255,255,255,.75);}
+.quiz-score-msg{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.quiz-score-sub{font-size:12px;color:var(--gray);margin-bottom:20px;}
+.quiz-review{text-align:left;margin-bottom:16px;max-height:200px;overflow-y:auto;}
+.review-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:12px;line-height:1.4;}
+.review-item.bad{color:#DC2626;}.review-item.ok{color:#16A34A;}.review-icon{flex-shrink:0;}
+.quiz-score-btns{display:flex;gap:10px;}
+.quiz-score-btns button{flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;}
+.qsb-retry{background:var(--header-bg);color:white;}.qsb-back{background:var(--light);color:var(--dark);}
+.quiz-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.quiz-btn:hover{background:rgba(255,255,255,.25);}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F4BB; SCCM / Microsoft Intune Lab Tracker</h1>
+      <p>ConfigMgr Current Branch &middot; 6-Phase Deep Dive &middot; Endpoint Management, Co-management &amp; Security</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+      <a href="az500.html" class="nav-link">&#x1F6E1;&#xFE0F; AZ-500</a>
+      <a href="m365.html" class="nav-link">&#x1F4E7; M365</a>
+      <a href="iam.html" class="nav-link">&#x1F512; IAM</a>
+      <span id="user-chip" class="user-chip" onclick="changeUser()" title="Logged in user">&#x1F464; <span id="user-name-display">...</span></span>
+      <button class="quiz-btn" onclick="openQuiz()">&#x1F9E0; Quiz</button>
+      <button class="lb-btn" onclick="openLeaderboard()">&#x1F3C6; Leaderboard</button>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="user-overlay" id="user-overlay"></div>
+
+<div class="lb-overlay" id="lb-overlay" onclick="if(event.target===this)closeLb()">
+  <div class="lb-card">
+    <h3>&#x1F3C6; Team Leaderboard</h3>
+    <p class="lb-sub">Live SCCM/Intune progress across all teammates</p>
+    <div id="lb-body"><div class="lb-loading">&#x21BB; Loading&hellip;</div></div>
+    <button class="lb-close" onclick="closeLb()">Close</button>
+  </div>
+</div>
+
+<div class="quiz-overlay" id="quiz-overlay" onclick="if(event.target===this)closeQuiz()">
+  <div class="quiz-modal">
+    <div class="quiz-header">
+      <div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your SCCM &amp; Intune knowledge</p></div>
+      <button class="quiz-close" onclick="closeQuiz()">&#x2715; Close</button>
+    </div>
+    <div class="quiz-body" id="quiz-body"></div>
+  </div>
+</div>
+
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Connect Firebase Realtime Database to sync SCCM/Intune lab progress across all your devices.</p>
+    <div class="fb-steps"><b>Quick setup:</b><br>1. Go to console.firebase.google.com &rarr; Create project<br>2. Build &rarr; Realtime Database &rarr; Create database (test mode)<br>3. Project Settings &rarr; Web app &rarr; copy config<br>4. Paste values below and click Connect</div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey" />
+    <input class="fb-input" id="fb-databaseURL" placeholder="databaseURL" />
+    <input class="fb-input" id="fb-projectId" placeholder="projectId" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions">
+      <button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button>
+      <button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button>
+      <button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button>
+    </div>
+  </div>
+</div>
+
+<div id="congrats">
+  <div class="card">
+    <span class="emoji">&#x1F3C6;</span>
+    <h2>Endpoint Expert!</h2>
+    <p>You've completed all SCCM &amp; Intune labs!</p>
+    <button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button>
+  </div>
+</div>
+
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
+  <div class="big-bar-wrap">
+    <div class="big-bar-label"><span>Overall SCCM/Intune Progress</span><span id="stat-pct">0%</span></div>
+    <div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab" onclick="filterTab('sccm',this)">&#x1F4BB; SCCM/Intune</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+(function(){
+  var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);
+  onAuthReady(function(user){
+    if(user){clearTimeout(t);document.body.style.visibility='visible';}
+    else{window.location.href='../personal_site/login.html';}
+  });
+})();
+
+const PHASES = [
+  {
+    id:'p1', badge:'PHASE 1', title:'ConfigMgr Infrastructure Setup', week:'Week 1',
+    labs:[
+      {
+        id:'p1-infra', cloud:'sccm', title:'Site Server, SQL & Prerequisites',
+        meta:'Install prerequisites, SQL Server, and ConfigMgr Primary Site',
+        steps:[
+          {id:'p1-infra-s1', text:'Prepare the Windows Server for ConfigMgr — install prerequisites and Windows ADK', details:['Windows Server 2022 recommended; join to domain before installation','Install Windows ADK: winget install Microsoft.WindowsADK (includes Deployment Tools, PE Add-ons)','Install .NET Framework 3.5: Add-WindowsFeature NET-Framework-Core -Source D:\\sources\\sxs','Install IIS with required features: Web-Server, Web-Asp-Net45, Web-WMI, Web-Scripting-Tools','Enable Remote Differential Compression: Add-WindowsFeature RDC','Configure Windows Firewall for SCCM ports: 80, 443, 8530, 445, 1433, 4022']},
+          {id:'p1-infra-s2', text:'Install SQL Server with correct collation and enable required services', details:['SQL Server 2019 or 2022 recommended; minimum SQL 2016 SP2 for CM 2303+','Collation: SQL_Latin1_General_CP1_CI_AS (must match, cannot be changed post-install)','Enable: Database Engine, SQL Server Browser, SQL Server Agent','Memory: set Max Server Memory — leave at least 2-4 GB for OS (e.g., 32GB RAM → max 28GB for SQL)','TCP/IP: SQL Configuration Manager → SQL Server Network Configuration → TCP/IP → Enabled','Firewall: allow TCP 1433, 4022 (Database Mirroring for HA)']},
+          {id:'p1-infra-s3', text:'Install ConfigMgr Primary Site using the setup wizard', details:['Mount the ConfigMgr install media; run splash.hta → Install','Site code: 3 alphanumeric characters (e.g., LAB); Site name: descriptive (e.g., LAB Primary Site)','Install path: C:\\Program Files\\Microsoft Configuration Manager','SQL server: use FQDN; SQL instance: default or named','Content library: separate volume recommended (e.g., E:\\ContentLib)','Accept default boundaries and boundary groups to be configured later']},
+          {id:'p1-infra-s4', text:'Verify site installation and configure basic site settings', details:['ConfigMgr Console → Monitoring → System Status → Site Status — all components should show green','Check ConfigMgr logs: C:\\Program Files\\...\\Logs\\sitecomp.log, hman.log','Enable cloud services if required: Administration → Cloud Services → Azure Services','Set the data discovery methods: Administration → Hierarchy Configuration → Discovery Methods','Configure client settings: Administration → Client Settings → Default Client Settings','Set hierarchy settings: max concurrent installs, approved requests']},
+          {id:'p1-infra-s5', text:'Install and configure a Distribution Point and Software Update Point', details:['Administration → Site Configuration → Servers and Site System Roles → Add Site System Roles','Distribution Point (DP): configure IIS, enable HTTPS (recommended), set content validation schedule','Software Update Point (SUP): configure WSUS port (8530 HTTP / 8531 HTTPS), sync schedule','After SUP install: trigger Software Update synchronization; monitor SUPSetup.log','Boundary Groups: create a boundary group, add subnets/AD sites, assign DP to boundary group','Default site assignment boundary group: add boundaries for client auto-assignment']},
+        ],
+        validation:[
+          {id:'p1-infra-v1', text:'ConfigMgr console connects and all site components show green in System Status'},
+          {id:'p1-infra-v2', text:'SQL Server accessible on FQDN with correct collation SQL_Latin1_General_CP1_CI_AS'},
+          {id:'p1-infra-v3', text:'Distribution Point installed and content library accessible'},
+          {id:'p1-infra-v4', text:'Software Update Point synchronized — updates visible in Software Library → Software Updates'},
+          {id:'p1-infra-v5', text:'Boundary group configured with subnets and DP assigned'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p2', badge:'PHASE 2', title:'Client Deployment & Collections', week:'Week 2',
+    labs:[
+      {
+        id:'p2-discovery', cloud:'sccm', title:'Discovery Methods & Client Push Installation',
+        meta:'Configure Active Directory discovery, deploy the ConfigMgr client, and validate client health',
+        steps:[
+          {id:'p2-discovery-s1', text:'Enable and configure Active Directory System Discovery and User Discovery', details:['Administration → Discovery Methods → Active Directory System Discovery','Enable; add Active Directory containers (OUs to discover)','Schedule: every 1 hour for delta; full every 7 days','Active Directory User Discovery: enable for user-targeted deployments','Group Discovery: enable for AD security groups (used in collections)','Monitor discovery: CM Console → Assets and Compliance → Devices (newly discovered appear here)']},
+          {id:'p2-discovery-s2', text:'Configure and trigger Client Push Installation to discovered devices', details:['Administration → Site Configuration → Sites → Client Installation Settings','Enable Automatic Site-Wide Client Push; specify credentials (domain admin or dedicated service account)','Fallback: always install client even if AD discovery is not complete','Right-click discovered device → Install Client (manual push for testing)','Monitor: Monitoring → Client Deployment Status','Logs to check: CCM.log (server side), ccmsetup.log (client side at C:\\Windows\\ccmsetup\\Logs)']},
+          {id:'p2-discovery-s3', text:'Verify client health and configure Client Health Evaluation', details:['Assets and Compliance → Devices — healthy clients show green in Client column','Client health status: check Client Activity (Online/Offline) and Client Check (Pass/Fail)','Administration → Client Settings → Default → Client Health Evaluation: every 7 days','Review Client Health Dashboard: Monitoring → Client Status','Re-evaluate unhealthy clients: right-click → Run Client Health Evaluation','Logs: ClientIDManagerStartup.log, CcmMessaging.log for connectivity issues']},
+          {id:'p2-discovery-s4', text:'Create Device Collections using Query Rules and Direct Membership', details:['Assets and Compliance → Device Collections → Create Device Collection','Limiting Collection: All Systems','Query Rule: WMI query to filter by OS — select * from SMS_R_System where OperatingSystemNameAndVersion like "%Windows 11%"','Direct Membership: add specific devices manually for testing','Schedule membership update: evaluate every 1 day','Create collections for: All Workstations, All Servers, Pilot group, Production group']},
+          {id:'p2-discovery-s5', text:'Configure Maintenance Windows on collections', details:['Right-click Collection → Properties → Maintenance Windows → Add','Name: Business Hours; Start: 08:00; End: 18:00; Recurrence: Weekly (Mon-Fri)','Name: Patch Window; Start: 02:00 Sat; Duration: 4 hours; Recurrence: Monthly (2nd Saturday)','Maintenance windows control when deployments, updates, and restarts are applied','Software Update deployments respect maintenance windows when "Software Updates" type is checked','Testing: create a 1-hour window during business hours for lab deployments']},
+        ],
+        validation:[
+          {id:'p2-discovery-v1', text:'AD System and User Discovery running — devices and users visible in console'},
+          {id:'p2-discovery-v2', text:'ConfigMgr client installed on at least 2 test machines (Client=Yes in console)'},
+          {id:'p2-discovery-v3', text:'Client health evaluation passing on enrolled devices'},
+          {id:'p2-discovery-v4', text:'At least 3 device collections created (Workstations, Servers, Pilot)'},
+          {id:'p2-discovery-v5', text:'Maintenance windows configured on the Workstations collection'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p3', badge:'PHASE 3', title:'App & Software Update Management', week:'Week 2-3',
+    labs:[
+      {
+        id:'p3-apps', cloud:'sccm', title:'Application Deployment & Packages',
+        meta:'Create applications with detection methods, deploy to collections, and monitor compliance',
+        steps:[
+          {id:'p3-apps-s1', text:'Create an Application with an MSI deployment type and detection method', details:['Software Library → Application Management → Applications → Create Application','Auto-detect: browse to MSI file on UNC path (\\\\Server\\Sources\\App\\setup.msi)','CM extracts product code, version, publisher automatically','Detection Method: MSI Product Code (preferred) — CM checks registry for installed product','Requirements: OS version (Windows 10+), disk space, architecture (x64)','Dependencies: add prerequisite apps (e.g., .NET Runtime must be present before app installs)']},
+          {id:'p3-apps-s2', text:'Create a Script-based deployment type for EXE or silent installs', details:['Application → Deployment Types → Add → Script Installer','Install program: setup.exe /S /norestart','Uninstall program: msiexec /x {ProductCode} /qn','Detection Method: Custom Script (PowerShell)','Detection script: if(Test-Path "C:\\Program Files\\AppName\\app.exe"){exit 0}else{exit 1}','Return codes: 0=success, 1707=success, 3010=soft reboot required, 1641=hard reboot']},
+          {id:'p3-apps-s3', text:'Deploy the application to the Pilot collection as Available, then Required', details:['Right-click Application → Deploy','Collection: Pilot-Workstations; Purpose: Available (user can install from Software Center)','Test: log into client, open Software Center → Applications tab → install app','Promote to Required: create new deployment to Production collection; Purpose: Required','Deadline: specify deadline time for forced installation','User Experience: display user notifications vs. silent install options']},
+          {id:'p3-apps-s4', text:'Monitor deployment compliance and review application catalog logs', details:['Monitoring → Deployments → select deployment → view status','Review Success/Error/In Progress/Unknown counts','Right-click on Error count → View Status to see specific error codes','Drill into device: right-click → Resource Explorer → check installed software','Client-side logs: AppEnforce.log (install actions), AppDiscovery.log (detection)','Server logs: SMSProv.log, objreplmgr.log (content replication)']},
+          {id:'p3-apps-s5', text:'Create a Package and Program for legacy software without MSI', details:['Software Library → Application Management → Packages → Create Package','Source directory: UNC path to installer files','Create Program: Command line: setup.exe /S; Run: Normal; After running: No action required','Deploy Package to collection: same deployment workflow as applications','Packages have no detection method — CM cannot determine if software is installed','Use Applications with detection methods whenever possible; Packages are legacy for older tools']},
+        ],
+        validation:[
+          {id:'p3-apps-v1', text:'Application with MSI detection method created and distributed to DP'},
+          {id:'p3-apps-v2', text:'Script-based deployment type working with PowerShell detection script'},
+          {id:'p3-apps-v3', text:'Application deployed as Required and installed successfully on test client'},
+          {id:'p3-apps-v4', text:'Deployment compliance visible in Monitoring → Deployments'},
+        ]
+      },
+      {
+        id:'p3-sup', cloud:'sccm', title:'Software Update Management & Automatic Deployment Rules',
+        meta:'Configure Software Update Groups, ADRs, and patch deployment to maintenance windows',
+        steps:[
+          {id:'p3-sup-s1', text:'Synchronize the Software Update Point and review available updates', details:['Software Library → Software Updates → All Software Updates','Trigger sync: right-click Software Update Point → Synchronize Software Updates','Monitor: supcert.log, wsyncmgr.log','Updates should appear within 10-30 minutes after sync','Filter updates: Products (Windows 11, Windows Server 2022, Microsoft 365 Apps); Classifications (Security, Critical, Updates)','Review Metadata-only vs. Downloaded updates — download content to DP before deploying']},
+          {id:'p3-sup-s2', text:'Create a Software Update Group for the current Patch Tuesday', details:['Software Library → Software Updates → All Software Updates','Filter: Released Last Month; Classification: Security Updates; Product: Windows 11','Select all relevant updates → Right-click → Save to Software Update Group','Name: 2024-Q1-Security-Patches','Download content: right-click SUG → Download → specify DP; monitor in Monitoring → Distribution Status','Content must be downloaded before deploying to clients']},
+          {id:'p3-sup-s3', text:'Deploy the Software Update Group to the Pilot collection with a deadline', details:['Right-click Software Update Group → Deploy','Deployment name: 2024-Q1-Patches-Pilot; Collection: Pilot-Workstations','Schedule: Available immediately; Installation Deadline: next maintenance window','Suppress restart: outside maintenance window','User notifications: Display in Software Center and show deadline notifications','Monitor: Monitoring → Software Update Deployments → select deployment']},
+          {id:'p3-sup-s4', text:'Create an Automatic Deployment Rule (ADR) for monthly Patch Tuesday automation', details:['Software Library → Software Updates → Automatic Deployment Rules → Create ADR','ADR name: Monthly-Security-Patches; Collection: All-Workstations','Schedule: Trigger on 2nd Tuesday of month at 06:00','Search criteria: Classification=Security Updates, Product=Windows 11, Released=Last 1 month','Add to new SUG each month; Deployment settings: deadline 7 days after release','ADR fully automates: search → create SUG → download → deploy — zero touch patching']},
+          {id:'p3-sup-s5', text:'Review patch compliance reports and configure update baselines', details:['Monitoring → Reporting → Reports → Software Updates','Run: Compliance 9 — Overall health and compliance for a specific update','Run: Compliance 1A — Computers in a specific collection and compliance state','Configuration Baselines: Assets and Compliance → Compliance Settings → Configuration Baselines','Create baseline: add Configuration Items (CI) for required software versions','Deploy baseline to collection to enforce compliance reporting']},
+        ],
+        validation:[
+          {id:'p3-sup-v1', text:'Software Update Point synchronized — updates visible with correct products/classifications'},
+          {id:'p3-sup-v2', text:'Software Update Group created and content downloaded to Distribution Point'},
+          {id:'p3-sup-v3', text:'SUG deployed to Pilot collection with correct deadline'},
+          {id:'p3-sup-v4', text:'ADR created and triggered — confirms auto-patching workflow works'},
+          {id:'p3-sup-v5', text:'Patch compliance report shows update status per device'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p4', badge:'PHASE 4', title:'Microsoft Intune Setup & Policy Management', week:'Week 3-4',
+    labs:[
+      {
+        id:'p4-intune', cloud:'sccm', title:'Intune Tenant, Enrollment & Autopilot',
+        meta:'Configure MDM authority, enrollment profiles, Windows Autopilot, and verify enrollment',
+        steps:[
+          {id:'p4-intune-s1', text:'Configure the Intune MDM Authority and verify licensing', details:['Intune Admin Center: intune.microsoft.com → Tenant Administration → MDM Authority','MDM Authority must be set to Intune (not SCCM) for pure Intune management','License check: Microsoft Intune Plan 1 or Microsoft 365 E3/E5 required per user','Assign licenses: Entra admin center → Users → select user → Licenses → assign M365/Intune license','Configure enrollment restrictions: Devices → Enrollment → Enrollment restrictions','Default allows all platforms; create restrictions to limit to corporate devices or specific OS versions']},
+          {id:'p4-intune-s2', text:'Configure Windows Autopilot for zero-touch device provisioning', details:['Collect device hardware hash: run Get-WindowsAutopilotInfo.ps1 on target device','Upload hash to Intune: Devices → Windows → Windows Enrollment → Devices → Import','Create Autopilot Deployment Profile: Devices → Enrollment → Deployment Profiles → Create profile','Profile type: Self-Deploying or User-Driven; Join type: Entra ID joined or Hybrid','Out-of-box experience (OOBE): hide EULA, skip privacy, skip account setup (self-deploying)','Create Enrollment Status Page (ESP) profile: Devices → Enrollment → Enrollment Status Page']},
+          {id:'p4-intune-s3', text:'Enroll a Windows device manually via Azure AD Join and verify in Intune', details:['On Windows device: Settings → Accounts → Access work or school → Connect → Join this device to Azure AD','Enter M365 credentials; device joins Entra ID and enrolls in Intune','Verify enrollment: Intune Admin Center → Devices → All Devices — device should appear within 5 minutes','Intune sends policies within 15 minutes; force sync: Settings → Accounts → Access work or school → Info → Sync','Check compliance: device compliance state should update within 30 minutes','MDM diagnostic report: Settings → Accounts → Access work or school → Info → Create report']},
+          {id:'p4-intune-s4', text:'Configure Enrollment Restrictions and Corporate Device Identifiers', details:['Devices → Enrollment → Enrollment restrictions → Device type restrictions','Block Android and iOS if Windows-only environment; allow Windows only','Platform restrictions: Windows MDM — block personal, allow corporate','Corporate device identifiers: add device serial numbers to mark as corporate','Platform Enrollment Restrictions: set per-user or per-group to allow specific platforms','Test: try enrolling a restricted device — should be blocked with clear error message']},
+          {id:'p4-intune-s5', text:'Review Intune-enrolled device inventory and configure enrollment status reporting', details:['Devices → All Devices: review OS version, compliance state, last check-in, primary user','Filter by ownership: Corporate vs. Personal','Device details: click device → Hardware, Discovered apps, Device configuration, Compliance','Enrollment Status Page: track app and policy installation during Autopilot/ESP provisioning','Intune Reports: Reports → Device enrollment → Enrollment failures','Monitor: Devices → Monitor → Enrollment status, Failed enrollments, Incomplete enrollments']},
+        ],
+        validation:[
+          {id:'p4-intune-v1', text:'MDM authority set to Intune; licenses assigned to test users'},
+          {id:'p4-intune-v2', text:'Autopilot deployment profile created and device hash uploaded'},
+          {id:'p4-intune-v3', text:'At least one Windows device enrolled and visible in Intune All Devices'},
+          {id:'p4-intune-v4', text:'Enrollment restrictions configured (block personal or restrict platform)'},
+          {id:'p4-intune-v5', text:'Enrolled device shows hardware inventory and compliance status'},
+        ]
+      },
+      {
+        id:'p4-policy', cloud:'sccm', title:'Compliance Policies & Configuration Profiles',
+        meta:'Create device compliance policies, link to Conditional Access, and deploy configuration profiles',
+        steps:[
+          {id:'p4-policy-s1', text:'Create a Windows Compliance Policy with security requirements', details:['Devices → Compliance policies → Create Policy → Windows 10/11','Require BitLocker: Yes; Require Secure Boot: Yes; Require Code Integrity: Yes','Minimum OS version: 10.0.19041 (Windows 10 2004)','Password: require password, min length 8, complexity: alphanumeric','Firewall: required; Antivirus: required; Antispyware: required','Non-compliance action: mark non-compliant immediately; send email after 1 day; remotely lock after 3 days']},
+          {id:'p4-policy-s2', text:'Integrate compliance policy with Conditional Access in Entra ID', details:['Compliance policy is only useful when tied to Conditional Access','Entra admin center → Protection → Conditional Access → New Policy','Name: Require Compliant Device','Users: include All Users; exclude Break-glass account','Cloud apps: Office 365 (or All Cloud Apps)','Conditions: Device platforms: Windows','Grant: Require device to be marked as compliant; Require Entra ID joined device','Enable policy: Report-only first, then On after testing']},
+          {id:'p4-policy-s3', text:'Create a Configuration Profile for Windows security settings', details:['Devices → Configuration Profiles → Create Profile → Windows 10/11 → Settings Catalog','Search "BitLocker" → add: BitLocker OS drive encryption; Require device encryption','Search "Windows Defender" → add: Real-time protection, cloud-delivered protection, MAPS reporting','Search "Windows Update" → add: Configure update policies (defer quality updates 7 days)','Search "Start Menu" → customize for corporate branding','Assign profile to: All Devices group or specific Entra security group']},
+          {id:'p4-policy-s4', text:'Deploy ADMX-based Group Policy settings via Intune Settings Catalog', details:['Settings Catalog provides Group Policy equivalent settings — no GPO required','Devices → Configuration Profiles → Create → Windows 10/11 → Settings Catalog','Search for any GPO setting by name (e.g., "Disable USB storage")','Example: Administrative Templates → Windows Components → RemovableStorage → "All Removable Storage classes: Deny all access"','Assign to test device group; verify via MDM diagnostic on device','Intune settings catalog covers >5000 GP settings — check it before deploying custom OMA-URI']},
+          {id:'p4-policy-s5', text:'Monitor configuration profile assignment status and remediate issues', details:['Devices → Configuration Profiles → select profile → Device and user check-in status','Review: Succeeded / Failed / Pending / Not Applicable counts','Click on a failed device → View Status → see specific setting failures','Common failures: device not enrolled, OS version too old, conflicting policies','Resolve conflicts: check for duplicate settings across multiple profiles on same device','Use Intune Filters to scope profiles to specific device groups (e.g., only Autopilot devices)']},
+        ],
+        validation:[
+          {id:'p4-policy-v1', text:'Compliance policy created with BitLocker, firewall, and OS version requirements'},
+          {id:'p4-policy-v2', text:'Conditional Access policy requiring compliant device configured (report-only or active)'},
+          {id:'p4-policy-v3', text:'Configuration profile deployed — BitLocker enabled on enrolled device'},
+          {id:'p4-policy-v4', text:'ADMX-based settings profile assigned and applied via Settings Catalog'},
+          {id:'p4-policy-v5', text:'Profile assignment status shows Succeeded on enrolled test device'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p5', badge:'PHASE 5', title:'Co-management & Cloud Management Gateway', week:'Week 4-5',
+    labs:[
+      {
+        id:'p5-coman', cloud:'sccm', title:'Co-management Setup & Workload Sliding',
+        meta:'Enable co-management between ConfigMgr and Intune, configure tenant attach, and shift workloads',
+        steps:[
+          {id:'p5-coman-s1', text:'Meet co-management prerequisites — verify Entra hybrid join and Intune licenses', details:['Co-management requires: ConfigMgr CB 1710+, Entra ID hybrid join or Entra join on clients','Hybrid Entra Join: devices are AD domain joined AND registered in Entra ID (requires Entra Connect sync)','Verify hybrid join: dsregcmd /status on client — AzureAdJoined: YES, DomainJoined: YES','Intune license required per co-managed device user','Firewall: client needs HTTPS outbound to Microsoft endpoints (windowsupdate.com, manage.microsoft.com, etc.)','Check Entra Connect: sync state and device writeback enabled']},
+          {id:'p5-coman-s2', text:'Enable co-management in ConfigMgr and configure automatic Intune enrollment', details:['Administration → Cloud Services → Co-management → Configure Co-management','Sign in with Azure Global Admin; authorize ConfigMgr Microservice AAD app','Automatic enrollment: Pilot (selected collection) or All','Intune enrollment credentials: use device token (seamless) not user credentials','Pilot collection: create "Co-management Pilot" collection with 5-10 test devices','After enabling: co-management eligible clients auto-enroll in Intune within 15 minutes']},
+          {id:'p5-coman-s3', text:'Slide workloads from ConfigMgr to Intune and verify authority changes', details:['Co-management Properties → Workloads tab','Workloads available to slide: Compliance Policies, Resource Access, Device Configuration, Endpoint Protection, Office Click-to-Run Apps, Client Apps, Windows Update policies','Slide Compliance Policies to Pilot → Intune becomes authority for compliance on pilot devices','Slide Device Configuration to Pilot → Intune config profiles apply instead of CM baselines','Best practice: slide one workload at a time and validate before sliding next','Check in Intune: Devices → select co-managed device → confirm policies applying from Intune']},
+          {id:'p5-coman-s4', text:'Configure Tenant Attach for SCCM devices visible in Intune Admin Center', details:['Tenant Attach is separate from co-management — allows viewing SCCM-only devices in Intune portal','Administration → Cloud Services → Tenant Attach → Enable tenant attach upload','All devices managed by SCCM appear in Intune Admin Center → Devices → All Devices (with "ConfigMgr" management type)','Actions available from Intune on SCCM devices: Restart, Sync, Run CMPivot, Run scripts','Use case: helpdesk uses one portal for all devices regardless of management authority','Tenant Attach does NOT enroll devices in Intune — no Intune license required per device']},
+          {id:'p5-coman-s5', text:'Use CMPivot to run real-time queries on co-managed device inventory', details:['CMPivot: real-time query engine for ConfigMgr (and via Tenant Attach in Intune portal)','Administration → Run CMPivot (or from Devices → right-click → Start CMPivot)','Query installed software: InstalledSoftware | where Name contains "Chrome" | summarize count() by Name, Version','Query OS info: OSInfo | project Device, Caption, Version, LastBootUpTime','Query network: IPConfig | project Device, IPAddress, MACAddress','CMPivot runs queries live against online clients — responses in seconds; no inventory scan required']},
+        ],
+        validation:[
+          {id:'p5-coman-v1', text:'Hybrid Entra Join confirmed on test devices (dsregcmd /status shows AzureAdJoined:YES)'},
+          {id:'p5-coman-v2', text:'Co-management enabled; pilot devices auto-enrolled in Intune'},
+          {id:'p5-coman-v3', text:'Compliance Policies workload slid to Intune on pilot collection'},
+          {id:'p5-coman-v4', text:'Tenant Attach enabled — SCCM devices visible in Intune Admin Center'},
+          {id:'p5-coman-v5', text:'CMPivot query run successfully against a co-managed device'},
+        ]
+      },
+      {
+        id:'p5-cmg', cloud:'sccm', title:'Cloud Management Gateway (CMG)',
+        meta:'Deploy CMG for internet-based client management — content delivery and policy without VPN',
+        steps:[
+          {id:'p5-cmg-s1', text:'Meet CMG prerequisites — Azure subscription, certificates, and service connection point', details:['CMG requires: Azure subscription linked to ConfigMgr, service connection point role installed','Service Connection Point (SCP): Administration → Site Configuration → Servers and Site System Roles → Service Connection Point','SCP mode: Online (real-time); must have internet connectivity','Azure: create a resource group for CMG; contributor role on subscription for ConfigMgr','Authentication: PKI certificate (traditional) or token-based (Entra ID join — recommended for modern devices)','Windows 10+ clients using Entra ID can authenticate with CMG without PKI']},
+          {id:'p5-cmg-s2', text:'Create the CMG in Azure via the ConfigMgr Console wizard', details:['Administration → Cloud Services → Cloud Management Gateway → Create Cloud Management Gateway','Azure environment: AzurePublicCloud; Subscription: select your Azure sub','Resource Group: CMG-RG; Region: nearest Azure region; VM SKU: A2_V2 (Standard)','Certificate: if PKI, upload CMG server authentication cert (from internal CA); otherwise use Entra token auth','Enable CMG to function as a cloud DP: allows internet clients to download content from CMG','Deployment takes 10-15 minutes; monitor CMSvc.log']},
+          {id:'p5-cmg-s3', text:'Configure existing site systems to allow CMG traffic and update client settings', details:['Management Point: Administration → Site System → Management Point Properties → Allow clients to use CMG','Software Update Point: Properties → Allow ConfigMgr cloud management gateway traffic','Client Settings → Cloud Services: Enable clients to use CMG → Yes; Allow access to cloud DP → Yes','Configure client internet settings: Clients on internet only vs. Intranet and Internet','Boundaries: Internet-based clients are NOT assigned via boundaries — they use the CMG automatically','Verify: CMG connection point role auto-created on the site']},
+          {id:'p5-cmg-s4', text:'Test CMG connectivity from an internet-based client and verify content download', details:['Simulate internet client: disconnect from corporate network (or use split-DNS/test device)','Client detects internet: CCM log shows "Current network is Internet"','Client communicates with CMG: CMGClientHandler.log shows incoming requests','Deploy application to test device collection → verify installation without VPN','CMG cost monitoring: Azure Portal → CMG resource → Metrics (outbound data transfer, request count)','Scale: add CMG instance (additional Azure VMs) if load increases; auto-scale option available in newer versions']},
+        ],
+        validation:[
+          {id:'p5-cmg-v1', text:'Service Connection Point installed and online in console'},
+          {id:'p5-cmg-v2', text:'CMG deployed in Azure and showing Online status in ConfigMgr console'},
+          {id:'p5-cmg-v3', text:'Management Point and SUP configured to allow CMG traffic'},
+          {id:'p5-cmg-v4', text:'Internet-based client successfully receives policies and content via CMG'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p6', badge:'PHASE 6', title:'Security, Compliance & LAPS', week:'Week 5-6',
+    labs:[
+      {
+        id:'p6-mde', cloud:'sccm', title:'Microsoft Defender for Endpoint via Intune',
+        meta:'Onboard devices to MDE via Intune, configure AV and ASR policies, review security dashboard',
+        steps:[
+          {id:'p6-mde-s1', text:'Connect Intune to Microsoft Defender for Endpoint (MDE) tenant', details:['Intune Admin Center → Endpoint Security → Microsoft Defender for Endpoint','Click "Open the Microsoft Defender for Endpoint admin console" to link tenants','In Defender portal (security.microsoft.com): Settings → Endpoints → Advanced Features → Microsoft Intune connection: ON','Back in Intune: Endpoint Security → Microsoft Defender for Endpoint → MDM Compliance Policy Settings: ON','This enables Intune compliance policies to use MDE device risk score','MDE sends risk scores (Clean/Low/Medium/High) to Intune for conditional access evaluation']},
+          {id:'p6-mde-s2', text:'Deploy MDE onboarding via Intune configuration profile', details:['Intune → Endpoint Security → Endpoint Detection and Response → Create Policy → Windows 10/11','Policy type: Endpoint Detection and Response (EDR)','Onboard devices: use Intune MDM instead of onboarding package (preferred for Intune-managed devices)','Assign to All Devices or specific group','Monitor onboarding: Defender portal → Devices — enrolled devices appear within 24 hours','Verify: Endpoint Security → Microsoft Defender for Endpoint → Onboarding status dashboard']},
+          {id:'p6-mde-s3', text:'Configure Antivirus policy for real-time protection and cloud-delivered protection', details:['Endpoint Security → Antivirus → Create Policy → Windows 10/11 → Microsoft Defender Antivirus','Enable: Real-time protection, Cloud-delivered protection, Automatic sample submission','Exclusions: add process/path exclusions for business-critical tools (SQL, backup agents)','Scan settings: Scheduled scan type: Quick; Frequency: Daily; Time: 02:00','PUA protection: Block (prevents potentially unwanted apps)','Assign to All Devices; monitor compliance in Endpoint Security → Antivirus → Unhealthy endpoints']},
+          {id:'p6-mde-s4', text:'Configure Attack Surface Reduction (ASR) rules via Intune', details:['Endpoint Security → Attack Surface Reduction → Create Policy → Windows 10/11 → Attack Surface Reduction Rules','Start with Audit mode — does not block, just logs events for 30 days','Key ASR rules to enable: Block executable content from email/webmail, Block Office apps from creating child processes','Block credential stealing from LSASS: Audit first (many legitimate apps access LSASS)','Block untrusted/unsigned processes from USB: Block (immediate win)','After Audit review: promote to Block mode; monitor ASR events in Defender portal → Reports → ASR']},
+          {id:'p6-mde-s5', text:'Review MDE Security Recommendations and vulnerability management', details:['Defender portal (security.microsoft.com) → Vulnerability Management → Recommendations','Recommendations include: OS patches, misconfigured security settings, outdated software','Each recommendation shows exposure score, devices affected, remediation steps','Create remediation task: links to Intune or SCCM for automated remediation','Secure Score: Defender portal → Secure Score — shows current score and improvement actions','Set up custom email alerts: Defender portal → Settings → Email notifications for high-severity alerts']},
+        ],
+        validation:[
+          {id:'p6-mde-v1', text:'Intune tenant connected to MDE — MDM Compliance Policy Settings enabled'},
+          {id:'p6-mde-v2', text:'Devices onboarded to MDE via Intune EDR policy (visible in Defender portal)'},
+          {id:'p6-mde-v3', text:'Antivirus policy deployed — real-time and cloud protection enabled on enrolled devices'},
+          {id:'p6-mde-v4', text:'ASR rules deployed in Audit mode; events visible in Defender portal'},
+          {id:'p6-mde-v5', text:'MDE Security Recommendations reviewed; Secure Score baseline documented'},
+        ]
+      },
+      {
+        id:'p6-laps', cloud:'sccm', title:'Windows LAPS, Conditional Access & Zero Trust',
+        meta:'Deploy Windows LAPS via Intune, harden CA policies, and implement Zero Trust principles',
+        steps:[
+          {id:'p6-laps-s1', text:'Configure Windows LAPS policy via Intune to rotate local admin passwords', details:['Windows LAPS (Local Administrator Password Solution) rotates and backs up local admin passwords','Intune → Endpoint Security → Account Protection → Create Policy → Windows LAPS','Backup directory: Microsoft Entra ID (for Entra joined devices) or Active Directory (for hybrid/domain joined)','Password age: 30 days; Password complexity: Large letters + Small letters + Numbers + Special','Account name: Administrator (or custom local admin account name)','Password length: 20 characters; Post-auth action: Reset password after use']},
+          {id:'p6-laps-s2', text:'Retrieve LAPS passwords from Entra ID and audit access', details:['Entra admin center → Devices → All Devices → select device → Local administrator password','Requires Azure AD role: Intune Administrator, Cloud Device Administrator, or Global Admin','View password: shows password, account name, and expiry date','After viewing: password can be rotated immediately (if post-auth action configured)','Audit log: Entra admin center → Monitoring → Audit logs → filter by "Retrieve local administrator password"','Who can retrieve LAPS passwords: configure via Entra ID role assignments (least privilege)']},
+          {id:'p6-laps-s3', text:'Create a layered Conditional Access policy for Zero Trust access', details:['Zero Trust principles: verify explicitly, use least privileged access, assume breach','CA Policy 1: Require MFA for all users on all cloud apps','CA Policy 2: Require Compliant Device for accessing corporate data (M365, SharePoint, Exchange)','CA Policy 3: Block legacy authentication protocols (Exchange ActiveSync, IMAP, POP) — these bypass MFA','CA Policy 4: Require approved app or app protection policy for mobile devices (MAM)','Named Locations: exclude trusted office IPs from MFA requirement (optional; evaluate risk)']},
+          {id:'p6-laps-s4', text:'Configure Intune App Protection Policies (MAM) for BYOD scenarios', details:['App Protection Policies apply security to managed apps on personal (BYOD) devices — no enrollment required','Intune → Apps → App Protection Policies → Create → iOS or Android','Target apps: Microsoft Outlook, Teams, OneDrive, SharePoint, Word/Excel/PowerPoint','Data protection: prevent copy/paste to unmanaged apps, block screenshot, require PIN','Access requirements: PIN required; biometric allowed; max attempts before PIN reset: 5','Conditional launch: min OS version 13.0 (iOS) or 12.0 (Android); block rooted/jailbroken devices']},
+        ],
+        validation:[
+          {id:'p6-laps-v1', text:'Windows LAPS policy deployed — password visible in Entra ID for enrolled device'},
+          {id:'p6-laps-v2', text:'LAPS password retrieval audit log entry recorded in Entra ID'},
+          {id:'p6-laps-v3', text:'Conditional Access: MFA required and compliant device policy active'},
+          {id:'p6-laps-v4', text:'App Protection Policy deployed for mobile — corporate data protected on BYOD'},
+        ]
+      }
+    ]
+  }
+];
+
+const APP_KEY = 'sccm_intune_lab_tracker';
+let state = {};
+let currentUser = null;
+let db = null;
+let syncRef = null;
+
+function loadState(){
+  const u = currentUser || 'default';
+  const raw = localStorage.getItem(APP_KEY+'_'+u);
+  state = raw ? JSON.parse(raw) : {steps:{},notes:{},labNotes:{},valChecks:{}};
+  if(!state.steps) state.steps={};
+  if(!state.notes) state.notes={};
+  if(!state.labNotes) state.labNotes={};
+  if(!state.valChecks) state.valChecks={};
+}
+function saveState(){
+  const u = currentUser || 'default';
+  localStorage.setItem(APP_KEY+'_'+u, JSON.stringify(state));
+  pushToFirebase();
+}
+
+function initFirebase(){
+  const cfg = JSON.parse(localStorage.getItem('sccm_intune_fb_config')||'null');
+  if(!cfg) return;
+  try{
+    const existing = firebase.apps.find(a=>a.name==='sccm-intune-tracker');
+    const app = existing || firebase.initializeApp(cfg,'sccm-intune-tracker');
+    db = firebase.database(app);
+    syncRef = db.ref('sccm_intune_progress');
+    listenFirebase();
+    setSyncStatus('ok','&#x2714; Synced');
+  } catch(e){ setSyncStatus('err','&#x26A0; Sync Error'); }
+}
+function listenFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).on('value', snap=>{
+    const data = snap.val();
+    if(data){
+      state = data;
+      if(!state.steps) state.steps={};
+      if(!state.notes) state.notes={};
+      if(!state.labNotes) state.labNotes={};
+      if(!state.valChecks) state.valChecks={};
+      saveState(); renderAll(); updateStats();
+    }
+  });
+}
+function pushToFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).set(state).then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Error'));
+}
+function setSyncStatus(type, html){
+  const el = document.getElementById('sync-status');
+  el.className='sync-status sync-'+type;
+  el.innerHTML=html;
+}
+function openFbPanel(){
+  const cfg = JSON.parse(localStorage.getItem('sccm_intune_fb_config')||'null');
+  if(cfg){ document.getElementById('fb-apiKey').value=cfg.apiKey||''; document.getElementById('fb-databaseURL').value=cfg.databaseURL||''; document.getElementById('fb-projectId').value=cfg.projectId||''; }
+  document.getElementById('fb-overlay').classList.add('open');
+}
+function closeFbPanel(){ document.getElementById('fb-overlay').classList.remove('open'); }
+function saveFbConfig(){
+  const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};
+  if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){ showFbMsg('err','Please fill in all 3 fields.'); return; }
+  localStorage.setItem('sccm_intune_fb_config',JSON.stringify(cfg));
+  showFbMsg('ok','Connecting...');
+  initFirebase();
+  setTimeout(closeFbPanel,1000);
+}
+function clearFbConfig(){ localStorage.removeItem('sccm_intune_fb_config'); db=null; syncRef=null; setSyncStatus('none','&#x1F4BE; Local Only'); closeFbPanel(); }
+function showFbMsg(type,msg){ const el=document.getElementById('fb-msg'); el.className='fb-status-msg '+type; el.innerHTML=msg; }
+
+function _lbDb(){var app=(typeof firebase!=='undefined')?firebase.apps.find(function(a){return a.name==='mk-site';}):null;return app?firebase.database(app):null;}
+function openLeaderboard(){
+  document.getElementById('lb-overlay').classList.add('open');
+  document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x21BB; Loading&hellip;</div>';
+  var lbDb=_lbDb();
+  if(!lbDb){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x26A0; Firebase not connected.</div>';return;}
+  lbDb.ref('sccm_intune_progress').once('value').then(function(snap){
+    var all=snap.val();
+    if(!all||!Object.keys(all).length){document.getElementById('lb-body').innerHTML='<div class="lb-loading">No data yet.</div>';return;}
+    var rows=Object.entries(all).map(function(e){
+      var name=e[0],u=e[1],tc=0,dc=0,dl=0;
+      PHASES.forEach(function(ph){ph.labs.forEach(function(lab){
+        var ts=lab.steps.length,tv=lab.validation.length;
+        var ds=lab.steps.filter(function(s){return u.steps&&u.steps[s.id];}).length;
+        var dv=lab.validation.filter(function(v){return u.valChecks&&u.valChecks[v.id];}).length;
+        tc+=ts+tv;dc+=ds+dv;if(ds+dv===ts+tv&&ts+tv>0)dl++;
+      });});
+      return{name:name,tc:tc,dc:dc,dl:dl,pct:tc>0?Math.round(dc/tc*100):0};
+    }).sort(function(a,b){return b.pct-a.pct||b.dl-a.dl;});
+    var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+    var html=rows.map(function(r,i){return '<tr class="'+(r.name===currentUser?'me':'')+'"><td class="lb-rank">'+(i<3?medals[i]:'#'+(i+1))+'</td><td><b>'+r.name+'</b>'+(r.name===currentUser?' <span style="font-size:10px">(you)</span>':'')+'</td><td><div style="display:flex;align-items:center;gap:6px"><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:'+r.pct+'%"></div></div><span style="font-size:11px;font-weight:700">'+r.pct+'%</span></div></td><td style="text-align:center">'+r.dl+'</td><td style="text-align:center">'+r.dc+'/'+r.tc+'</td></tr>';}).join('');
+    document.getElementById('lb-body').innerHTML='<table class="lb-table"><thead><tr><th>Rank</th><th>Name</th><th>Progress</th><th>Labs Done</th><th>Checks</th></tr></thead><tbody>'+html+'</tbody></table><p style="font-size:10px;color:var(--gray);margin-top:10px;text-align:right">'+rows.length+' teammate'+(rows.length!==1?'s':'')+'</p>';
+  }).catch(function(){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x2717; Failed to load.</div>';});
+}
+function closeLb(){document.getElementById('lb-overlay').classList.remove('open');}
+
+var ALL_QUIZ=[
+  {id:'q1',phase:1,question:'What SQL Server collation is required for a ConfigMgr Primary Site installation?',options:['Latin1_General_CI_AS','SQL_Latin1_General_CP1_CI_AS','Latin1_General_BIN2','SQL_Latin1_General_CP1_CS_AS'],answer:1,explanation:'ConfigMgr requires SQL_Latin1_General_CP1_CI_AS collation. This must be set during SQL installation — it cannot be changed after the site is installed without a full reinstall.'},
+  {id:'q2',phase:1,question:'What is the role of a Boundary Group in Configuration Manager?',options:['Controls which devices can install the SCCM client','Associates network boundaries with site system roles for client assignment and content location','Defines Active Directory OUs that ConfigMgr can discover','Groups devices for deployment targeting similar to a collection'],answer:1,explanation:'Boundary Groups associate network boundaries (IP subnets, AD sites, IP ranges) with site system roles (Distribution Points, Management Points). Clients use boundary groups to find the closest DP for content and to determine their assigned site.'},
+  {id:'q3',phase:2,question:'What log file should you check on the client to troubleshoot ConfigMgr client installation issues?',options:['ccm.log','clientmsi.log','ccmsetup.log','execmgr.log'],answer:2,explanation:'ccmsetup.log records the client installation process on the target device. It is located at C:\\Windows\\ccmsetup\\Logs. ClientIDManagerStartup.log tracks client registration with the site after installation.'},
+  {id:'q4',phase:2,question:'What is the difference between a Direct Membership Rule and a Query Rule in a ConfigMgr collection?',options:['Direct membership is for user collections; Query rules are for device collections only','Direct membership adds specific devices manually; Query rules dynamically add devices matching WMI/SQL criteria','Query rules are evaluated weekly; direct membership rules update daily','Direct membership requires AD discovery; Query rules work without any discovery'],answer:1,explanation:'Direct Membership Rules add specific, named devices/users to a collection permanently. Query Rules use WMI queries that are re-evaluated on a schedule — devices are added or removed automatically as they match or stop matching the query criteria.'},
+  {id:'q5',phase:3,question:'What is the key advantage of using an Application over a Package in ConfigMgr?',options:['Applications support more installation file types','Applications have Detection Methods that allow ConfigMgr to determine if software is already installed','Applications deploy faster due to binary delta replication','Applications can target user collections; Packages can only target device collections'],answer:1,explanation:'Applications include Detection Methods (MSI product code, registry key, file existence) that let ConfigMgr verify whether the software is installed. This enables compliance reporting and prevents re-installation. Packages have no detection method and are a legacy approach.'},
+  {id:'q6',phase:3,question:'What is an Automatic Deployment Rule (ADR) in ConfigMgr Software Updates?',options:['A rule that automatically approves updates in WSUS without deploying them','A scheduled task that searches for, creates SUGs, and deploys software updates automatically','A Group Policy that enables Windows Update for Business on clients','A compliance rule that blocks devices without required updates from accessing resources'],answer:1,explanation:'An ADR runs on a schedule, searches for updates matching criteria (classification, product, release date), creates a Software Update Group, downloads content to DPs, and deploys to a collection — completely automating the monthly patch cycle.'},
+  {id:'q7',phase:4,question:'What is Windows Autopilot and what business problem does it solve?',options:['A ConfigMgr feature for imaging PCs before deployment','A cloud-based provisioning service that configures new Windows devices without custom imaging or IT touching the hardware','A Microsoft tool for deploying Windows updates via Windows Update for Business','An Intune feature that remotely wipes and re-enrolls non-compliant devices'],answer:1,explanation:'Windows Autopilot allows new devices to be shipped directly to end users. When the user turns on the device and signs in, it automatically joins Entra ID, enrolls in Intune, and installs apps/settings — no custom image or IT involvement required at the device level.'},
+  {id:'q8',phase:4,question:'What is the difference between an Intune Compliance Policy and a Configuration Profile?',options:['Compliance policies apply settings; Configuration profiles assess compliance state','Compliance policies assess whether a device meets security requirements; Configuration profiles push settings to devices','They are identical — both push settings and assess compliance','Compliance policies work on iOS/Android; Configuration profiles are Windows-only'],answer:1,explanation:'Compliance Policies evaluate whether a device meets defined security requirements (BitLocker on, firewall enabled, min OS version) and mark devices as Compliant or Non-Compliant. Configuration Profiles actively push settings to devices (enable BitLocker, configure VPN, push Wi-Fi profile).'},
+  {id:'q9',phase:5,question:'In ConfigMgr Co-management, what does "sliding a workload to Intune" mean?',options:['Migrating all ConfigMgr data to Intune and decommissioning the SCCM site','Transferring management authority for a specific management area from ConfigMgr to Intune','Allowing Intune and ConfigMgr to jointly manage the same setting (dual-write)','Configuring Intune as a backup in case ConfigMgr connectivity fails'],answer:1,explanation:'Co-management workloads represent management areas (Compliance Policies, Device Configuration, Endpoint Protection, etc.). "Sliding" a workload to Intune means Intune becomes the sole authority for that area on co-managed devices — ConfigMgr stops applying that workload.'},
+  {id:'q10',phase:5,question:'What is the primary purpose of the Cloud Management Gateway (CMG)?',options:['It replaces the Management Point for all clients, including intranet clients','It allows internet-based ConfigMgr clients to receive policies and content without a VPN connection','It provides a cloud-hosted distribution point for Azure Virtual Machines only','It backs up the ConfigMgr site database to Azure Blob Storage'],answer:1,explanation:'The CMG is a cloud service deployed in Azure that acts as a proxy between internet-based clients and on-premises ConfigMgr infrastructure. Clients on the internet (e.g., remote workers) can receive ConfigMgr policies, software, and updates without needing a VPN.'},
+  {id:'q11',phase:6,question:'How does Microsoft Defender for Endpoint integrate with Intune compliance policies?',options:['MDE directly blocks non-compliant devices at the network level','MDE sends a device risk score (Clean/Low/Medium/High) to Intune; compliance policies can require a maximum risk score','Intune compliance policies automatically onboard devices to MDE when deployed','MDE replaces Intune compliance policies entirely when the tenant connection is enabled'],answer:1,explanation:'When the Intune-MDE tenant connection is enabled, MDE sends a machine risk score to Intune. Intune compliance policies can be configured to require a max risk score (e.g., Low), marking devices as Non-Compliant if MDE detects threats — blocking them via Conditional Access.'},
+  {id:'q12',phase:6,question:'What is Windows LAPS and how is it managed via Intune?',options:['Local App Publishing Service — manages app deployment on local networks','Local Administrator Password Solution — rotates local admin passwords and backs them up to Entra ID or AD via Intune policy','Local Admin Policy Settings — enforces GPO-equivalent settings on non-domain devices','Licensed Application Protection Suite — enforces DLP on local applications'],answer:1,explanation:'Windows LAPS (Local Administrator Password Solution) automatically rotates local administrator account passwords on a schedule and stores them in Entra ID or Active Directory. Via Intune Account Protection policies, you configure the backup target, password age, complexity, and post-authentication actions.'}
+];
+var quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};
+var QUIZ_LS='sccm_intune_quiz_scores';
+function openQuiz(){document.getElementById('quiz-overlay').classList.add('open');quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};renderQuiz();}
+function closeQuiz(){document.getElementById('quiz-overlay').classList.remove('open');}
+function getQuizScores(){try{return JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');}catch(e){return{};}}
+function saveQuizScore(ph,sc,tot){var s=getQuizScores();var k='p'+ph;if(!s[k]||sc>s[k].best)s[k]={best:sc,total:tot};localStorage.setItem(QUIZ_LS,JSON.stringify(s));}
+function renderQuiz(){
+  var body=document.getElementById('quiz-body');var scores=getQuizScores();
+  var phases=[...new Set(ALL_QUIZ.map(function(q){return q.phase;}))].sort(function(a,b){return a-b;});
+  var tiles=phases.map(function(p){return{phase:p,name:PHASES[p-1]?PHASES[p-1].title:'Phase '+p,count:ALL_QUIZ.filter(function(q){return q.phase===p;}).length};});
+  tiles.push({phase:'all',name:'All Phases',count:ALL_QUIZ.length});
+  if(quizState.screen==='select'){
+    body.innerHTML='<p style="font-size:12px;color:var(--gray);margin-bottom:14px">Select a phase to quiz on, or choose <b>All Phases</b>.</p><div class="phase-grid">'+
+    tiles.map(function(t){var sc=scores['p'+t.phase];var scH=sc?'<div class="pt-score">Best: '+sc.best+'/'+sc.total+'</div>':'';return '<div class="phase-tile'+(t.phase==='all'?' all-tile':'')+(quizState.selectedPhase===t.phase?' selected':'')+'" onclick="selectQuizPhase(\''+t.phase+'\')"><div class="pt-num">'+(t.phase==='all'?'ALL':'Phase '+t.phase)+'</div><div class="pt-name">'+t.name+'</div><div style="font-size:10px;color:var(--gray);margin-top:3px">'+t.count+' questions</div>'+scH+'</div>';}).join('')+
+    '</div><button class="quiz-start-btn" onclick="startQuiz()" '+(quizState.selectedPhase===null?'disabled':'')+'>&#x1F680; Start Quiz</button>';
+  } else if(quizState.screen==='question'){
+    var q=quizState.questions[quizState.current];var letters=['A','B','C','D'];var pct=Math.round(quizState.current/quizState.questions.length*100);
+    body.innerHTML='<div class="quiz-progress"><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:'+pct+'%"></div></div><span class="quiz-prog-txt">'+(quizState.current+1)+'/'+quizState.questions.length+'</span></div><div class="quiz-question">'+q.question+'</div><div class="quiz-options" id="quiz-opts">'+q.options.map(function(o,i){return '<button class="quiz-option" id="opt-'+i+'" onclick="answerQuiz('+i+')"><span class="opt-letter">'+letters[i]+'</span><span>'+o+'</span></button>';}).join('')+'</div><div class="quiz-explanation" id="quiz-exp"><b>&#x1F4A1;</b> '+q.explanation+'</div><button class="quiz-next-btn" id="quiz-next" onclick="nextQuestion()">'+(quizState.current+1<quizState.questions.length?'Next &#x2192;':'Results &#x1F3C6;')+'</button>';
+  } else if(quizState.screen==='score'){
+    var sc=quizState.score,tot=quizState.questions.length,pct2=Math.round(sc/tot*100);
+    var msg=pct2===100?'Perfect! &#x1F3C6;':pct2>=80?'Excellent! &#x1F44F;':pct2>=60?'Good Work! &#x1F44D;':pct2>=40?'Keep Practising &#x1F4AA;':'Review the material &#x1F4DA;';
+    var rev=quizState.questions.map(function(q,i){var ok=quizState.wrongs.indexOf(i)===-1;return '<div class="review-item '+(ok?'ok':'bad')+'"><span class="review-icon">'+(ok?'&#x2705;':'&#x274C;')+'</span><span>'+q.question+'</span></div>';}).join('');
+    body.innerHTML='<div class="quiz-score-screen"><div class="score-circle"><div class="sc-num">'+sc+'/'+tot+'</div><div class="sc-lbl">'+pct2+'%</div></div><div class="quiz-score-msg">'+msg+'</div><div class="quiz-score-sub">'+(pct2>=80?'Excellent knowledge!':'Review topics you missed and try again.')+'</div><div class="quiz-review">'+rev+'</div><div class="quiz-score-btns"><button class="qsb-retry" onclick="startQuiz()">&#x1F504; Retry</button><button class="qsb-back" onclick="quizState.screen=\'select\';renderQuiz()">&#x2190; Phases</button></div></div>';
+  }
+}
+function selectQuizPhase(p){quizState.selectedPhase=p==='all'?'all':parseInt(p);renderQuiz();}
+function startQuiz(){
+  var ph=quizState.selectedPhase;
+  var pool=ph==='all'?ALL_QUIZ.slice():ALL_QUIZ.filter(function(q){return q.phase===ph;});
+  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
+  pool=pool.slice(0,ph==='all'?12:Math.min(pool.length,6));
+  quizState=Object.assign({},quizState,{screen:'question',questions:pool,current:0,answered:false,score:0,wrongs:[]});
+  renderQuiz();
+}
+function answerQuiz(sel){
+  if(quizState.answered)return;quizState.answered=true;
+  var q=quizState.questions[quizState.current];var ok=q.answer===sel;
+  if(ok)quizState.score++;else quizState.wrongs.push(quizState.current);
+  q.options.forEach(function(_,i){var b=document.getElementById('opt-'+i);b.disabled=true;b.className='quiz-option '+(i===q.answer?'correct':i===sel&&!ok?'wrong':'reveal');});
+  document.getElementById('quiz-exp').classList.add('show');document.getElementById('quiz-next').classList.add('show');
+}
+function nextQuestion(){
+  quizState.current++;
+  if(quizState.current>=quizState.questions.length){saveQuizScore(quizState.selectedPhase,quizState.score,quizState.questions.length);quizState.screen='score';}
+  else{quizState.answered=false;}
+  renderQuiz();
+}
+
+function initUser(){
+  onAuthReady(function(user){
+    if(!user) return;
+    currentUser = user.displayName || user.email.split('@')[0];
+    localStorage.setItem('sccm_current_user', currentUser);
+    document.getElementById('user-name-display').textContent = currentUser;
+    loadState(); build(); updateStats(); initFirebase();
+  });
+}
+function changeUser(){}
+
+function countAll(){
+  let total=0,done=0,p1to3=0,p1to3Done=0,p4to6=0,p4to6Done=0;
+  PHASES.forEach((ph,idx)=>{
+    ph.labs.forEach(lab=>{
+      total++;
+      const labDone=lab.steps.every(s=>state.steps[s.id])&&lab.validation.every(v=>state.valChecks[v.id]);
+      if(idx<3){p1to3++;if(labDone)p1to3Done++;}
+      else{p4to6++;if(labDone)p4to6Done++;}
+      if(labDone)done++;
+    });
+  });
+  return{total,done,p1to3,p1to3Done,p4to6,p4to6Done};
+}
+function countPhase(ph){
+  let s=0,d=0;
+  ph.labs.forEach(lab=>{s+=lab.steps.length+lab.validation.length;d+=lab.steps.filter(x=>state.steps[x.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length;});
+  return{s,d};
+}
+function updateStats(){
+  const c=countAll();
+  document.getElementById('stat-total').textContent=c.total;
+  document.getElementById('stat-done').textContent=c.done;
+  document.getElementById('stat-p1').textContent=c.p1to3Done+'/'+c.p1to3;
+  document.getElementById('stat-p2').textContent=c.p4to6Done+'/'+c.p4to6;
+  const pct=c.total?Math.round(c.done/c.total*100):0;
+  document.getElementById('stat-pct').textContent=pct+'%';
+  document.getElementById('big-bar-fill').style.width=pct+'%';
+  PHASES.forEach(ph=>{
+    const{s,d}=countPhase(ph);
+    const fill=document.getElementById('ph-fill-'+ph.id);
+    if(fill)fill.style.width=(s?Math.round(d/s*100):0)+'%';
+  });
+  if(c.done===c.total&&c.total>0){document.getElementById('congrats').style.display='flex';}
+}
+function toggleStep(id){state.steps[id]=!state.steps[id];if(!state.steps[id])delete state.steps[id];saveState();renderAll();updateStats();}
+function toggleVal(id){state.valChecks[id]=!state.valChecks[id];if(!state.valChecks[id])delete state.valChecks[id];saveState();renderAll();updateStats();}
+function toggleDetail(btn){const panel=btn.closest('.step-row').querySelector('.step-details');if(!panel)return;const open=panel.classList.toggle('open');btn.classList.toggle('open',open);btn.textContent=open?'Hide ▲':'Details ▼';}
+function toggleNote(btn){const panel=btn.closest('.step-row').querySelector('.step-note-panel');if(!panel)return;const open=panel.classList.toggle('open');btn.classList.toggle('open',open);btn.textContent=open?'Note ▲':'Note ▼';}
+function saveNote(id,val){if(val.trim())state.notes[id]=val;else delete state.notes[id];const btn=document.querySelector('[data-note-btn="'+id+'"]');if(btn)btn.classList.toggle('has-note',!!state.notes[id]);saveState();}
+function saveLabNote(id,val){if(val.trim())state.labNotes[id]=val;else delete state.labNotes[id];saveState();}
+let activeFilter='all';
+function filterTab(f,btn){activeFilter=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.lab-section').forEach(sec=>{sec.style.display=(f==='all'||sec.dataset.cloud===f)?'block':'none';});}
+function renderAll(){
+  document.querySelectorAll('.step-row').forEach(row=>{const id=row.dataset.stepId;if(id)row.classList.toggle('done',!!state.steps[id]);const chk=row.querySelector('.step-check');if(chk&&id)chk.innerHTML=state.steps[id]?'&#x2714;':'';});
+  document.querySelectorAll('.val-row').forEach(row=>{const id=row.dataset.valId;if(id)row.classList.toggle('done',!!state.valChecks[id]);const chk=row.querySelector('.val-check');if(chk&&id)chk.innerHTML=state.valChecks[id]?'&#x2714;':'';});
+  document.querySelectorAll('textarea[data-note-id]').forEach(ta=>{ta.value=state.notes[ta.dataset.noteId]||'';});
+  document.querySelectorAll('[data-note-btn]').forEach(btn=>{btn.classList.toggle('has-note',!!state.notes[btn.dataset.noteBtnId]);});
+  document.querySelectorAll('textarea[data-lab-note]').forEach(ta=>{ta.value=state.labNotes[ta.dataset.labNote]||'';});
+}
+function build(){
+  const content=document.getElementById('content');
+  content.innerHTML='';
+  PHASES.forEach(ph=>{
+    const card=document.createElement('div');
+    card.className='phase-card';
+    card.id='phase-'+ph.id;
+    const{s,d}=countPhase(ph);
+    const pct=s?Math.round(d/s*100):0;
+    card.innerHTML=`<div class="phase-header" onclick="togglePhase(this)"><div class="phase-header-left"><span class="phase-badge">${ph.badge}</span><div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div></div><div style="display:flex;align-items:center;gap:10px"><div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div><span style="font-size:11px;color:#93C5FD;min-width:32px;text-align:right">${pct}%</span><span class="chevron">&#x25BC;</span></div></div><div class="phase-body">${ph.labs.map(lab=>buildLab(lab)).join('')}</div>`;
+    content.appendChild(card);
+  });
+}
+function buildLab(lab){
+  const doneSteps=lab.steps.filter(s=>state.steps[s.id]).length;
+  const doneVals=lab.validation.filter(v=>state.valChecks[v.id]).length;
+  const total=lab.steps.length+lab.validation.length;
+  const done=doneSteps+doneVals;
+  const pct=total?Math.round(done/total*100):0;
+  return `<div class="lab-section" id="lab-${lab.id}" data-cloud="${lab.cloud}"><div class="lab-header sccm-lab"><span class="lab-cloud-badge sccm-badge">INTUNE</span><div class="lab-title-area"><div class="lab-title">${lab.title}</div><div class="lab-meta">${lab.meta} &middot; ${done}/${total} steps</div></div><div class="lab-stats"><div style="font-size:11px;font-weight:700;color:var(--gray)">${pct}%</div><button class="lab-toggle sccm-btn" onclick="toggleLab('lab-${lab.id}')">&#x25BC; Expand</button></div></div><div class="steps-list"><div class="section-lbl">&#x1F527; Lab Steps</div>${lab.steps.map((s,i)=>buildStep(s,i+1)).join('')}<div class="section-lbl" style="margin-top:14px">&#x2705; Validation Checks</div>${lab.validation.map(v=>buildVal(v)).join('')}<div class="section-lbl" style="margin-top:14px">&#x1F4DD; Lab Notes</div><textarea class="notes-area" data-lab-note="${lab.id}" placeholder="Add any overall notes about this lab..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea></div></div>`;
+}
+function buildStep(s,num){
+  const done=!!state.steps[s.id];const hasDetails=s.details&&s.details.length>0;const hasNote=!!state.notes[s.id];
+  return `<div class="step-row${done?' done':''}" data-step-id="${s.id}"><div class="step-check" onclick="toggleStep('${s.id}')">${done?'&#x2714;':''}</div><div class="step-main"><div class="step-top"><span class="step-num">${num}.</span><span class="step-text">${s.text}</span>${hasDetails?`<button class="detail-btn" onclick="toggleDetail(this)">Details &#x25BC;</button>`:''}<button class="note-btn${hasNote?' has-note':''}" data-note-btn="${s.id}" onclick="toggleNote(this)">Note &#x25BC;</button></div>${hasDetails?`<div class="step-details">${s.details.map((d,i)=>`<div class="detail-item"><span class="di-num">${i+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}<div class="step-note-panel"><textarea class="note-textarea" data-note-id="${s.id}" placeholder="Your notes for this step..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea><div class="note-hint">&#x1F4A1; Notes are saved locally and synced if Firebase is connected.</div></div></div></div>`;
+}
+function buildVal(v){
+  const done=!!state.valChecks[v.id];
+  return `<div class="val-row${done?' done':''}" data-val-id="${v.id}" onclick="toggleVal('${v.id}')"><div class="val-check">${done?'&#x2714;':''}</div><span class="step-text">&#x1F4CB; ${v.text}</span></div>`;
+}
+function togglePhase(header){header.closest('.phase-card').classList.toggle('open');}
+function toggleLab(id){const sec=document.getElementById(id);if(!sec)return;sec.classList.toggle('open');const btn=sec.querySelector('.lab-toggle');if(btn)btn.innerHTML=sec.classList.contains('open')?'&#x25B2; Collapse':'&#x25BC; Expand';}
+function resetProgress(){if(!confirm('Reset all SCCM/Intune lab progress for '+currentUser+'? This cannot be undone.'))return;state={steps:{},notes:{},labNotes:{},valChecks:{}};saveState();build();updateStats();}
+
+initUser();
+</script>
+</body>
+</html>

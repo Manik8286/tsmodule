@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microsoft 365 / O365 Lab Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="../personal_site/auth.js"></script>
+<style>body{visibility:hidden;}</style>
+<style>
+:root{
+  --m365:#6264A7;--m365-dark:#4f5196;--m365-light:#F5F3FF;
+  --dark:#1F2937;--gray:#6B7280;--light:#F3F4F6;
+  --green:#16A34A;--green-light:#F0FDF4;
+  --header-bg:#1B1464;--header-accent:#6264A7;
+  --white:#FFFFFF;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:#EFECFF;color:var(--dark);min-height:100vh;}
+.site-header{background:var(--header-bg);color:white;padding:24px 28px 18px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.site-header h1{font-size:20px;font-weight:700;}
+.site-header p{font-size:12px;color:#C4B5FD;margin-top:2px;}
+.header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.nav-link{font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.12);color:#C4B5FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(255,255,255,.22);color:white;}
+.overall-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;margin:20px 20px 0;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.stat-block{text-align:center;min-width:64px;}
+.stat-block .num{font-size:26px;font-weight:800;line-height:1;}
+.stat-block .lbl{font-size:10px;color:var(--gray);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-block.total .num{color:var(--header-bg);}
+.stat-block.done .num{color:var(--green);}
+.stat-block.p1 .num{color:#4338CA;}
+.stat-block.p2 .num{color:#5B21B6;}
+.big-bar-wrap{flex:1;min-width:200px;}
+.big-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.big-bar{background:var(--light);border-radius:99px;height:16px;overflow:hidden;}
+.big-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--header-bg),var(--m365));transition:width .5s ease;}
+.tabs{display:flex;gap:6px;margin:16px 20px 0;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--gray);transition:all .2s;}
+.tab:hover{background:var(--light);}
+.tab.active{background:var(--header-bg);color:white;border-color:var(--header-bg);}
+#content{padding:14px 20px 48px;display:flex;flex-direction:column;gap:18px;}
+.phase-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.phase-header{background:var(--header-bg);color:white;padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
+.phase-header:hover{filter:brightness(1.08);}
+.phase-header-left{display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px;letter-spacing:.5px;flex-shrink:0;}
+.phase-title{font-size:15px;font-weight:700;}
+.phase-week{font-size:11px;color:#C4B5FD;margin-top:1px;}
+.phase-progress-bar{background:rgba(255,255,255,.2);border-radius:99px;height:7px;width:100px;overflow:hidden;flex-shrink:0;}
+.phase-progress-fill{height:100%;border-radius:99px;background:#A78BFA;transition:width .4s ease;}
+.chevron{font-size:16px;transition:transform .25s;flex-shrink:0;}
+.phase-card.open .chevron{transform:rotate(180deg);}
+.phase-body{display:none;}
+.phase-card.open .phase-body{display:block;}
+.lab-section{border-top:1px solid var(--light);}
+.lab-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:10px;}
+.lab-header.m365-lab{border-left:4px solid var(--m365);background:var(--m365-light);}
+.lab-cloud-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;color:white;flex-shrink:0;}
+.m365-badge{background:var(--m365-dark);}
+.lab-title-area{flex:1;}
+.lab-title{font-size:13px;font-weight:700;}
+.lab-meta{font-size:11px;color:var(--gray);margin-top:1px;}
+.lab-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lab-toggle{font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid currentColor;cursor:pointer;font-weight:600;background:white;transition:all .2s;}
+.lab-toggle.m365-btn{color:var(--m365-dark);}
+.lab-toggle.m365-btn:hover{background:var(--m365-dark);color:white;}
+.steps-list{padding:0 18px 14px;display:none;}
+.lab-section.open .steps-list{display:block;}
+.section-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 5px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:8px;margin-bottom:2px;transition:background .15s;}
+.step-row:hover{background:var(--light);}
+.step-row.done{background:var(--green-light);}
+.step-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.step-check{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .2s;font-size:11px;}
+.step-row.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-main{flex:1;}
+.step-top{display:flex;align-items:flex-start;gap:6px;}
+.step-num{font-size:10px;font-weight:700;color:var(--gray);min-width:18px;flex-shrink:0;margin-top:3px;}
+.step-text{font-size:12.5px;line-height:1.5;flex:1;}
+.detail-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.detail-btn:hover{border-color:var(--m365);color:var(--m365-dark);}
+.detail-btn.open{background:var(--m365-light);border-color:var(--m365);color:var(--m365-dark);}
+.step-details{display:none;margin:6px 0 6px 26px;background:#F5F3FF;border-left:3px solid var(--m365);border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-details.open{display:block;}
+.detail-item{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.55;}
+.detail-item:last-child{margin-bottom:0;}
+.di-num{color:var(--m365-dark);font-weight:700;font-size:11px;min-width:16px;flex-shrink:0;margin-top:1px;}
+.di-text{color:var(--dark);}
+.di-text code{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;background:#EDE9FE;padding:1px 4px;border-radius:3px;color:#4338CA;}
+.note-btn{flex-shrink:0;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid #D1D5DB;background:white;color:var(--gray);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.note-btn:hover{border-color:#F59E0B;color:#B45309;}
+.note-btn.has-note{border-color:#F59E0B;color:#B45309;background:#FFFBEB;}
+.note-btn.open{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.step-note-panel{display:none;margin:6px 0 6px 26px;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;}
+.step-note-panel.open{display:block;}
+.note-textarea{width:100%;border:1.5px solid #FDE68A;border-radius:6px;padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:60px;background:white;color:var(--dark);line-height:1.6;}
+.note-textarea:focus{outline:none;border-color:#F59E0B;background:#FFFDF5;}
+.note-hint{font-size:10px;color:#92400E;margin-top:6px;opacity:.8;}
+.val-row{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;background:#F5F3FF;}
+.val-row:hover{background:#EDE9FE;}
+.val-row.done .step-text{text-decoration:line-through;color:var(--gray);}
+.val-check{width:18px;height:18px;border-radius:4px;border:2px solid #C4B5FD;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;transition:all .2s;cursor:pointer;}
+.val-row.done .val-check{background:var(--green);border-color:var(--green);color:white;}
+.notes-area{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:56px;color:var(--dark);background:#FAFAFA;margin-top:6px;}
+.notes-area:focus{outline:none;border-color:var(--m365);background:white;}
+.reset-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #EF4444;font-size:11px;font-weight:700;cursor:pointer;background:white;color:#EF4444;transition:all .2s;}
+.reset-btn:hover{background:#EF4444;color:white;}
+.sync-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.sync-btn:hover{background:rgba(255,255,255,.25);}
+.sync-status{font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:.3px;}
+.sync-none{background:rgba(255,255,255,.12);color:#C4B5FD;}
+.sync-ing{background:rgba(255,180,0,.25);color:#FCD34D;}
+.sync-ok{background:rgba(74,222,128,.2);color:#4ADE80;}
+.sync-err{background:rgba(252,165,165,.2);color:#FCA5A5;}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.fb-overlay.open{display:flex;}
+.fb-card{background:white;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.fb-card h3{font-size:16px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.fb-card .fb-desc{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.6;}
+.fb-card .fb-steps{background:#F5F3FF;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11.5px;color:var(--dark);line-height:1.8;}
+.fb-card .fb-steps b{color:var(--header-bg);}
+.fb-input{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--dark);}
+.fb-input:focus{outline:none;border-color:var(--m365);background:#F5F3FF;}
+.fb-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+.fb-btn{padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.fb-connect-btn{background:var(--m365-dark);color:white;}.fb-connect-btn:hover{filter:brightness(1.1);}
+.fb-cancel-btn{background:var(--light);color:var(--dark);}.fb-cancel-btn:hover{background:#E5E7EB;}
+.fb-remove-btn{background:white;color:#EF4444;border:1.5px solid #EF4444;margin-right:auto;}.fb-remove-btn:hover{background:#EF4444;color:white;}
+.fb-status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;}
+.fb-status-msg.ok{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;display:block;}
+.fb-status-msg.err{background:#FFF1F2;color:#DC2626;border:1px solid #FCA5A5;display:block;}
+#congrats{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+#congrats .card{background:white;border-radius:20px;padding:36px 44px;text-align:center;max-width:400px;}
+#congrats .emoji{font-size:56px;display:block;margin-bottom:14px;}
+#congrats h2{font-size:24px;font-weight:800;color:var(--header-bg);margin-bottom:8px;}
+#congrats p{color:var(--gray);font-size:14px;}
+#congrats button{margin-top:20px;padding:10px 28px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.user-chip{font-size:11px;background:rgba(255,255,255,.15);color:white;padding:3px 10px;border-radius:99px;font-weight:600;cursor:pointer;}
+.user-chip:hover{background:rgba(255,255,255,.28);}
+@media(max-width:640px){.overall-card{padding:14px;gap:14px;}#content,.tabs{padding-left:10px;padding-right:10px;}.overall-card{margin-left:10px;margin-right:10px;}}
+.lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1500;align-items:center;justify-content:center;}
+.lb-overlay.open{display:flex;}
+.lb-card{background:white;border-radius:16px;padding:28px 32px;max-width:580px;width:95%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.lb-card h3{font-size:17px;font-weight:800;color:var(--header-bg);margin-bottom:4px;}
+.lb-sub{font-size:12px;color:var(--gray);margin-bottom:18px;}
+.lb-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.lb-table th{background:var(--header-bg);color:white;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:.4px;}
+.lb-table th:first-child{border-radius:8px 0 0 8px;}.lb-table th:last-child{border-radius:0 8px 8px 0;}
+.lb-table td{padding:9px 12px;border-bottom:1px solid var(--light);}
+.lb-table tr:hover td{background:#F5F3FF;}.lb-table tr.me td{background:#EDE9FE;font-weight:700;}
+.lb-rank{font-size:16px;text-align:center;}
+.lb-bar-wrap{background:var(--light);border-radius:99px;height:8px;width:80px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:99px;background:var(--m365-dark);transition:width .4s;}
+.lb-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.lb-btn:hover{background:rgba(255,255,255,.25);}
+.lb-close{margin-top:18px;padding:8px 24px;border-radius:8px;border:none;background:var(--light);color:var(--dark);font-size:12px;font-weight:700;cursor:pointer;}
+.lb-close:hover{background:#E5E7EB;}.lb-loading{text-align:center;padding:24px;color:var(--gray);font-size:13px;}
+.quiz-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;}
+.quiz-overlay.open{display:flex;}
+.quiz-modal{background:white;border-radius:18px;max-width:660px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.3);overflow:hidden;}
+.quiz-header{background:var(--header-bg);color:white;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.quiz-header h3{font-size:16px;font-weight:800;margin:0;}.quiz-header p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+.quiz-close{background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.quiz-close:hover{background:rgba(255,255,255,.28);}.quiz-body{padding:24px;}
+.phase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.phase-tile{background:#F8FAFC;border:2px solid #E5E7EB;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .2s;}
+.phase-tile:hover,.phase-tile.selected{border-color:var(--header-bg);background:#F5F3FF;}.phase-tile.all-tile{border-style:dashed;}
+.pt-num{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;}
+.pt-name{font-size:12px;font-weight:700;color:var(--header-bg);margin-top:3px;line-height:1.3;}
+.pt-score{font-size:10px;color:#16A34A;margin-top:4px;font-weight:700;}
+.quiz-start-btn{width:100%;padding:12px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.quiz-start-btn:hover{filter:brightness(1.1);}.quiz-start-btn:disabled{opacity:.4;cursor:not-allowed;}
+.quiz-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.quiz-prog-bar{flex:1;background:var(--light);border-radius:99px;height:8px;overflow:hidden;}
+.quiz-prog-fill{height:100%;border-radius:99px;background:var(--header-bg);transition:width .4s;}
+.quiz-prog-txt{font-size:11px;font-weight:700;color:var(--gray);min-width:48px;text-align:right;}
+.quiz-question{font-size:15px;font-weight:700;color:var(--dark);line-height:1.5;margin-bottom:18px;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.quiz-option{padding:12px 16px;border-radius:10px;border:2px solid #E5E7EB;background:#FAFAFA;cursor:pointer;font-size:13px;line-height:1.4;transition:all .2s;text-align:left;display:flex;align-items:flex-start;gap:10px;}
+.quiz-option:hover:not(:disabled){border-color:var(--header-bg);background:#F5F3FF;}.quiz-option:disabled{cursor:default;}
+.quiz-option.correct{border-color:#16A34A;background:#F0FDF4;color:#16A34A;}
+.quiz-option.wrong{border-color:#EF4444;background:#FFF1F2;color:#DC2626;}
+.quiz-option.reveal{border-color:#16A34A;background:#F0FDF4;opacity:.7;}
+.quiz-option.correct .opt-letter,.quiz-option.reveal .opt-letter{background:#16A34A;color:white;}
+.quiz-option.wrong .opt-letter{background:#EF4444;color:white;}
+.opt-letter{width:22px;height:22px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.quiz-explanation{background:#F5F3FF;border-left:3px solid var(--m365);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;line-height:1.6;color:var(--dark);margin-bottom:16px;display:none;}
+.quiz-explanation.show{display:block;}
+.quiz-next-btn{width:100%;padding:10px;background:var(--header-bg);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}
+.quiz-next-btn.show{display:block;}
+.quiz-score-screen{text-align:center;padding:10px 0;}
+.score-circle{width:90px;height:90px;border-radius:50%;background:var(--header-bg);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:14px;}
+.sc-num{font-size:22px;font-weight:800;color:white;line-height:1;}.sc-lbl{font-size:11px;color:rgba(255,255,255,.75);}
+.quiz-score-msg{font-size:18px;font-weight:800;color:var(--header-bg);margin-bottom:6px;}
+.quiz-score-sub{font-size:12px;color:var(--gray);margin-bottom:20px;}
+.quiz-review{text-align:left;margin-bottom:16px;max-height:200px;overflow-y:auto;}
+.review-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:12px;line-height:1.4;}
+.review-item.bad{color:#DC2626;}.review-item.ok{color:#16A34A;}.review-icon{flex-shrink:0;}
+.quiz-score-btns{display:flex;gap:10px;}
+.quiz-score-btns button{flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;}
+.qsb-retry{background:var(--header-bg);color:white;}.qsb-back{background:var(--light);color:var(--dark);}
+.quiz-btn{padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:white;transition:all .2s;}
+.quiz-btn:hover{background:rgba(255,255,255,.25);}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-row">
+    <div>
+      <h1>&#x1F4E7; Microsoft 365 / O365 Lab Tracker</h1>
+      <p>M365 E3/E5 &middot; 6-Phase Deep Dive &middot; Exchange Online, Teams, SharePoint, Purview, Hybrid &amp; PowerShell</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
+      <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>
+      <a href="sccm-intune.html" class="nav-link">&#x1F4BB; SCCM/Intune</a>
+      <a href="az500.html" class="nav-link">&#x1F6E1;&#xFE0F; AZ-500</a>
+      <a href="iam.html" class="nav-link">&#x1F512; IAM</a>
+      <span id="user-chip" class="user-chip" onclick="changeUser()" title="Logged in user">&#x1F464; <span id="user-name-display">...</span></span>
+      <button class="quiz-btn" onclick="openQuiz()">&#x1F9E0; Quiz</button>
+      <button class="lb-btn" onclick="openLeaderboard()">&#x1F3C6; Leaderboard</button>
+      <span class="sync-status sync-none" id="sync-status">&#x1F4BE; Local Only</span>
+      <button class="sync-btn" onclick="openFbPanel()">&#x2601; Sync</button>
+      <button class="reset-btn" onclick="resetProgress()">&#x26A0; Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="lb-overlay" id="lb-overlay" onclick="if(event.target===this)closeLb()">
+  <div class="lb-card">
+    <h3>&#x1F3C6; Team Leaderboard</h3>
+    <p class="lb-sub">Live M365 progress across all teammates</p>
+    <div id="lb-body"><div class="lb-loading">&#x21BB; Loading&hellip;</div></div>
+    <button class="lb-close" onclick="closeLb()">Close</button>
+  </div>
+</div>
+
+<div class="quiz-overlay" id="quiz-overlay" onclick="if(event.target===this)closeQuiz()">
+  <div class="quiz-modal">
+    <div class="quiz-header">
+      <div><h3>&#x1F9E0; Knowledge Quiz</h3><p>Test your Microsoft 365 knowledge</p></div>
+      <button class="quiz-close" onclick="closeQuiz()">&#x2715; Close</button>
+    </div>
+    <div class="quiz-body" id="quiz-body"></div>
+  </div>
+</div>
+
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-card">
+    <h3>&#x2601; Firebase Cross-Device Sync</h3>
+    <p class="fb-desc">Connect Firebase Realtime Database to sync M365 lab progress across all your devices.</p>
+    <div class="fb-steps"><b>Quick setup:</b><br>1. Go to console.firebase.google.com &rarr; Create project<br>2. Build &rarr; Realtime Database &rarr; Create database (test mode)<br>3. Project Settings &rarr; Web app &rarr; copy config<br>4. Paste values below and click Connect</div>
+    <input class="fb-input" id="fb-apiKey" placeholder="apiKey" />
+    <input class="fb-input" id="fb-databaseURL" placeholder="databaseURL" />
+    <input class="fb-input" id="fb-projectId" placeholder="projectId" />
+    <div id="fb-msg" class="fb-status-msg"></div>
+    <div class="fb-actions">
+      <button class="fb-btn fb-remove-btn" onclick="clearFbConfig()">Remove Sync</button>
+      <button class="fb-btn fb-cancel-btn" onclick="closeFbPanel()">Cancel</button>
+      <button class="fb-btn fb-connect-btn" onclick="saveFbConfig()">&#x2714; Connect</button>
+    </div>
+  </div>
+</div>
+
+<div id="congrats">
+  <div class="card">
+    <span class="emoji">&#x1F3C6;</span>
+    <h2>M365 Expert!</h2>
+    <p>You've completed all Microsoft 365 labs!</p>
+    <button onclick="document.getElementById('congrats').style.display='none'">&#x2714; Awesome!</button>
+  </div>
+</div>
+
+<div class="overall-card">
+  <div class="stat-block total"><div class="num" id="stat-total">0</div><div class="lbl">Total Labs</div></div>
+  <div class="stat-block done"><div class="num" id="stat-done">0</div><div class="lbl">Completed</div></div>
+  <div class="stat-block p1"><div class="num" id="stat-p1">0/0</div><div class="lbl">Phase 1-3 Done</div></div>
+  <div class="stat-block p2"><div class="num" id="stat-p2">0/0</div><div class="lbl">Phase 4-6 Done</div></div>
+  <div class="big-bar-wrap">
+    <div class="big-bar-label"><span>Overall M365 Progress</span><span id="stat-pct">0%</span></div>
+    <div class="big-bar"><div class="big-bar-fill" id="big-bar-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="filterTab('all',this)">&#x1F4CB; All Phases</button>
+  <button class="tab" onclick="filterTab('m365',this)">&#x1F4E7; M365 Labs</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+(function(){
+  var t=setTimeout(function(){window.location.href='../personal_site/login.html';},3000);
+  onAuthReady(function(user){
+    if(user){clearTimeout(t);document.body.style.visibility='visible';}
+    else{window.location.href='../personal_site/login.html';}
+  });
+})();
+
+const PHASES = [
+  {
+    id:'p1', badge:'PHASE 1', title:'Tenant Setup & Identity Management', week:'Week 1',
+    labs:[
+      {
+        id:'p1-tenant', cloud:'m365', title:'M365 Tenant Configuration & Custom Domain',
+        meta:'Add and verify custom domain, configure admin roles, and set up tenant security defaults',
+        steps:[
+          {id:'p1-tenant-s1', text:'Add and verify a custom domain in the Microsoft 365 Admin Center', details:['M365 Admin Center (admin.microsoft.com) → Settings → Domains → Add Domain','Enter your domain (e.g., corp.com); Microsoft provides verification options','Verification method 1: Add TXT record to DNS (most common) — value: MS=msXXXXXXXX','Add TXT record at your DNS registrar (GoDaddy, Cloudflare, etc.); wait 15-60 min for propagation','Verification method 2: CNAME record (older method, not always available)','After verification: set as default domain; configure MX, SPF, DKIM CNAME records for mail flow']},
+          {id:'p1-tenant-s2', text:'Configure Entra ID user and group provisioning for the tenant', details:['Entra admin center (entra.microsoft.com) → Users → New User','Create users with UPN matching custom domain: user@corp.com','Bulk import: Users → Bulk operations → Bulk create (upload CSV with required columns)','Groups: Create Security Groups (for licensing/access) and Microsoft 365 Groups (for Teams/SharePoint)','Dynamic groups: membership rule e.g., user.department -eq "IT" for automatic group membership','Self-service group management: enable in Entra → Groups → General Settings']},
+          {id:'p1-tenant-s3', text:'Assign admin roles following the principle of least privilege', details:['Global Administrator: break-glass accounts only (2 max); protected with FIDO2 key + no MFA bypass','Exchange Administrator: manage mailboxes, mail flow, anti-spam','SharePoint Administrator: manage SPO sites and OneDrive','Teams Administrator: manage Teams policies, calling, meetings','Assign roles: Entra → Roles and administrators → select role → Add assignments','Privileged Identity Management (PIM): for eligible (just-in-time) admin access']},
+          {id:'p1-tenant-s4', text:'Enable Security Defaults or configure Conditional Access baseline policies', details:['Security Defaults: one-click MFA enforcement for all users; good for new tenants without CA license','Admin center → Entra → Properties → Manage Security Defaults → Enable','For E3/E5 tenants: disable Security Defaults and use Conditional Access policies instead','CA Baseline: Require MFA for admins, require MFA for all users, block legacy authentication','Legacy auth protocols: SMTP AUTH, IMAP, POP, EWS (used by older clients) — block these via CA','Monitor sign-in logs: Entra → Monitoring → Sign-in logs → filter by legacy auth clients']},
+          {id:'p1-tenant-s5', text:'Configure Self-Service Password Reset (SSPR) and Multi-Factor Authentication', details:['SSPR: Entra → Password Reset → Properties → Enable for All or Selected group','Authentication methods for SSPR: require 2 (mobile app notification, email, phone, security questions)','Combined security registration: users register both MFA and SSPR methods at one registration URL','MFA per-user or Conditional Access: CA is preferred for flexibility','MFA default method: Microsoft Authenticator app (most secure); phone call/SMS as fallback','SSPR writeback: for hybrid environments — requires Entra Connect with password writeback enabled']},
+        ],
+        validation:[
+          {id:'p1-tenant-v1', text:'Custom domain added, verified, and set as default in M365 Admin Center'},
+          {id:'p1-tenant-v2', text:'Users created with custom domain UPN; licensed with M365 E3 or equivalent'},
+          {id:'p1-tenant-v3', text:'Admin roles assigned at least privilege (not everyone is Global Admin)'},
+          {id:'p1-tenant-v4', text:'MFA enforced via Security Defaults or Conditional Access'},
+          {id:'p1-tenant-v5', text:'SSPR enabled and tested — user successfully resets password without admin'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p2', badge:'PHASE 2', title:'Exchange Online & Email Security', week:'Week 1-2',
+    labs:[
+      {
+        id:'p2-exo', cloud:'m365', title:'Exchange Online Administration & Mail Flow',
+        meta:'Configure mailboxes, distribution groups, mail flow rules, and anti-spam protection',
+        steps:[
+          {id:'p2-exo-s1', text:'Configure MX, SPF, DKIM, and DMARC DNS records for the custom domain', details:['MX record: points inbound email to Microsoft (e.g., corp-com.mail.protection.outlook.com); priority 0','SPF TXT record: v=spf1 include:spf.protection.outlook.com -all (reject if not from Microsoft)','DKIM: Exchange Admin Center (admin.exchange.microsoft.com) → Mail Flow → DKIM → Enable for your domain','DKIM adds a cryptographic signature to outgoing mail, proving it came from your tenant','DMARC TXT record: _dmarc.corp.com → v=DMARC1; p=quarantine; rua=mailto:dmarc@corp.com','DMARC policy: start with p=none (monitor), then p=quarantine, then p=reject as confidence grows']},
+          {id:'p2-exo-s2', text:'Create and manage mailboxes, shared mailboxes, and distribution lists', details:['User mailbox: auto-created when assigning Exchange Online license to user','Shared mailbox: Exchange Admin Center → Recipients → Mailboxes → Add shared mailbox','Shared mailboxes do not require a license (up to 50GB storage); add members with Full Access','Distribution Group (DL): EAC → Recipients → Groups → Add distribution group','Mail-enabled Security Group: created in Entra; also works as DL','Microsoft 365 Group: creates a mailbox, Teams, SharePoint site, and Planner together']},
+          {id:'p2-exo-s3', text:'Create Mail Flow (Transport) rules for compliance and security', details:['EAC → Mail Flow → Rules → New Rule','Rule: Add disclaimer — apply to all outgoing messages, append HTML disclaimer (company footer)','Rule: Block executables — if attachment has .exe/.ps1 extension → reject with notification','Rule: Confidential labeling — if message contains "confidential" keyword → add [CONFIDENTIAL] to subject','Rule priority: lower number = higher priority; order rules carefully to avoid conflicts','Test rules: Message Trace (EAC → Mail Flow → Message Trace) to verify rules triggered']},
+          {id:'p2-exo-s4', text:'Configure Exchange Online Protection (EOP) anti-spam and anti-phishing policies', details:['Microsoft Defender portal (security.microsoft.com) → Email & collaboration → Policies & rules → Threat policies','Anti-spam policy: review default; create custom for high-value users (executives)','Bulk email threshold: lower = stricter (7 = default; 4 for executives)','Anti-phishing policy: impersonation protection for company domain and key users (CEO, CFO)','Enable Safe Links and Safe Attachments (requires Defender for Office 365 Plan 1 = M365 Business Premium or above)','Spoof intelligence: review allowed/blocked senders; enable DMARC reporting']},
+          {id:'p2-exo-s5', text:'Configure Outlook on the Web (OWA) policies and mobile device access rules', details:['EAC → Classic EAC → Organization → Outlook on the Web Policies','OWA policy: restrict features (disable file attachments, enable calendar sharing, set session timeout)','Mobile device access: EAC → Mobile → Mobile Device Access → Block unknown devices','Allow specific device types via ActiveSync device access rules','Remote wipe: user self-service via OWA or admin via EAC → select mailbox → Manage mobile devices','Modern authentication: verify Hybrid Modern Auth enabled; blocks legacy ActiveSync for supported devices']},
+        ],
+        validation:[
+          {id:'p2-exo-v1', text:'MX, SPF, DKIM enabled, DMARC record configured for custom domain'},
+          {id:'p2-exo-v2', text:'Shared mailbox created and accessible to 2+ test users'},
+          {id:'p2-exo-v3', text:'Mail flow rule blocking .exe attachments tested and working'},
+          {id:'p2-exo-v4', text:'Anti-phishing policy with impersonation protection configured'},
+          {id:'p2-exo-v5', text:'Message Trace used to verify email delivery and rule application'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p3', badge:'PHASE 3', title:'Microsoft Teams & SharePoint Online', week:'Week 2-3',
+    labs:[
+      {
+        id:'p3-teams', cloud:'m365', title:'Teams Administration & Governance',
+        meta:'Configure Teams policies, governance, meeting settings, external access, and telephony',
+        steps:[
+          {id:'p3-teams-s1', text:'Configure Teams creation policies and governance settings', details:['Teams Admin Center (admin.teams.microsoft.com) → Teams → Teams settings','Who can create Teams: by default all users can create; restrict via M365 group creation policy in Entra','Restrict group creation: Entra → Groups → Settings → enable restriction → select allowed group','Teams policy: create channel policy (prevent external sharing of channels)','Expiration policy: M365 Groups expiration policy — auto-expire inactive groups after 180 days with renewal email','Naming policy: prefix/suffix rules for Teams names (e.g., prefix GRP-) + blocked words list']},
+          {id:'p3-teams-s2', text:'Create and configure Teams meeting policies and live event settings', details:['Teams Admin Center → Meetings → Meeting Policies → create custom policy for executives','Allow cloud recording: Yes for general; restrict to specific users who need it','Transcription: enable for accessibility; stored in OneDrive of organizer','Who can bypass lobby: policy options — everyone, people in your org, invited users, organizer only','Meeting chat: allow chat in meetings (disable for sensitive meetings)','Live Events policy: restrict creation to specific users; define attendee capacity (max 20,000)']},
+          {id:'p3-teams-s3', text:'Configure Teams external access and guest access policies', details:['External Access: Teams users from other tenants can find and message your users (federation)','Teams Admin Center → Users → External Access: allow all domains or allowlist specific domains','Guest Access: people outside your org join Teams with full functionality using any email','Teams Admin Center → Users → Guest Access: enable; configure what guests can do (create channels, etc.)','Conditional Access: scope CA policy to Teams app to require MFA for guests','Review: who are current guests? Teams Admin Center → Users → Guest Users — audit regularly']},
+          {id:'p3-teams-s4', text:'Configure Microsoft Teams Phone (Direct Routing or Calling Plans)', details:['Teams Phone requires: Teams Phone license + Calling Plan (Microsoft PSTN) or Direct Routing (own SBC)','Calling Plans: purchase from M365 admin center; assign phone numbers from Microsoft pool','Direct Routing: connect your own SBC (Session Border Controller) to Teams via SIP trunk','Teams Admin Center → Voice → Phone numbers → assign numbers to users','Dial plans: configure normalization rules for local number formats (e.g., 9-digit local to E.164)','Teams Admin Center → Voice → Calling policies: enable/disable calling features per user group']},
+          {id:'p3-teams-s5', text:'Review Teams usage reports and configure retention policies for Teams messages', details:['Teams Admin Center → Analytics & reports → Usage reports → Teams usage, User activity','Review: active teams, active channels, messages per user per week','Microsoft Purview: create retention policy for Teams messages — retain for 7 years, then delete','Teams messages stored in: user Exchange Online mailbox (hidden folder) + SharePoint (for files)','eDiscovery: Teams chat messages are discoverable; ensure legal hold configured for key users','Teams Admin Center → Teams apps → Manage apps: allow/block specific apps in your tenant']},
+        ],
+        validation:[
+          {id:'p3-teams-v1', text:'Teams creation restricted to specific groups; naming policy applied'},
+          {id:'p3-teams-v2', text:'Custom meeting policy deployed with lobby, recording, and chat settings'},
+          {id:'p3-teams-v3', text:'Guest access enabled with CA MFA policy for guests'},
+          {id:'p3-teams-v4', text:'Teams usage report reviewed — active users and channel messages visible'},
+          {id:'p3-teams-v5', text:'Retention policy for Teams messages created in Purview'},
+        ]
+      },
+      {
+        id:'p3-spo', cloud:'m365', title:'SharePoint Online & OneDrive Governance',
+        meta:'Configure SPO sharing settings, site collections, permissions, and OneDrive policies',
+        steps:[
+          {id:'p3-spo-s1', text:'Configure tenant-level SharePoint sharing settings and external sharing policies', details:['SharePoint Admin Center (tenant.sharepoint.com/admincenter) → Policies → Sharing','Tenant-level sharing: New and existing guests (recommended for most orgs) or Only people in your org','External sharing: require guests to sign in (audit-friendly) or allow anonymous links (high risk)','OneDrive sharing: set independently from SPO; typically more restrictive','Limit external sharing by domain: allowlist specific domains for external collaboration','Default link type: Specific people (not Anyone) to prevent accidental public links']},
+          {id:'p3-spo-s2', text:'Create and configure SharePoint site collections', details:['SharePoint Admin Center → Sites → Active Sites → Create','Site types: Team site (M365 group-connected), Communication site (intranet), Classic site','Team site: creates linked Teams, Outlook group, Planner; members have edit access','Communication site: for publishing — HR intranet, company news; visitors can read only','Hub sites: associate child sites under a hub for navigation, search, and branding','Site storage quota: default 25TB per site; set per-site limits in admin center']},
+          {id:'p3-spo-s3', text:'Configure SharePoint permissions using groups and inheritance', details:['SharePoint permission levels: Full Control, Design, Edit, Contribute, Read, View Only','Default groups per site: Owners (Full Control), Members (Edit), Visitors (Read)','Never add users directly to site permissions — add to SharePoint groups instead','Inheritance: subsites inherit parent permissions by default; break inheritance for sensitive content','SharePoint Admin Center → Access control → Block download for unmanaged devices','Sensitivity labels: apply labels to SPO sites to control access and external sharing settings']},
+          {id:'p3-spo-s4', text:'Configure OneDrive storage quotas, sync client policies, and known folder move', details:['SharePoint Admin Center → Settings → OneDrive storage limit per user (default 1TB)','OneDrive admin: restrict sync to domain-joined devices only (blocks personal computers)','Known Folder Move (KFM): silently moves Desktop, Documents, Pictures to OneDrive for backup','Deploy KFM via Intune: Configuration Profile → Settings Catalog → search OneDrive → KFMSilentOptIn','OneDrive sync policy: allow only approved domains to prevent sync to personal tenants','Block unmanaged device sync: SharePoint Admin Center → Access control → Unmanaged devices → Allow limited web-only access']},
+        ],
+        validation:[
+          {id:'p3-spo-v1', text:'Tenant sharing settings configured (no anonymous links); domain allowlist applied'},
+          {id:'p3-spo-v2', text:'Team site and Communication site created; hub site configured'},
+          {id:'p3-spo-v3', text:'Permissions managed via SharePoint groups (no direct user permissions)'},
+          {id:'p3-spo-v4', text:'OneDrive KFM policy deployed via Intune — Desktop/Documents syncing to OneDrive'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p4', badge:'PHASE 4', title:'Microsoft Purview — Compliance & Information Protection', week:'Week 3-4',
+    labs:[
+      {
+        id:'p4-purview', cloud:'m365', title:'Sensitivity Labels, DLP & Retention Policies',
+        meta:'Create sensitivity labels, data loss prevention policies, and retention policies in Microsoft Purview',
+        steps:[
+          {id:'p4-purview-s1', text:'Create and publish Sensitivity Labels for data classification', details:['Microsoft Purview portal (purview.microsoft.com) → Information Protection → Labels → Create a label','Label hierarchy: parent labels (Confidential, Internal, Public) with sub-labels (Confidential/Finance)','Label settings: visual marking (header, footer, watermark), encryption, content marking','Encryption: assign permissions — co-author for internal, view-only for external recipients','Publish labels: create a label policy; assign to All users or specific groups','Auto-labeling: create auto-labeling policy to auto-classify emails/docs with sensitive keywords (credit card, SSN)']},
+          {id:'p4-purview-s2', text:'Create DLP policies to prevent data leakage', details:['Purview → Data Loss Prevention → Policies → Create Policy','Built-in templates: Financial data (credit card, bank account), Medical/Health (HIPAA), Privacy (PII)','Custom policy: define sensitive information types (SIT) to detect — e.g., employee ID pattern','Policy rules: if content contains 5+ credit card numbers → block external sharing + notify user','Policy tips: show warning to user in Outlook, SharePoint, Teams before sending','Start with Audit mode for 2-4 weeks, review matches, then enforce (Block with override or Block)']},
+          {id:'p4-purview-s3', text:'Create Retention Policies and Retention Labels for records management', details:['Retention policies apply broadly: assign to Exchange mailboxes, SPO sites, OneDrive, Teams','Purview → Data lifecycle management → Retention policies → Create retention policy','Settings: Retain for 7 years, then Delete; or Delete content older than 3 years','Retention labels: apply to specific content items (not entire locations); more granular','Regulatory records: when applied, content cannot be deleted even by admins — use for compliance-critical data','Conflict resolution: if multiple policies apply, retention wins over deletion; longer period wins over shorter']},
+          {id:'p4-purview-s4', text:'Configure eDiscovery and Content Search for legal hold investigations', details:['Purview → eDiscovery → Standard eDiscovery → Create case','Case: assign members (legal team), add custodians (users whose data is in scope)','Hold: place custodian content on legal hold — preserves data even if user deletes it','Search: search across Exchange, SPO, OneDrive, Teams for keywords, date range, file types','Export results: export PST files and documents with audit chain for legal review','Advanced eDiscovery (E5): AI-based relevance scoring, near-duplicate detection, conversation threading']},
+          {id:'p4-purview-s5', text:'Review Compliance Score and configure Communication Compliance policies', details:['Purview → Compliance Manager → Compliance Score: shows regulatory compliance posture','Improvement actions: ranked list of configuration actions to improve score (MFA, DLP, retention, etc.)','Communication Compliance: monitor emails/Teams messages for policy violations','Purview → Communication Compliance → Create policy','Built-in policies: Detect inappropriate text (harassment/discrimination keywords), Detect regulatory info','Reviewers: assigned employees who review flagged communications; separate from IT admins (privacy)']},
+        ],
+        validation:[
+          {id:'p4-purview-v1', text:'Sensitivity labels created and published — users see labels in Outlook/Word'},
+          {id:'p4-purview-v2', text:'DLP policy in audit mode — matches visible in DLP reports'},
+          {id:'p4-purview-v3', text:'Retention policy covering Exchange and SharePoint deployed'},
+          {id:'p4-purview-v4', text:'eDiscovery case created with legal hold on test custodian'},
+          {id:'p4-purview-v5', text:'Compliance Score reviewed; at least 5 improvement actions completed'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p5', badge:'PHASE 5', title:'PowerShell & Microsoft Graph Automation', week:'Week 4-5',
+    labs:[
+      {
+        id:'p5-ps', cloud:'m365', title:'M365 PowerShell & Graph API Automation',
+        meta:'Automate M365 administration with PowerShell modules and Microsoft Graph API',
+        steps:[
+          {id:'p5-ps-s1', text:'Install and connect the Microsoft Graph PowerShell SDK and Exchange Online module', details:['Install modules: Install-Module Microsoft.Graph -Scope CurrentUser; Install-Module ExchangeOnlineManagement','Connect Graph: Connect-MgGraph -Scopes "User.ReadWrite.All","Group.ReadWrite.All","Mail.ReadWrite"','Connect Exchange Online: Connect-ExchangeOnline -UserPrincipalName admin@corp.com','Graph SDK maps to Graph API permissions — you choose scopes when connecting','Tenant-wide vs delegated permissions: use delegated (interactive sign-in) for admin tasks; app permissions for automation','Disconnect: Disconnect-MgGraph; Disconnect-ExchangeOnline']},
+          {id:'p5-ps-s2', text:'Automate user lifecycle management with Graph PowerShell', details:['Get all users: Get-MgUser -All | Select DisplayName,UserPrincipalName,AccountEnabled','Create user: New-MgUser -DisplayName "Jane Doe" -MailNickname "janedoe" -UserPrincipalName "janedoe@corp.com" -PasswordProfile @{Password="P@ssw0rd!"} -AccountEnabled $true','Assign license: Set-MgUserLicense -UserId $userId -AddLicenses @{SkuId="..."} -RemoveLicenses @()','Disable user on offboarding: Update-MgUser -UserId $userId -AccountEnabled $false','Get user sign-in activity: Get-MgAuditLogSignIn -Filter "userPrincipalName eq \'user@corp.com\'" -Top 10','Bulk export: Get-MgUser -All | Export-Csv users.csv -NoTypeInformation']},
+          {id:'p5-ps-s3', text:'Manage Exchange Online mailboxes and mail flow with PowerShell', details:['Get mailbox stats: Get-EXOMailbox -ResultSize Unlimited | Get-EXOMailboxStatistics | Sort TotalItemSize -Desc','Create shared mailbox: New-Mailbox -Shared -Name "Helpdesk" -PrimarySmtpAddress "helpdesk@corp.com"','Add full access: Add-MailboxPermission -Identity helpdesk@corp.com -User "john@corp.com" -AccessRights FullAccess','Set OOF/auto-reply: Set-MailboxAutoReplyConfiguration -Identity user -AutoReplyState Enabled -InternalMessage "..."','Message trace: Get-MessageTrace -SenderAddress user@corp.com -StartDate (Get-Date).AddDays(-7) -EndDate (Get-Date)','Bulk license check: Get-MgUser -All | Where-Object {!$_.AssignedLicenses} | Select DisplayName,UPN']},
+          {id:'p5-ps-s4', text:'Use Microsoft Graph API directly with Invoke-MgGraphRequest for advanced scenarios', details:['Graph Explorer (developer.microsoft.com/graph/graph-explorer): test API calls before scripting','List users via REST: Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/users"','Send email: POST to /users/{id}/sendMail with JSON body (to, subject, body, content type)','Teams: get all teams: GET /groups?$filter=resourceProvisioningOptions/Any(x:x eq \'Team\')','Pagination: use @odata.nextLink to retrieve all pages for large result sets','App registration: create Azure App Registration with application permissions for background automation (no user sign-in)']},
+          {id:'p5-ps-s5', text:'Build a scheduled M365 health and compliance report with PowerShell', details:['Combine Graph and Exchange cmdlets to generate tenant health report','Check: MFA registration status per user (risky users from Identity Protection)','Check: Mailboxes with forwarders enabled (forwarding to external = data exfiltration risk)','Check: Shared mailboxes with licensed users (unnecessary license cost)','Check: Guest users not active in 90+ days (access review)','Export: HTML report using ConvertTo-Html; email via Send-MgUserMail; schedule via Windows Task Scheduler or Azure Automation runbook']},
+        ],
+        validation:[
+          {id:'p5-ps-v1', text:'Graph PowerShell SDK connected; user list retrieved successfully'},
+          {id:'p5-ps-v2', text:'User created and licensed via PowerShell'},
+          {id:'p5-ps-v3', text:'Exchange Online shared mailbox created and permissions set via PowerShell'},
+          {id:'p5-ps-v4', text:'Graph API call made via Invoke-MgGraphRequest returning tenant data'},
+          {id:'p5-ps-v5', text:'Compliance report script created and output exported to CSV/HTML'},
+        ]
+      }
+    ]
+  },
+  {
+    id:'p6', badge:'PHASE 6', title:'Hybrid Identity & Mailbox Migration', week:'Week 5-6',
+    labs:[
+      {
+        id:'p6-hybrid', cloud:'m365', title:'Microsoft Entra Connect & Hybrid Identity',
+        meta:'Deploy Entra Connect for directory sync, configure hybrid Exchange, and manage password hash sync',
+        steps:[
+          {id:'p6-hybrid-s1', text:'Install and configure Microsoft Entra Connect (formerly Azure AD Connect)', details:['Download Entra Connect from Microsoft Download Center or Entra admin center → Entra Connect','Install on a dedicated domain-joined Windows Server (not on a DC)','Express settings: suitable for single AD forest, single domain, password hash sync','Custom installation: multiple forests, staging mode, filtering by OU, federation (ADFS)','Service accounts: Entra Connect creates AD DS Connector Account and Azure AD Connector Account','UPN suffix: on-prem UPN (user@corp.local) must match a verified M365 domain (user@corp.com) — use alternate login ID or rename UPN suffix']},
+          {id:'p6-hybrid-s2', text:'Configure password synchronization and verify sync health', details:['Password Hash Sync (PHS): hashes of on-prem AD password synced to Entra ID — cloud sign-in works without ADFS','Sync cycle: full sync on install, delta sync every 30 minutes','Force sync: Import-Module ADSync; Start-ADSyncSyncCycle -PolicyType Delta','Sync health: Entra admin center → Entra Connect Health → AD DS agents; check sync errors','Common errors: duplicate UPN/ProxyAddress, missing attributes (mail, sAMAccountName)','Password writeback: users can reset passwords in M365 SSPR and it syncs back to AD — enable in Entra Connect wizard']},
+          {id:'p6-hybrid-s3', text:'Configure Hybrid Exchange for coexistence between on-prem Exchange and Exchange Online', details:['Hybrid Exchange allows users on-prem and in Exchange Online to share free/busy, calendar sharing','Hybrid Configuration Wizard (HCW): run from on-prem Exchange server; configures mail flow, Autodiscover, OAuth','Full Hybrid vs. Minimal Hybrid: Full = complete coexistence + cross-premises mailbox moves; Minimal = one-time migration only','MX record: can point to Exchange Online (cloud-first) or on-prem (on-prem first) depending on migration strategy','Free/busy: set up Organization Sharing relationship in EAC on-prem and EAC cloud','Autodiscover: configure split-DNS or certificate for Autodiscover FQDN to resolve correctly for all clients']},
+          {id:'p6-hybrid-s4', text:'Migrate mailboxes from on-prem Exchange to Exchange Online', details:['Migration methods: Cutover (all at once, <2000 mailboxes), Staged (batches, Classic auth only), Hybrid (remote move with full coexistence)','Hybrid remote move: Start-MigrationBatch -Name "Batch1" -SourceEndpoint onprem -CSVData (Import-Csv users.csv)','Or via EAC Cloud: Migration → New Migration Batch → Remote move','Move request: shows progress in real-time; users stay active during migration (mailbox syncs in background)','Finalization: complete migration batch to cut over; user should re-configure Outlook profile','Post-migration: check user Outlook connects to Exchange Online; verify mobile devices re-sync']},
+          {id:'p6-hybrid-s5', text:'Configure Pass-through Authentication (PTA) or ADFS as federation option', details:['PTA: Entra Connect agent on-prem validates passwords in real-time against AD — no password hashes stored in cloud','Install PTA Agent: Entra Connect → Change user sign-in → Pass-through authentication','Multiple PTA agents: install 2-3 agents on different servers for high availability','ADFS: full federation; more complex; supports custom claims, smart card auth, on-prem MFA','Seamless SSO: works with PHS and PTA; users on domain-joined machines are silently signed in to M365 without entering credentials','Enable Seamless SSO: Entra Connect → Enable single sign-on; adds computer account to AD Kerberos configuration']},
+        ],
+        validation:[
+          {id:'p6-hybrid-v1', text:'Entra Connect installed; AD objects syncing to Entra ID (users visible in cloud)'},
+          {id:'p6-hybrid-v2', text:'Password Hash Sync active; on-prem password change reflects in M365 within 2 minutes'},
+          {id:'p6-hybrid-v3', text:'Entra Connect Health showing green in Entra admin center'},
+          {id:'p6-hybrid-v4', text:'Test mailbox migration from on-prem Exchange to Exchange Online completed'},
+          {id:'p6-hybrid-v5', text:'Seamless SSO tested — domain-joined device signs into M365 without password prompt'},
+        ]
+      }
+    ]
+  }
+];
+
+const APP_KEY = 'm365_lab_tracker';
+let state = {};
+let currentUser = null;
+let db = null;
+let syncRef = null;
+
+function loadState(){
+  const u = currentUser || 'default';
+  const raw = localStorage.getItem(APP_KEY+'_'+u);
+  state = raw ? JSON.parse(raw) : {steps:{},notes:{},labNotes:{},valChecks:{}};
+  if(!state.steps) state.steps={};
+  if(!state.notes) state.notes={};
+  if(!state.labNotes) state.labNotes={};
+  if(!state.valChecks) state.valChecks={};
+}
+function saveState(){
+  const u = currentUser || 'default';
+  localStorage.setItem(APP_KEY+'_'+u, JSON.stringify(state));
+  pushToFirebase();
+}
+function initFirebase(){
+  const cfg = JSON.parse(localStorage.getItem('m365_fb_config')||'null');
+  if(!cfg) return;
+  try{
+    const existing = firebase.apps.find(a=>a.name==='m365-tracker');
+    const app = existing || firebase.initializeApp(cfg,'m365-tracker');
+    db = firebase.database(app);
+    syncRef = db.ref('m365_progress');
+    listenFirebase();
+    setSyncStatus('ok','&#x2714; Synced');
+  } catch(e){ setSyncStatus('err','&#x26A0; Sync Error'); }
+}
+function listenFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).on('value', snap=>{
+    const data = snap.val();
+    if(data){state=data;if(!state.steps)state.steps={};if(!state.notes)state.notes={};if(!state.labNotes)state.labNotes={};if(!state.valChecks)state.valChecks={};saveState();renderAll();updateStats();}
+  });
+}
+function pushToFirebase(){
+  if(!syncRef) return;
+  const u = currentUser || 'default';
+  syncRef.child(u).set(state).then(()=>setSyncStatus('ok','&#x2714; Synced')).catch(()=>setSyncStatus('err','&#x26A0; Sync Error'));
+}
+function setSyncStatus(type,html){const el=document.getElementById('sync-status');el.className='sync-status sync-'+type;el.innerHTML=html;}
+function openFbPanel(){const cfg=JSON.parse(localStorage.getItem('m365_fb_config')||'null');if(cfg){document.getElementById('fb-apiKey').value=cfg.apiKey||'';document.getElementById('fb-databaseURL').value=cfg.databaseURL||'';document.getElementById('fb-projectId').value=cfg.projectId||'';}document.getElementById('fb-overlay').classList.add('open');}
+function closeFbPanel(){document.getElementById('fb-overlay').classList.remove('open');}
+function saveFbConfig(){const cfg={apiKey:document.getElementById('fb-apiKey').value.trim(),databaseURL:document.getElementById('fb-databaseURL').value.trim(),projectId:document.getElementById('fb-projectId').value.trim()};if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId){showFbMsg('err','Please fill in all 3 fields.');return;}localStorage.setItem('m365_fb_config',JSON.stringify(cfg));showFbMsg('ok','Connecting...');initFirebase();setTimeout(closeFbPanel,1000);}
+function clearFbConfig(){localStorage.removeItem('m365_fb_config');db=null;syncRef=null;setSyncStatus('none','&#x1F4BE; Local Only');closeFbPanel();}
+function showFbMsg(type,msg){const el=document.getElementById('fb-msg');el.className='fb-status-msg '+type;el.innerHTML=msg;}
+
+function _lbDb(){var app=(typeof firebase!=='undefined')?firebase.apps.find(function(a){return a.name==='mk-site';}):null;return app?firebase.database(app):null;}
+function openLeaderboard(){
+  document.getElementById('lb-overlay').classList.add('open');
+  document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x21BB; Loading&hellip;</div>';
+  var lbDb=_lbDb();
+  if(!lbDb){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x26A0; Firebase not connected.</div>';return;}
+  lbDb.ref('m365_progress').once('value').then(function(snap){
+    var all=snap.val();
+    if(!all||!Object.keys(all).length){document.getElementById('lb-body').innerHTML='<div class="lb-loading">No data yet.</div>';return;}
+    var rows=Object.entries(all).map(function(e){
+      var name=e[0],u=e[1],tc=0,dc=0,dl=0;
+      PHASES.forEach(function(ph){ph.labs.forEach(function(lab){var ts=lab.steps.length,tv=lab.validation.length;var ds=lab.steps.filter(function(s){return u.steps&&u.steps[s.id];}).length;var dv=lab.validation.filter(function(v){return u.valChecks&&u.valChecks[v.id];}).length;tc+=ts+tv;dc+=ds+dv;if(ds+dv===ts+tv&&ts+tv>0)dl++;});});
+      return{name:name,tc:tc,dc:dc,dl:dl,pct:tc>0?Math.round(dc/tc*100):0};
+    }).sort(function(a,b){return b.pct-a.pct||b.dl-a.dl;});
+    var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+    var html=rows.map(function(r,i){return '<tr class="'+(r.name===currentUser?'me':'')+'"><td class="lb-rank">'+(i<3?medals[i]:'#'+(i+1))+'</td><td><b>'+r.name+'</b>'+(r.name===currentUser?' <span style="font-size:10px">(you)</span>':'')+'</td><td><div style="display:flex;align-items:center;gap:6px"><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:'+r.pct+'%"></div></div><span style="font-size:11px;font-weight:700">'+r.pct+'%</span></div></td><td style="text-align:center">'+r.dl+'</td><td style="text-align:center">'+r.dc+'/'+r.tc+'</td></tr>';}).join('');
+    document.getElementById('lb-body').innerHTML='<table class="lb-table"><thead><tr><th>Rank</th><th>Name</th><th>Progress</th><th>Labs Done</th><th>Checks</th></tr></thead><tbody>'+html+'</tbody></table><p style="font-size:10px;color:var(--gray);margin-top:10px;text-align:right">'+rows.length+' teammate'+(rows.length!==1?'s':'')+'</p>';
+  }).catch(function(){document.getElementById('lb-body').innerHTML='<div class="lb-loading">&#x2717; Failed to load.</div>';});
+}
+function closeLb(){document.getElementById('lb-overlay').classList.remove('open');}
+
+var ALL_QUIZ=[
+  {id:'q1',phase:1,question:'What DNS record type is required to verify domain ownership when adding a custom domain to Microsoft 365?',options:['MX record pointing to Microsoft servers','A TXT record with a unique Microsoft verification value','CNAME record aliasing to outlook.com','NS record update to Microsoft nameservers'],answer:1,explanation:'Microsoft requires you to add a TXT record with a unique verification value (e.g., MS=ms12345678) to prove you own the domain. After DNS propagation, Microsoft reads the TXT record to confirm ownership. Some methods also allow a CNAME record as an alternative.'},
+  {id:'q2',phase:1,question:'What is the purpose of enabling Password Writeback in Entra Connect?',options:['It syncs passwords from cloud to on-premises AD, allowing SSPR to update on-prem passwords','It enables users to change their cloud password and have it sync to all other connected SaaS apps','It stores on-prem AD passwords in Entra ID for authentication','It allows Global Admins to reset passwords for on-prem AD users from the cloud portal'],answer:0,explanation:'Password Writeback allows Microsoft Entra ID Self-Service Password Reset (SSPR) to write password changes back to the on-premises Active Directory. Without writeback, cloud password resets do not affect the user\'s on-prem AD password, causing authentication failures.'},
+  {id:'q3',phase:2,question:'What does DMARC do and what is the recommended starting policy value?',options:['DMARC encrypts email in transit; start with p=encrypt','DMARC defines what happens to email that fails SPF or DKIM checks; start with p=none to monitor','DMARC replaces SPF; set p=reject immediately','DMARC is a spam filter; set p=quarantine on day 1'],answer:1,explanation:'DMARC (Domain-based Message Authentication, Reporting & Conformance) tells receiving mail servers what to do with email that fails SPF or DKIM checks. Starting with p=none allows monitoring without blocking; transition to p=quarantine then p=reject as confidence in SPF/DKIM grows.'},
+  {id:'q4',phase:2,question:'What is a Shared Mailbox in Exchange Online and does it require a license?',options:['A mailbox shared between two users that requires 2 licenses','A mailbox without a primary owner — multiple users access it; no license required up to 50GB','A distribution group that also stores emails permanently; requires one license','A mailbox that forwards all mail to multiple recipients; requires a Flow license'],answer:1,explanation:'A Shared Mailbox allows multiple users to access a single mailbox (e.g., helpdesk@company.com) without a per-mailbox license (up to 50GB storage). Users must be granted Full Access and Send As permissions. Above 50GB, an Exchange Online Plan 2 license is required.'},
+  {id:'q5',phase:3,question:'What is the difference between External Access and Guest Access in Microsoft Teams?',options:['External Access is for B2B collaboration; Guest Access is for anonymous attendees in meetings','External Access lets Teams users from other orgs find and message your users (federation); Guest Access invites people to be members of a specific team with full app access','External Access requires a license; Guest Access is free for all M365 plans','They are the same feature with different names'],answer:1,explanation:'External Access (federation) allows Teams users from other organizations to search for and chat with your users in the same way they use Teams with their own colleagues. Guest Access allows you to invite anyone (any email) to join a specific Team as a member with full Teams features.'},
+  {id:'q6',phase:3,question:'What is Known Folder Move (KFM) in OneDrive for Business?',options:['A feature that moves SharePoint document libraries to the recycle bin automatically','A policy that silently redirects users\' Desktop, Documents, and Pictures folders to OneDrive for automatic backup','A migration tool for moving files from network shares to SharePoint Online','An admin feature to move a user\'s OneDrive to a different data center region'],answer:1,explanation:'Known Folder Move (KFM) automatically redirects the Windows Desktop, Documents, and Pictures folders to synchronize with OneDrive for Business, providing automatic backup and enabling access across devices. It can be deployed silently via Intune or Group Policy.'},
+  {id:'q7',phase:4,question:'What is the difference between a Retention Policy and a Retention Label in Microsoft Purview?',options:['Retention policies are manual; retention labels are automatic','Retention policies apply broadly to entire locations (mailboxes, sites); labels apply to specific items and can have different retention actions per item type','Retention labels work in Exchange only; policies work in SharePoint only','They are interchangeable and do the same thing'],answer:1,explanation:'Retention Policies are applied to entire locations (all mailboxes, specific SharePoint sites) and apply the same action to all content. Retention Labels are applied to individual items (emails, documents) and can have different retention periods or actions per content type. Labels can also mark content as regulatory records.'},
+  {id:'q8',phase:4,question:'What does a DLP policy\'s "Audit" mode do versus "Block" mode?',options:['Audit deletes the content; Block just logs it','Audit only logs policy matches without preventing any action; Block prevents the action and shows a policy tip','Audit sends a copy to eDiscovery; Block quarantines the original','Audit mode only works on email; Block mode only works on SharePoint'],answer:1,explanation:'In Audit mode, DLP policies detect policy matches and log them in the DLP reports without preventing users from sharing or sending the content. This allows admins to understand false positive rates before enforcing. Block mode prevents the action and optionally shows a policy tip warning to the user.'},
+  {id:'q9',phase:5,question:'Which PowerShell module provides a unified way to manage all Microsoft 365 workloads using the Microsoft Graph API?',options:['MSOnline (MSOL) module','AzureAD module','Microsoft.Graph PowerShell SDK','Microsoft365DSC'],answer:2,explanation:'The Microsoft Graph PowerShell SDK wraps the Microsoft Graph REST API in PowerShell cmdlets, providing access to users, groups, mail, Teams, SharePoint, and more. The older MSOnline and AzureAD modules are deprecated and being replaced by Graph PowerShell.'},
+  {id:'q10',phase:5,question:'What is an App Registration in Entra ID and when do you need one for automation?',options:['A way to register third-party apps in the Microsoft Store','A service principal that allows a script or application to authenticate to Microsoft Graph without a user sign-in, using application permissions','A compliance requirement to approve apps before users can install them','An Intune feature to deploy apps to devices'],answer:1,explanation:'An App Registration creates a service principal with a client ID and secret (or certificate) that a script/application uses to authenticate to Microsoft Graph without interactive user sign-in. Application permissions (not delegated) allow the app to act on its own behalf. Required for scheduled automation, Azure Functions, Logic Apps.'},
+  {id:'q11',phase:6,question:'What is the difference between Password Hash Sync (PHS) and Pass-Through Authentication (PTA) in Entra Connect?',options:['PHS requires ADFS; PTA does not','PHS stores a hash of the on-prem password in Entra ID for cloud authentication; PTA authenticates in real-time against on-prem AD with no hashes stored in the cloud','PHS is more secure than PTA because hashes are encrypted twice','PTA requires Azure AD Premium P2; PHS is available in all Entra tiers'],answer:1,explanation:'Password Hash Sync (PHS) synchronizes a hash of the on-prem AD password hash to Entra ID — authentication happens in the cloud. Pass-Through Authentication (PTA) does NOT store any credentials in the cloud; instead a lightweight agent on-prem validates the password against AD in real-time during each sign-in.'},
+  {id:'q12',phase:6,question:'What is the purpose of Seamless Single Sign-On (Seamless SSO) in Entra Connect?',options:['It allows users to sign in once and access all on-prem apps without re-entering credentials','It automatically signs in users on domain-joined devices to Microsoft 365 without any password prompt by using Kerberos tickets from the on-prem AD','It synchronizes SSO tokens from Okta or Ping to Entra ID','It enables SAML federation between on-prem and cloud applications'],answer:1,explanation:'Seamless SSO uses Kerberos to automatically sign in users on domain-joined Windows devices to Microsoft 365 services without requiring them to enter their password. It works with both PHS and PTA sign-in methods and is transparent to users on corporate-joined machines.'}
+];
+var quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};
+var QUIZ_LS='m365_quiz_scores';
+function openQuiz(){document.getElementById('quiz-overlay').classList.add('open');quizState={screen:'select',selectedPhase:null,questions:[],current:0,answered:false,score:0,wrongs:[]};renderQuiz();}
+function closeQuiz(){document.getElementById('quiz-overlay').classList.remove('open');}
+function getQuizScores(){try{return JSON.parse(localStorage.getItem(QUIZ_LS)||'{}');}catch(e){return{};}}
+function saveQuizScore(ph,sc,tot){var s=getQuizScores();var k='p'+ph;if(!s[k]||sc>s[k].best)s[k]={best:sc,total:tot};localStorage.setItem(QUIZ_LS,JSON.stringify(s));}
+function renderQuiz(){
+  var body=document.getElementById('quiz-body');var scores=getQuizScores();
+  var phases=[...new Set(ALL_QUIZ.map(function(q){return q.phase;}))].sort(function(a,b){return a-b;});
+  var tiles=phases.map(function(p){return{phase:p,name:PHASES[p-1]?PHASES[p-1].title:'Phase '+p,count:ALL_QUIZ.filter(function(q){return q.phase===p;}).length};});
+  tiles.push({phase:'all',name:'All Phases',count:ALL_QUIZ.length});
+  if(quizState.screen==='select'){
+    body.innerHTML='<p style="font-size:12px;color:var(--gray);margin-bottom:14px">Select a phase to quiz on, or choose <b>All Phases</b>.</p><div class="phase-grid">'+
+    tiles.map(function(t){var sc=scores['p'+t.phase];var scH=sc?'<div class="pt-score">Best: '+sc.best+'/'+sc.total+'</div>':'';return '<div class="phase-tile'+(t.phase==='all'?' all-tile':'')+(quizState.selectedPhase===t.phase?' selected':'')+'" onclick="selectQuizPhase(\''+t.phase+'\')"><div class="pt-num">'+(t.phase==='all'?'ALL':'Phase '+t.phase)+'</div><div class="pt-name">'+t.name+'</div><div style="font-size:10px;color:var(--gray);margin-top:3px">'+t.count+' questions</div>'+scH+'</div>';}).join('')+
+    '</div><button class="quiz-start-btn" onclick="startQuiz()" '+(quizState.selectedPhase===null?'disabled':'')+'>&#x1F680; Start Quiz</button>';
+  } else if(quizState.screen==='question'){
+    var q=quizState.questions[quizState.current];var letters=['A','B','C','D'];var pct=Math.round(quizState.current/quizState.questions.length*100);
+    body.innerHTML='<div class="quiz-progress"><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:'+pct+'%"></div></div><span class="quiz-prog-txt">'+(quizState.current+1)+'/'+quizState.questions.length+'</span></div><div class="quiz-question">'+q.question+'</div><div class="quiz-options" id="quiz-opts">'+q.options.map(function(o,i){return '<button class="quiz-option" id="opt-'+i+'" onclick="answerQuiz('+i+')"><span class="opt-letter">'+letters[i]+'</span><span>'+o+'</span></button>';}).join('')+'</div><div class="quiz-explanation" id="quiz-exp"><b>&#x1F4A1;</b> '+q.explanation+'</div><button class="quiz-next-btn" id="quiz-next" onclick="nextQuestion()">'+(quizState.current+1<quizState.questions.length?'Next &#x2192;':'Results &#x1F3C6;')+'</button>';
+  } else if(quizState.screen==='score'){
+    var sc=quizState.score,tot=quizState.questions.length,pct2=Math.round(sc/tot*100);
+    var msg=pct2===100?'Perfect! &#x1F3C6;':pct2>=80?'Excellent! &#x1F44F;':pct2>=60?'Good Work! &#x1F44D;':pct2>=40?'Keep Practising &#x1F4AA;':'Review the material &#x1F4DA;';
+    var rev=quizState.questions.map(function(q,i){var ok=quizState.wrongs.indexOf(i)===-1;return '<div class="review-item '+(ok?'ok':'bad')+'"><span class="review-icon">'+(ok?'&#x2705;':'&#x274C;')+'</span><span>'+q.question+'</span></div>';}).join('');
+    body.innerHTML='<div class="quiz-score-screen"><div class="score-circle"><div class="sc-num">'+sc+'/'+tot+'</div><div class="sc-lbl">'+pct2+'%</div></div><div class="quiz-score-msg">'+msg+'</div><div class="quiz-score-sub">'+(pct2>=80?'Excellent knowledge!':'Review topics you missed and try again.')+'</div><div class="quiz-review">'+rev+'</div><div class="quiz-score-btns"><button class="qsb-retry" onclick="startQuiz()">&#x1F504; Retry</button><button class="qsb-back" onclick="quizState.screen=\'select\';renderQuiz()">&#x2190; Phases</button></div></div>';
+  }
+}
+function selectQuizPhase(p){quizState.selectedPhase=p==='all'?'all':parseInt(p);renderQuiz();}
+function startQuiz(){
+  var ph=quizState.selectedPhase;
+  var pool=ph==='all'?ALL_QUIZ.slice():ALL_QUIZ.filter(function(q){return q.phase===ph;});
+  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
+  pool=pool.slice(0,ph==='all'?12:Math.min(pool.length,6));
+  quizState=Object.assign({},quizState,{screen:'question',questions:pool,current:0,answered:false,score:0,wrongs:[]});
+  renderQuiz();
+}
+function answerQuiz(sel){
+  if(quizState.answered)return;quizState.answered=true;
+  var q=quizState.questions[quizState.current];var ok=q.answer===sel;
+  if(ok)quizState.score++;else quizState.wrongs.push(quizState.current);
+  q.options.forEach(function(_,i){var b=document.getElementById('opt-'+i);b.disabled=true;b.className='quiz-option '+(i===q.answer?'correct':i===sel&&!ok?'wrong':'reveal');});
+  document.getElementById('quiz-exp').classList.add('show');document.getElementById('quiz-next').classList.add('show');
+}
+function nextQuestion(){
+  quizState.current++;
+  if(quizState.current>=quizState.questions.length){saveQuizScore(quizState.selectedPhase,quizState.score,quizState.questions.length);quizState.screen='score';}
+  else{quizState.answered=false;}
+  renderQuiz();
+}
+
+function initUser(){
+  onAuthReady(function(user){
+    if(!user) return;
+    currentUser = user.displayName || user.email.split('@')[0];
+    localStorage.setItem('m365_current_user', currentUser);
+    document.getElementById('user-name-display').textContent = currentUser;
+    loadState(); build(); updateStats(); initFirebase();
+  });
+}
+function changeUser(){}
+
+function countAll(){
+  let total=0,done=0,p1to3=0,p1to3Done=0,p4to6=0,p4to6Done=0;
+  PHASES.forEach((ph,idx)=>{ph.labs.forEach(lab=>{total++;const labDone=lab.steps.every(s=>state.steps[s.id])&&lab.validation.every(v=>state.valChecks[v.id]);if(idx<3){p1to3++;if(labDone)p1to3Done++;}else{p4to6++;if(labDone)p4to6Done++;}if(labDone)done++;});});
+  return{total,done,p1to3,p1to3Done,p4to6,p4to6Done};
+}
+function countPhase(ph){let s=0,d=0;ph.labs.forEach(lab=>{s+=lab.steps.length+lab.validation.length;d+=lab.steps.filter(x=>state.steps[x.id]).length+lab.validation.filter(v=>state.valChecks[v.id]).length;});return{s,d};}
+function updateStats(){
+  const c=countAll();
+  document.getElementById('stat-total').textContent=c.total;
+  document.getElementById('stat-done').textContent=c.done;
+  document.getElementById('stat-p1').textContent=c.p1to3Done+'/'+c.p1to3;
+  document.getElementById('stat-p2').textContent=c.p4to6Done+'/'+c.p4to6;
+  const pct=c.total?Math.round(c.done/c.total*100):0;
+  document.getElementById('stat-pct').textContent=pct+'%';
+  document.getElementById('big-bar-fill').style.width=pct+'%';
+  PHASES.forEach(ph=>{const{s,d}=countPhase(ph);const fill=document.getElementById('ph-fill-'+ph.id);if(fill)fill.style.width=(s?Math.round(d/s*100):0)+'%';});
+  if(c.done===c.total&&c.total>0){document.getElementById('congrats').style.display='flex';}
+}
+function toggleStep(id){state.steps[id]=!state.steps[id];if(!state.steps[id])delete state.steps[id];saveState();renderAll();updateStats();}
+function toggleVal(id){state.valChecks[id]=!state.valChecks[id];if(!state.valChecks[id])delete state.valChecks[id];saveState();renderAll();updateStats();}
+function toggleDetail(btn){const panel=btn.closest('.step-row').querySelector('.step-details');if(!panel)return;const open=panel.classList.toggle('open');btn.classList.toggle('open',open);btn.textContent=open?'Hide ▲':'Details ▼';}
+function toggleNote(btn){const panel=btn.closest('.step-row').querySelector('.step-note-panel');if(!panel)return;const open=panel.classList.toggle('open');btn.classList.toggle('open',open);btn.textContent=open?'Note ▲':'Note ▼';}
+function saveNote(id,val){if(val.trim())state.notes[id]=val;else delete state.notes[id];const btn=document.querySelector('[data-note-btn="'+id+'"]');if(btn)btn.classList.toggle('has-note',!!state.notes[id]);saveState();}
+function saveLabNote(id,val){if(val.trim())state.labNotes[id]=val;else delete state.labNotes[id];saveState();}
+let activeFilter='all';
+function filterTab(f,btn){activeFilter=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.lab-section').forEach(sec=>{sec.style.display=(f==='all'||sec.dataset.cloud===f)?'block':'none';});}
+function renderAll(){
+  document.querySelectorAll('.step-row').forEach(row=>{const id=row.dataset.stepId;if(id)row.classList.toggle('done',!!state.steps[id]);const chk=row.querySelector('.step-check');if(chk&&id)chk.innerHTML=state.steps[id]?'&#x2714;':'';});
+  document.querySelectorAll('.val-row').forEach(row=>{const id=row.dataset.valId;if(id)row.classList.toggle('done',!!state.valChecks[id]);const chk=row.querySelector('.val-check');if(chk&&id)chk.innerHTML=state.valChecks[id]?'&#x2714;':'';});
+  document.querySelectorAll('textarea[data-note-id]').forEach(ta=>{ta.value=state.notes[ta.dataset.noteId]||'';});
+  document.querySelectorAll('[data-note-btn]').forEach(btn=>{btn.classList.toggle('has-note',!!state.notes[btn.dataset.noteBtnId]);});
+  document.querySelectorAll('textarea[data-lab-note]').forEach(ta=>{ta.value=state.labNotes[ta.dataset.labNote]||'';});
+}
+function build(){
+  const content=document.getElementById('content');content.innerHTML='';
+  PHASES.forEach(ph=>{
+    const card=document.createElement('div');card.className='phase-card';card.id='phase-'+ph.id;
+    const{s,d}=countPhase(ph);const pct=s?Math.round(d/s*100):0;
+    card.innerHTML=`<div class="phase-header" onclick="togglePhase(this)"><div class="phase-header-left"><span class="phase-badge">${ph.badge}</span><div><div class="phase-title">${ph.title}</div><div class="phase-week">${ph.week}</div></div></div><div style="display:flex;align-items:center;gap:10px"><div class="phase-progress-bar"><div class="phase-progress-fill" id="ph-fill-${ph.id}" style="width:${pct}%"></div></div><span style="font-size:11px;color:#C4B5FD;min-width:32px;text-align:right">${pct}%</span><span class="chevron">&#x25BC;</span></div></div><div class="phase-body">${ph.labs.map(lab=>buildLab(lab)).join('')}</div>`;
+    content.appendChild(card);
+  });
+}
+function buildLab(lab){
+  const doneSteps=lab.steps.filter(s=>state.steps[s.id]).length;const doneVals=lab.validation.filter(v=>state.valChecks[v.id]).length;const total=lab.steps.length+lab.validation.length;const done=doneSteps+doneVals;const pct=total?Math.round(done/total*100):0;
+  return `<div class="lab-section" id="lab-${lab.id}" data-cloud="${lab.cloud}"><div class="lab-header m365-lab"><span class="lab-cloud-badge m365-badge">M365</span><div class="lab-title-area"><div class="lab-title">${lab.title}</div><div class="lab-meta">${lab.meta} &middot; ${done}/${total} steps</div></div><div class="lab-stats"><div style="font-size:11px;font-weight:700;color:var(--gray)">${pct}%</div><button class="lab-toggle m365-btn" onclick="toggleLab('lab-${lab.id}')">&#x25BC; Expand</button></div></div><div class="steps-list"><div class="section-lbl">&#x1F527; Lab Steps</div>${lab.steps.map((s,i)=>buildStep(s,i+1)).join('')}<div class="section-lbl" style="margin-top:14px">&#x2705; Validation Checks</div>${lab.validation.map(v=>buildVal(v)).join('')}<div class="section-lbl" style="margin-top:14px">&#x1F4DD; Lab Notes</div><textarea class="notes-area" data-lab-note="${lab.id}" placeholder="Add any overall notes about this lab..." onchange="saveLabNote('${lab.id}',this.value)">${state.labNotes[lab.id]||''}</textarea></div></div>`;
+}
+function buildStep(s,num){
+  const done=!!state.steps[s.id];const hasDetails=s.details&&s.details.length>0;const hasNote=!!state.notes[s.id];
+  return `<div class="step-row${done?' done':''}" data-step-id="${s.id}"><div class="step-check" onclick="toggleStep('${s.id}')">${done?'&#x2714;':''}</div><div class="step-main"><div class="step-top"><span class="step-num">${num}.</span><span class="step-text">${s.text}</span>${hasDetails?`<button class="detail-btn" onclick="toggleDetail(this)">Details &#x25BC;</button>`:''}<button class="note-btn${hasNote?' has-note':''}" data-note-btn="${s.id}" onclick="toggleNote(this)">Note &#x25BC;</button></div>${hasDetails?`<div class="step-details">${s.details.map((d,i)=>`<div class="detail-item"><span class="di-num">${i+1}.</span><span class="di-text">${d}</span></div>`).join('')}</div>`:''}<div class="step-note-panel"><textarea class="note-textarea" data-note-id="${s.id}" placeholder="Your notes for this step..." onchange="saveNote('${s.id}',this.value)">${state.notes[s.id]||''}</textarea><div class="note-hint">&#x1F4A1; Notes are saved locally and synced if Firebase is connected.</div></div></div></div>`;
+}
+function buildVal(v){const done=!!state.valChecks[v.id];return `<div class="val-row${done?' done':''}" data-val-id="${v.id}" onclick="toggleVal('${v.id}')"><div class="val-check">${done?'&#x2714;':''}</div><span class="step-text">&#x1F4CB; ${v.text}</span></div>`;}
+function togglePhase(header){header.closest('.phase-card').classList.toggle('open');}
+function toggleLab(id){const sec=document.getElementById(id);if(!sec)return;sec.classList.toggle('open');const btn=sec.querySelector('.lab-toggle');if(btn)btn.innerHTML=sec.classList.contains('open')?'&#x25B2; Collapse':'&#x25BC; Expand';}
+function resetProgress(){if(!confirm('Reset all M365 lab progress for '+currentUser+'? This cannot be undone.'))return;state={steps:{},notes:{},labNotes:{},valChecks:{}};saveState();build();updateStats();}
+
+initUser();
+</script>
+</body>
+</html>
