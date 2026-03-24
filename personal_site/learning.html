@@ -95,7 +95,22 @@ nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.96);backdrop-fil
 .fb-notice-icon{font-size:18px;flex-shrink:0;}
 .fb-notice a{color:#D97706;font-weight:700;}
 
-@media(max-width:640px){.content{padding:20px 14px 48px;}.cards-grid{grid-template-columns:1fr;}.search-wrap{margin-left:0;width:100%;}.search-input{width:100%;}}
+.mob-menu-btn{display:none;background:none;border:1.5px solid rgba(255,255,255,.3);color:white;font-size:20px;line-height:1;padding:4px 10px;border-radius:6px;cursor:pointer;}
+@media(max-width:768px){
+  .mob-menu-btn{display:block;}
+  .nav-links{display:none;position:fixed;top:58px;left:0;right:0;background:rgba(15,23,42,.98);flex-direction:column;padding:8px 12px;gap:2px;z-index:99;border-bottom:1px solid rgba(255,255,255,.08);}
+  .nav-links.mob-open{display:flex;}
+  .nav-links a{padding:10px 14px;border-radius:6px;font-size:14px;}
+}
+@media(max-width:640px){
+  .content{padding:20px 14px 48px;}
+  .cards-grid{grid-template-columns:1fr;}
+  .search-wrap{margin-left:0;width:100%;}
+  .search-input{width:100%;}
+  .stats-row{gap:10px;}
+  .stat-pill{padding:10px 14px;}
+  .filter-bar{gap:6px;}
+}
 </style>
 <style>body{visibility:hidden;}</style>
 </head>
@@ -111,6 +126,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.96);backdrop-fil
       <a href="resume.html">&#x1F4C4; Resume</a>
       <a href="admin.html">&#x2699;&#xFE0F; Admin</a>
     </div>
+    <button class="mob-menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('mob-open')">&#x2630;</button>
     <div id="nav-auth" style="margin-left:10px;"></div>
   </div>
 </nav>

@@ -159,7 +159,29 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 .repl-prompt{color:var(--py-blue);font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;margin-right:8px;flex-shrink:0;}
 #repl-input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;caret-color:var(--white);}
 
-@media(max-width:768px){.sidebar{width:240px;}.site-header h1{font-size:13px;}}
+@media(max-width:900px){.sidebar{width:230px;}.site-header h1{font-size:13px;}}
+@media(max-width:640px){
+  html,body{height:auto;overflow-y:auto;}
+  .site-header{padding:8px 12px;gap:6px;}
+  .site-header h1{font-size:12px;}
+  .site-header p{display:none;}
+  .nav-links{display:none;}
+  .mob-toggle{display:inline-flex !important;}
+  .app{flex-direction:column;height:auto;overflow:visible;}
+  .sidebar{width:100%;border-right:none;border-bottom:2px solid var(--border);display:none;flex-shrink:0;}
+  .sidebar.mob-open{display:flex;}
+  .sidebar-content{max-height:220px;}
+  .editor-wrap{flex:none;min-height:0;}
+  .toolbar{overflow-x:auto;flex-wrap:nowrap;padding:5px 8px;gap:4px;}
+  .toolbar::-webkit-scrollbar{height:3px;}
+  .toolbar::-webkit-scrollbar-thumb{background:var(--border);}
+  .cmd-btn{font-size:10px;padding:3px 8px;white-space:nowrap;flex-shrink:0;}
+  .split-pane{flex-direction:column;height:auto;}
+  .editor-pane{flex:none;height:260px;}
+  .terminal-pane{flex:none;height:260px;}
+  .challenge-bar{position:relative;}
+  .term-scroll,.repl-out{min-height:180px;}
+}
 </style>
 </head>
 <body>
@@ -169,6 +191,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
     <h1><span class="py-badge">PY</span> Python Lab — Interactive Coding Environment</h1>
     <p>Real Python 3 in your browser via Pyodide &middot; Exercises &middot; REPL &middot; Cheatsheet</p>
   </div>
+  <button class="mob-toggle" onclick="document.querySelector('.sidebar').classList.toggle('mob-open')" style="display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:white;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;cursor:pointer;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">&#x2630; Labs</button>
   <div class="nav-links">
     <a href="../personal_site/index.html" class="nav-link">Home</a>
     <a href="../personal_site/learning.html" class="nav-link">Learning Hub</a>

@@ -91,6 +91,28 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 #cmd-input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-family:inherit;font-size:13px;caret-color:white;}
 .prog-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:6px;}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:width .4s;}
+@media(max-width:900px){.sidebar{width:220px;}.site-header h1{font-size:13px;}}
+@media(max-width:640px){
+  html,body{height:auto;overflow-y:auto;}
+  .site-header{padding:8px 12px;gap:6px;}
+  .site-header h1{font-size:12px;}
+  .site-header p{display:none;}
+  .nav-links{display:none;}
+  .mob-toggle{display:inline-flex !important;}
+  .app{flex-direction:column;height:auto;overflow:visible;}
+  .sidebar{width:100%;border-right:none;border-bottom:2px solid var(--border);display:none;flex-shrink:0;}
+  .sidebar.mob-open{display:flex;}
+  .sidebar-content{max-height:220px;}
+  .editor-wrap{flex:none;min-height:0;}
+  .toolbar{overflow-x:auto;flex-wrap:nowrap;padding:5px 8px;gap:4px;}
+  .toolbar::-webkit-scrollbar{height:3px;}
+  .toolbar::-webkit-scrollbar-thumb{background:var(--border);}
+  .cmd-btn{font-size:10px;padding:3px 8px;white-space:nowrap;flex-shrink:0;}
+  .split-pane{flex-direction:column;height:auto;}
+  .editor-pane{flex:none;height:260px;}
+  .terminal-pane{flex:none;height:260px;}
+  .challenge-bar{position:relative;}
+}
 </style>
 </head>
 <body>
@@ -100,6 +122,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
     <h1>&#x2388; Kubernetes Terminal &#8212; Hands-On Lab</h1>
     <p>Simulated kubectl &middot; pods &middot; deployments &middot; services &middot; namespaces &middot; helm</p>
   </div>
+  <button class="mob-toggle" onclick="document.querySelector('.sidebar').classList.toggle('mob-open')" style="display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:white;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;cursor:pointer;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">&#x2630; Labs</button>
   <div class="nav-links">
     <a href="../personal_site/index.html" class="nav-link">&#x1F3E0; Home</a>
     <a href="../personal_site/learning.html" class="nav-link">&#x1F4DA; Learning Hub</a>

@@ -149,13 +149,25 @@ footer{background:var(--navy);color:rgba(255,255,255,.45);text-align:center;padd
 footer a{color:rgba(255,255,255,.6);text-decoration:none;}
 footer a:hover{color:white;}
 
+.mob-menu-btn{display:none;background:none;border:1.5px solid rgba(255,255,255,.3);color:white;font-size:20px;line-height:1;padding:4px 10px;border-radius:6px;cursor:pointer;}
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
   .about-grid{grid-template-columns:1fr;}
   .about-highlights{grid-template-columns:1fr;}
-  .nav-links{display:none;}
   .hero{padding:72px 20px 60px;}
   .hero-stats{gap:24px;}
+  .mob-menu-btn{display:block;}
+  .nav-cta{display:none;}
+  .nav-links{display:none;position:fixed;top:58px;left:0;right:0;background:rgba(15,23,42,.98);flex-direction:column;padding:8px 12px;gap:2px;z-index:99;border-bottom:1px solid rgba(255,255,255,.08);}
+  .nav-links.mob-open{display:flex;}
+  .nav-links a{padding:10px 14px;border-radius:6px;font-size:14px;}
+}
+@media(max-width:480px){
+  section{padding:48px 16px;}
+  .hero-stats{gap:16px;}
+  .stat .n{font-size:26px;}
+  .contact-links{gap:8px;}
+  .contact-link{padding:10px 14px;font-size:12px;}
 }
 </style>
 </head>
@@ -174,6 +186,7 @@ footer a:hover{color:white;}
       <a href="resume.html">&#x1F4C4; Resume</a>
       <a href="#contact">Contact</a>
     </div>
+    <button class="mob-menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('mob-open')">&#x2630;</button>
     <a href="learning.html" class="nav-cta">&#x1F4DA; Learning Hub</a>
   </div>
 </nav>

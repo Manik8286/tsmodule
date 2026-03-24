@@ -139,14 +139,20 @@ nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.97);backdrop-fil
 .sb-gcp .sb-num{color:var(--gcp-dark);}
 .sb-sep{width:1px;height:40px;background:var(--light);}
 
+.mob-menu-btn{display:none;background:none;border:1.5px solid rgba(255,255,255,.3);color:white;font-size:20px;line-height:1;padding:4px 10px;border-radius:6px;cursor:pointer;}
 @media(max-width:900px){
   .cloud-headers,.tier-row,.arrow-row{grid-template-columns:70px 1fr;grid-template-rows:auto auto auto;}
   .ch-azure{grid-column:1/-1;border-radius:var(--radius);}
   .azure-section,.aws-section,.gcp-section{margin-bottom:24px;}
+  .mob-menu-btn{display:block;}
+  .nav-links{display:none;position:fixed;top:58px;left:0;right:0;background:rgba(15,23,42,.98);flex-direction:column;padding:8px 12px;gap:2px;z-index:99;border-bottom:1px solid rgba(255,255,255,.08);}
+  .nav-links.mob-open{display:flex;}
+  .nav-links a{padding:10px 14px;border-radius:6px;font-size:14px;}
 }
 @media(max-width:640px){
   .roadmap-wrap,.legend-wrap{padding:0 12px;}
   .cert-card{min-width:100%;flex:0 0 100%;}
+  .stats-bar{flex-wrap:wrap;gap:10px;}
 }
 </style>
 </head>
@@ -163,6 +169,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.97);backdrop-fil
       <a href="resume.html">&#x1F4C4; Resume</a>
       <a href="admin.html">&#x2699;&#xFE0F; Admin</a>
     </div>
+    <button class="mob-menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('mob-open')">&#x2630;</button>
   </div>
 </nav>
 

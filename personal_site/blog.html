@@ -127,14 +127,23 @@ nav{position:sticky;top:0;z-index:200;background:rgba(15,23,42,.96);backdrop-fil
 .reader-content .callout.warn{background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;}
 .reader-content .callout.tip{background:var(--green-light);border:1px solid #BBF7D0;color:#166534;}
 
+.mob-menu-btn{display:none;background:none;border:1.5px solid rgba(255,255,255,.3);color:white;font-size:20px;line-height:1;padding:4px 10px;border-radius:6px;cursor:pointer;}
 /* RESPONSIVE */
 @media(max-width:768px){
   .featured{grid-template-columns:1fr;}
   .featured-img{padding:28px;}
-  .nav-links{display:none;}
   .reader-body{padding:24px 20px 48px;}
   .search-wrap{margin-left:0;width:100%;}
   .search-input{width:100%;}
+  .mob-menu-btn{display:block;}
+  .nav-cta{display:none;}
+  .nav-links{display:none;position:fixed;top:58px;left:0;right:0;background:rgba(15,23,42,.98);flex-direction:column;padding:8px 12px;gap:2px;z-index:99;border-bottom:1px solid rgba(255,255,255,.08);}
+  .nav-links.mob-open{display:flex;}
+  .nav-links a{padding:10px 14px;border-radius:6px;font-size:14px;}
+}
+@media(max-width:480px){
+  .blog-grid{grid-template-columns:1fr;}
+  .post-tags{flex-wrap:wrap;}
 }
 </style>
 </head>
@@ -153,6 +162,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(15,23,42,.96);backdrop-fil
       <a href="resume.html">&#x1F4C4; Resume</a>
       <a href="index.html#contact">Contact</a>
     </div>
+    <button class="mob-menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('mob-open')">&#x2630;</button>
     <a href="learning.html" class="nav-cta">&#x1F4DA; Learning Hub</a>
   </div>
 </nav>

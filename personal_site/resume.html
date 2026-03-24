@@ -177,11 +177,20 @@ nav{position:sticky;top:0;z-index:200;background:rgba(15,23,42,.96);backdrop-fil
 .score-bar-wrap{width:100%;background:var(--light);border-radius:99px;height:6px;margin-top:8px;}
 .score-bar{height:6px;border-radius:99px;transition:width .6s ease;}
 
+.mob-menu-btn{display:none;background:none;border:1.5px solid rgba(255,255,255,.3);color:white;font-size:20px;line-height:1;padding:4px 10px;border-radius:6px;cursor:pointer;}
 @media(max-width:900px){
   #tab-builder{flex-direction:column;height:auto;}
   .form-panel{width:100%;padding-right:0;}
   .validator-layout{grid-template-columns:1fr;}
-  .nav-links{display:none;}
+  .mob-menu-btn{display:block;}
+  .nav-cta{display:none;}
+  .nav-links{display:none;position:fixed;top:58px;left:0;right:0;background:rgba(15,23,42,.98);flex-direction:column;padding:8px 12px;gap:2px;z-index:99;border-bottom:1px solid rgba(255,255,255,.08);}
+  .nav-links.mob-open{display:flex;}
+  .nav-links a{padding:10px 14px;border-radius:6px;font-size:14px;}
+}
+@media(max-width:640px){
+  .resume-preview{padding:24px 20px;}
+  .ats-score-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -197,6 +206,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(15,23,42,.96);backdrop-fil
       <a href="resume.html" class="active">&#x1F4C4; Resume</a>
       <a href="index.html#contact">Contact</a>
     </div>
+    <button class="mob-menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('mob-open')">&#x2630;</button>
     <a href="learning.html" class="nav-cta">&#x1F4DA; Learning Hub</a>
   </div>
 </nav>
