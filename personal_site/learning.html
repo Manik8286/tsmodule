@@ -168,7 +168,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.96);backdrop-fil
   <!-- Pinned Labs section -->
   <div class="section-heading">
     <h2>&#x1F4CC; Pinned Lab Trackers</h2>
-    <span class="section-count" id="pinned-count">6</span>
+    <span class="section-count" id="pinned-count">19</span>
   </div>
   <div class="cards-grid" id="pinned-grid">
     <a href="../learning_lab/docker-terminal.html" class="lcard pinned" data-category="Cloud Labs" data-title="Docker Terminal Lab">
@@ -684,14 +684,17 @@ function renderDynamic(items){
 }
 
 function updateStats(){
-  const total = allItems.length + 2; // +2 for pinned
-  const active = allItems.filter(i=>i.status==='active').length + 2;
+  const pinnedCards = document.querySelectorAll('#pinned-grid .lcard').length;
+  const pinnedActive = document.querySelectorAll('#pinned-grid .lcard .s-active').length;
+  const total = allItems.length + pinnedCards;
+  const active = allItems.filter(i=>i.status==='active').length + pinnedActive;
   const prog = allItems.filter(i=>i.status==='in-progress').length;
   const planned = allItems.filter(i=>i.status==='planned').length;
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-prog').textContent = prog;
   document.getElementById('stat-planned').textContent = planned;
+  document.getElementById('pinned-count').textContent = pinnedCards;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
