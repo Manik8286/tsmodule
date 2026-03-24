@@ -66,19 +66,24 @@ function signInWithYahoo() {
 }
 
 function signInAsGuest() {
-  const auth = _getAuth();
-  return auth.signInAnonymously().catch(_handleError);
+  sessionStorage.setItem('mk_guest', '1');
+  return Promise.resolve({ user: { isAnonymous: true, displayName: 'Guest', email: null, photoURL: null } });
 }
 
 function signOut() {
+  sessionStorage.removeItem('mk_guest');
   const auth = _getAuth();
   if (auth) auth.signOut();
 }
 
+const _GUEST = { isAnonymous: true, displayName: 'Guest', email: null, photoURL: null };
+
 function onAuthReady(callback) {
   const auth = _getAuth();
-  if (!auth) { callback(null); return; }
-  auth.onAuthStateChanged(callback);
+  if (!auth) { callback(sessionStorage.getItem('mk_guest') ? _GUEST : null); return; }
+  auth.onAuthStateChanged(function(user) {
+    callback(user || (sessionStorage.getItem('mk_guest') ? _GUEST : null));
+  });
 }
 
 function _handleError(err) {
