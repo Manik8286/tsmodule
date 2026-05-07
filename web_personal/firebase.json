@@ -1,0 +1,10 @@
+{
+  "hosting": {
+    "public": "cloud-lab-tracker",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

