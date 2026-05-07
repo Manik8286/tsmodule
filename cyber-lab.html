@@ -308,7 +308,7 @@ const PHASES = [
        meta:'Reflected · Stored · DOM-based · CSP bypass',
        resources:['https://portswigger.net/web-security/cross-site-scripting'],
        steps:[
-         {text:"Reflected XSS: inject <script>alert(1)</script> in URL parameters",tags:['concept']},
+         {text:"Reflected XSS: inject &lt;script&gt;alert(1)&lt;/script&gt; in URL parameters",tags:['concept']},
          {text:'Stored XSS: persisted payloads in database (guestbooks, comments)',tags:['concept']},
          {text:'DOM-based XSS: document.location, innerHTML sinks',tags:['concept']},
          {text:'CSP bypass techniques and filter evasion strategies',tags:['concept']},
